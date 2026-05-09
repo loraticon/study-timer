@@ -123,6 +123,87 @@
 
             const theme = THEMES[themeId];
 
+            // --------------------------------------------------------
+            // 노션 연동 로직 시작
+            // --------------------------------------------------------
+
+            // 날짜 기반 노션 제목 생성: "[과목] YY년 M월 D일"
+            const generateNotionTitle = (subject) => {
+                const now = new Date();
+                const year = String(now.getFullYear()).slice(-2);
+                const month = now.getMonth() + 1;
+                const day = now.getDate();
+                return `[${subject || '미지정'}] ${year}년 ${month}월 ${day}일`;
+            };
+
+            // 노션 API로 기록 전송
+            const saveToNotion = async (mode, durationSeconds) => {
+                if (durationSeconds <= 0) return;
+
+                // 🚨 여기에 본인의 노션 연동 정보를 입력해주세요!
+                const WORKER_URL = "https://notion-proxy-worker.loraticon.workers.dev";
+                const API_KEY = "여기에_노션_API_키를_입력하세요"; // 수정 필수
+                const DB_ID = "35b32cb803f980f2a9d9dcfe9ffbb336"; // 공부기록 DB ID
+
+                if (API_KEY === "여기에_노션_API_키를_입력하세요") {
+                    console.warn("노션 API 키가 설정되지 않아 저장을 건너뜁니다.");
+                    return;
+                }
+
+                const titleText = generateNotionTitle(selectedSubject);
+                const nowIso = new Date().toISOString();
+
+                // 노션 데이터베이스 속성 구조
+                const requestBody = {
+                    parent: { database_id: DB_ID },
+                    properties: {
+                        "이름": {
+                            title: [
+                                { text: { content: titleText } }
+                            ]
+                        },
+                        "날짜": {
+                            date: { start: nowIso }
+                        },
+                        "모드": {
+                            select: { name: mode === 'pomodoro' ? '뽀모도로' : '일반 타이머' }
+                        },
+                        "순공시간": {
+                            number: Math.floor(durationSeconds / 60) // 초를 분으로 환산하여 저장
+                        }
+                        // 참고: 과목(Relation형) 연결 로직은 과목 페이지 ID가 필요하므로 
+                        // 이번 구성에서는 "이름" 속성으로 과목명을 표시하는 것에 집중했습니다.
+                    }
+                };
+
+                try {
+                    const res = await fetch(`${WORKER_URL}/v1/pages`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': API_KEY,
+                            'x-notion-version': '2022-06-28'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!res.ok) {
+                        const errorData = await res.json();
+                        console.error("노션 저장 실패:", errorData);
+                        showToast("노션 저장에 실패했습니다.");
+                    } else {
+                        console.log("노션 저장 성공!");
+                        showToast("노션에 성공적으로 기록되었습니다! 🎉");
+                    }
+                } catch (error) {
+                    console.error("네트워크 에러:", error);
+                }
+            };
+            // --------------------------------------------------------
+            // 노션 연동 로직 끝
+            // --------------------------------------------------------
+
+
             // 뽀모도로 타이머
             useEffect(() => {
                 if (timerMode !== 'pomodoro') return;
@@ -131,10 +212,18 @@
                     interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
                 } else if (isActive && timeLeft === 0) {
                     const next = pomoPhase === 'focus' ? 'break' : 'focus';
+                    
+                    // 집중 세션이 끝난 시점 -> 노션에 기록
+                    if (pomoPhase === 'focus') {
+                        saveToNotion('pomodoro', focusDuration * 60);
+                        showToast('집중 세션 완료! 노션에 기록 중... ☕');
+                    } else {
+                        showToast('휴식 완료! 다시 집중해볼까요?');
+                    }
+
                     setPomoPhase(next);
                     setTimeLeft(next === 'focus' ? focusDuration * 60 : breakDuration * 60);
                     setIsActive(false);
-                    if (next === 'break') showToast('집중 세션 완료! ☕');
                 }
                 return () => clearInterval(interval);
             }, [isActive, timeLeft, pomoPhase, focusDuration, breakDuration, timerMode]);
@@ -184,9 +273,10 @@
             const stopStopwatch = () => {
                 setIsActive(false);
                 if (elapsed > 0) {
-                    showToast(`${formatTime(elapsed)} 기록 완료! 📚`);
+                    showToast(`${formatTime(elapsed)} 기록 완료! 노션에 기록 중... 📚`);
+                    // 노션 DB 저장 실행
+                    saveToNotion('stopwatch', elapsed);
                 }
-                // TODO: 노션 DB 저장 → elapsed(초), selectedSubject, startTime
                 setElapsed(0);
                 setStartTime(null);
             };
@@ -208,6 +298,14 @@
             };
 
             const skipPomo = () => {
+                // 집중 도중 건너뛰기를 누르면 지금까지 진행한 시간을 기록
+                if (pomoPhase === 'focus') {
+                    const focusDone = (focusDuration * 60) - timeLeft;
+                    if (focusDone >= 60) { // 1분 이상 진행했을 때만 기록
+                        saveToNotion('pomodoro', focusDone);
+                        showToast('건너뛰기! 지금까지의 시간을 기록합니다.');
+                    }
+                }
                 const next = pomoPhase === 'focus' ? 'break' : 'focus';
                 setPomoPhase(next);
                 setTimeLeft(next === 'focus' ? focusDuration * 60 : breakDuration * 60);
