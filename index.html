@@ -425,7 +425,7 @@ const App = () => {
                                 <input
                                     type={type}
                                     value={setupForm[key]}
-                                    onChange={e => setSetupForm(f => ({ ...f, [key]: e.target.value.trim() }))}
+                                    onChange={e => setSetupForm(f => ({ ...f, [key]: e.target.value.replace(/\s/g, '') }))}
                                     placeholder={placeholder}
                                     className="w-full text-sm border-b-2 border-gray-200 bg-transparent text-gray-800 py-2 focus:outline-none focus:border-[#A67B5B] placeholder-gray-300"
                                 />
