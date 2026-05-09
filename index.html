@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코지 카페 타이머</title>
+    <title>코지 카페 타이머 - Loraticon Edition</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -26,12 +26,8 @@
         * { -ms-overflow-style: none; scrollbar-width: none; }
         .coffee-cup { filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05)); }
         .dark .coffee-cup { filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); }
-
-        /* 탭 슬라이더 */
         .mode-tab { transition: color 0.2s; }
         .mode-slider { transition: transform 0.25s cubic-bezier(.4,0,.2,1); }
-
-        /* 과목 드롭다운 */
         .subject-dropdown {
             position: absolute;
             top: calc(100% + 6px);
@@ -43,28 +39,12 @@
             z-index: 50;
             overflow: hidden;
         }
-        .dark .subject-dropdown {
-            background: #27272a;
-            border-color: #3f3f46;
-        }
-        .subject-option {
-            padding: 10px 16px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: background 0.15s;
-        }
+        .dark .subject-dropdown { background: #27272a; border-color: #3f3f46; }
+        .subject-option { padding: 10px 16px; cursor: pointer; font-size: 0.875rem; transition: background 0.15s; }
         .subject-option:hover { background: #F4F0EA; }
         .dark .subject-option:hover { background: #3f3f46; }
-
-        /* 완료 토스트 */
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .toast { animation: slideUp 0.3s ease; }
-
-        /* 입력 필드 포커스 */
-        .subject-input:focus { outline: none; }
     </style>
 </head>
 <body>
@@ -90,176 +70,134 @@
             earlgrey: { id: 'earlgrey', name: '밀크티',     bg: 'bg-[#D4A373]', hover: 'hover:bg-[#B88B5E]', hex: '#D4A373', ring: 'ring-[#D4A373]' },
         };
 
-        const DEFAULT_SUBJECTS = ['수학', '영어', '국어', '과학', '사회', '기타'];
+        const DEFAULT_SUBJECTS = ['경제', '디자인', '개발', '수학', '영어', '기타'];
 
         const App = () => {
-            // 타이머 모드: 'pomodoro' | 'stopwatch'
             const [timerMode, setTimerMode] = useState('pomodoro');
-
-            // 뽀모도로 관련
-            const [pomoPhase, setPomoPhase] = useState('focus'); // 'focus' | 'break'
+            const [pomoPhase, setPomoPhase] = useState('focus');
             const [timeLeft, setTimeLeft] = useState(25 * 60);
             const [focusDuration, setFocusDuration] = useState(25);
             const [breakDuration, setBreakDuration] = useState(5);
 
-            // 스톱워치 관련
-            const [elapsed, setElapsed] = useState(0); // seconds
-            const [startTime, setStartTime] = useState(null); // Date ISO string
-
-            // 공통
+            const [elapsed, setElapsed] = useState(0);
             const [isActive, setIsActive] = useState(false);
             const [themeId, setThemeId] = useState('latte');
             const [showSettings, setShowSettings] = useState(false);
 
-            // 과목
             const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
             const [selectedSubject, setSelectedSubject] = useState('');
             const [showSubjectDrop, setShowSubjectDrop] = useState(false);
             const [newSubject, setNewSubject] = useState('');
             const subjectRef = useRef(null);
-
-            // 완료 토스트
             const [toast, setToast] = useState(null);
+
+            // ✨ 정밀도 보정용 Ref
+            const pomoDeadlineRef = useRef(null);
+            const swStartTimeRef = useRef(null);
+            const swOffsetRef = useRef(0); // 일시정지 누적 시간 보정
 
             const theme = THEMES[themeId];
 
-            // --------------------------------------------------------
-            // 노션 연동 로직 시작
-            // --------------------------------------------------------
+            // 노션 연동 정보
+            const WORKER_URL = "https://notion-proxy-worker.loraticon.workers.dev";
+            const API_KEY = "여기에_노션_API_키를_입력하세요"; 
+            const DB_ID = "35b32cb803f980f2a9d9dcfe9ffbb336";
 
-            // 날짜 기반 노션 제목 생성: "[과목] YY년 M월 D일"
-            const generateNotionTitle = (subject) => {
-                const now = new Date();
-                const year = String(now.getFullYear()).slice(-2);
-                const month = now.getMonth() + 1;
-                const day = now.getDate();
-                return `[${subject || '미지정'}] ${year}년 ${month}월 ${day}일`;
-            };
+            const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-            // 노션 API로 기록 전송
             const saveToNotion = async (mode, durationSeconds) => {
-                if (durationSeconds <= 0) return;
-
-                // 🚨 여기에 본인의 노션 연동 정보를 입력해주세요!
-                const WORKER_URL = "https://notion-proxy-worker.loraticon.workers.dev";
-                const API_KEY = "여기에_노션_API_키를_입력하세요"; // 수정 필수
-                const DB_ID = "35b32cb803f980f2a9d9dcfe9ffbb336"; // 공부기록 DB ID
-
-                if (API_KEY === "여기에_노션_API_키를_입력하세요") {
-                    console.warn("노션 API 키가 설정되지 않아 저장을 건너뜁니다.");
-                    return;
-                }
-
-                const titleText = generateNotionTitle(selectedSubject);
-                const nowIso = new Date().toISOString();
-
-                // 노션 데이터베이스 속성 구조
+                if (durationSeconds <= 0 || API_KEY.includes("입력하세요")) return;
+                const now = new Date();
+                const titleText = `[${selectedSubject || '미지정'}] ${String(now.getFullYear()).slice(-2)}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+                
                 const requestBody = {
                     parent: { database_id: DB_ID },
                     properties: {
-                        "이름": {
-                            title: [
-                                { text: { content: titleText } }
-                            ]
-                        },
-                        "날짜": {
-                            date: { start: nowIso }
-                        },
-                        "모드": {
-                            select: { name: mode === 'pomodoro' ? '뽀모도로' : '일반 타이머' }
-                        },
-                        "순공시간": {
-                            number: Math.floor(durationSeconds / 60) // 초를 분으로 환산하여 저장
-                        }
-                        // 참고: 과목(Relation형) 연결 로직은 과목 페이지 ID가 필요하므로 
-                        // 이번 구성에서는 "이름" 속성으로 과목명을 표시하는 것에 집중했습니다.
+                        "이름": { title: [{ text: { content: titleText } }] },
+                        "날짜": { date: { start: now.toISOString() } },
+                        "모드": { select: { name: mode === 'pomodoro' ? '뽀모도로' : '일반 타이머' } },
+                        "순공시간": { number: Math.floor(durationSeconds / 60) }
                     }
                 };
 
                 try {
-                    const res = await fetch(`${WORKER_URL}/v1/pages`, {
+                    await fetch(`${WORKER_URL}/v1/pages`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-api-key': API_KEY,
-                            'x-notion-version': '2022-06-28'
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'x-notion-version': '2022-06-28' },
                         body: JSON.stringify(requestBody)
                     });
-
-                    if (!res.ok) {
-                        const errorData = await res.json();
-                        console.error("노션 저장 실패:", errorData);
-                        showToast("노션 저장에 실패했습니다.");
-                    } else {
-                        console.log("노션 저장 성공!");
-                        showToast("노션에 성공적으로 기록되었습니다! 🎉");
-                    }
-                } catch (error) {
-                    console.error("네트워크 에러:", error);
-                }
+                    showToast("노션에 성공적으로 기록되었습니다! ☕");
+                } catch (e) { console.error("Notion Save Error:", e); }
             };
-            // --------------------------------------------------------
-            // 노션 연동 로직 끝
-            // --------------------------------------------------------
 
-
-            // 뽀모도로 타이머
+            // 🍅 뽀모도로 정밀 타이머 (Deadline 기반)
             useEffect(() => {
-                if (timerMode !== 'pomodoro') return;
-                let interval = null;
-                if (isActive && timeLeft > 0) {
-                    interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
-                } else if (isActive && timeLeft === 0) {
-                    const next = pomoPhase === 'focus' ? 'break' : 'focus';
-                    
-                    // 집중 세션이 끝난 시점 -> 노션에 기록
-                    if (pomoPhase === 'focus') {
-                        saveToNotion('pomodoro', focusDuration * 60);
-                        showToast('집중 세션 완료! 노션에 기록 중... ☕');
-                    } else {
-                        showToast('휴식 완료! 다시 집중해볼까요?');
+                if (timerMode !== 'pomodoro' || !isActive) return;
+
+                pomoDeadlineRef.current = Date.now() + (timeLeft * 1000);
+
+                const interval = setInterval(() => {
+                    const remaining = Math.max(0, Math.round((pomoDeadlineRef.current - Date.now()) / 1000));
+                    setTimeLeft(remaining);
+
+                    if (remaining === 0) {
+                        clearInterval(interval);
+                        setIsActive(false);
+                        if (pomoPhase === 'focus') {
+                            saveToNotion('pomodoro', focusDuration * 60);
+                            showToast('집중 완료! 기록되었습니다. 🍅');
+                        }
+                        const next = pomoPhase === 'focus' ? 'break' : 'focus';
+                        setPomoPhase(next);
+                        setTimeLeft(next === 'focus' ? focusDuration * 60 : breakDuration * 60);
                     }
+                }, 100); // 0.1초마다 체크하여 오차 최소화
 
-                    setPomoPhase(next);
-                    setTimeLeft(next === 'focus' ? focusDuration * 60 : breakDuration * 60);
-                    setIsActive(false);
-                }
                 return () => clearInterval(interval);
-            }, [isActive, timeLeft, pomoPhase, focusDuration, breakDuration, timerMode]);
+            }, [isActive, timerMode, pomoPhase]);
 
-            // 스톱워치 타이머
+            // ⏱ 일반 타이머 정밀도 보정 (StartTime & swOffsetRef 기반)
             useEffect(() => {
-                if (timerMode !== 'stopwatch') return;
-                let interval = null;
-                if (isActive) {
-                    interval = setInterval(() => setElapsed(e => e + 1), 1000);
-                }
+                if (timerMode !== 'stopwatch' || !isActive) return;
+
+                swStartTimeRef.current = Date.now();
+
+                const interval = setInterval(() => {
+                    const currentElapsed = swOffsetRef.current + Math.floor((Date.now() - swStartTimeRef.current) / 1000);
+                    setElapsed(currentElapsed);
+                }, 100);
+
                 return () => clearInterval(interval);
             }, [isActive, timerMode]);
 
-            // 설정(시간) 변경 시에만 뽀모도로 리셋 — 일시정지 중엔 건드리지 않음
-            useEffect(() => {
-                if (!isActive && timerMode === 'pomodoro') {
-                    setTimeLeft(focusDuration * 60);
-                    setPomoPhase('focus');
-                }
-            }, [focusDuration, breakDuration]); // eslint-disable-line
-
-            // 드롭다운 외부 클릭 닫기
-            useEffect(() => {
-                const handler = (e) => {
-                    if (subjectRef.current && !subjectRef.current.contains(e.target)) {
-                        setShowSubjectDrop(false);
+            const toggleTimer = () => {
+                if (isActive) {
+                    // 일시정지 시: 현재까지 흐른 시간을 오프셋에 저장
+                    if (timerMode === 'stopwatch') {
+                        swOffsetRef.current += Math.floor((Date.now() - swStartTimeRef.current) / 1000);
                     }
-                };
-                document.addEventListener('mousedown', handler);
-                return () => document.removeEventListener('mousedown', handler);
-            }, []);
+                }
+                setIsActive(!isActive);
+            };
 
-            const showToast = (msg) => {
-                setToast(msg);
-                setTimeout(() => setToast(null), 3000);
+            const stopStopwatch = () => {
+                setIsActive(false);
+                const totalElapsed = swOffsetRef.current + (isActive ? Math.floor((Date.now() - swStartTimeRef.current) / 1000) : 0);
+                if (totalElapsed > 0) {
+                    saveToNotion('stopwatch', totalElapsed);
+                    showToast(`총 ${Math.floor(totalElapsed/60)}분 기록 완료! 📚`);
+                }
+                setElapsed(0);
+                swOffsetRef.current = 0;
+            };
+
+            const switchTimerMode = (m) => {
+                if (isActive) return;
+                setTimerMode(m);
+                setElapsed(0);
+                swOffsetRef.current = 0;
+                setPomoPhase('focus');
+                setTimeLeft(focusDuration * 60);
             };
 
             const formatTime = (seconds) => {
@@ -269,60 +207,6 @@
                 return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
             };
 
-            // 스톱워치 종료 (기록)
-            const stopStopwatch = () => {
-                setIsActive(false);
-                if (elapsed > 0) {
-                    showToast(`${formatTime(elapsed)} 기록 완료! 노션에 기록 중... 📚`);
-                    // 노션 DB 저장 실행
-                    saveToNotion('stopwatch', elapsed);
-                }
-                setElapsed(0);
-                setStartTime(null);
-            };
-
-            const toggleTimer = () => {
-                if (timerMode === 'stopwatch' && !isActive && elapsed === 0) {
-                    setStartTime(new Date().toISOString());
-                }
-                setIsActive(a => !a);
-            };
-
-            const switchTimerMode = (m) => {
-                if (isActive) return; // 진행 중엔 전환 불가
-                setTimerMode(m);
-                setElapsed(0);
-                setStartTime(null);
-                setPomoPhase('focus');
-                setTimeLeft(focusDuration * 60);
-            };
-
-            const skipPomo = () => {
-                // 집중 도중 건너뛰기를 누르면 지금까지 진행한 시간을 기록
-                if (pomoPhase === 'focus') {
-                    const focusDone = (focusDuration * 60) - timeLeft;
-                    if (focusDone >= 60) { // 1분 이상 진행했을 때만 기록
-                        saveToNotion('pomodoro', focusDone);
-                        showToast('건너뛰기! 지금까지의 시간을 기록합니다.');
-                    }
-                }
-                const next = pomoPhase === 'focus' ? 'break' : 'focus';
-                setPomoPhase(next);
-                setTimeLeft(next === 'focus' ? focusDuration * 60 : breakDuration * 60);
-                setIsActive(false);
-            };
-
-            const addSubject = () => {
-                const s = newSubject.trim();
-                if (s && !subjects.includes(s)) {
-                    setSubjects(prev => [...prev, s]);
-                    setSelectedSubject(s);
-                }
-                setNewSubject('');
-                setShowSubjectDrop(false);
-            };
-
-            // 원형 퍼센트 (뽀모도로)
             const currentDuration = pomoPhase === 'focus' ? focusDuration * 60 : breakDuration * 60;
             const percentage = timerMode === 'pomodoro' ? timeLeft / currentDuration : 1;
 
@@ -333,268 +217,75 @@
                 const rad = (angle - 90) * (Math.PI / 180);
                 const x = 100 + 100 * Math.cos(rad);
                 const y = 100 + 100 * Math.sin(rad);
-                const largeArcFlag = angle > 180 ? 1 : 0;
-                return `M100,100 L100,0 A100,100 0 ${largeArcFlag},1 ${x},${y} Z`;
+                return `M100,100 L100,0 A100,100 0 ${angle > 180 ? 1 : 0},1 ${x},${y} Z`;
             };
-
-            const displayTime = timerMode === 'pomodoro' ? formatTime(timeLeft) : formatTime(elapsed);
-            const phase = timerMode === 'pomodoro' ? pomoPhase : 'focus';
 
             return (
                 <div className="w-full max-w-[340px] bg-[#FDFBF7] dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-[#EBE8DE] dark:border-zinc-800 transition-colors duration-300 relative">
-
-                    {/* Header */}
                     <div className="flex justify-between items-center px-7 pt-6 pb-0">
                         <div className="flex flex-col">
                             <span className="text-xs font-bold tracking-widest text-gray-400 dark:text-gray-500 uppercase flex items-center gap-1.5">
-                                {timerMode === 'pomodoro'
-                                    ? (phase === 'focus' ? 'FOCUS TIME' : 'BREAK TIME')
-                                    : 'STUDY TIMER'}
-                                <span className={`w-2 h-2 rounded-full ${isActive ? theme.bg : 'bg-gray-300 dark:bg-zinc-600'}`}
-                                    style={isActive ? {boxShadow: `0 0 0 3px ${theme.hex}33`} : {}}></span>
+                                {timerMode === 'pomodoro' ? (pomoPhase === 'focus' ? 'FOCUS' : 'BREAK') : 'TIMER'}
+                                <span className={`w-2 h-2 rounded-full ${isActive ? theme.bg : 'bg-gray-300'}`}></span>
                             </span>
-                            <span className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-0.5">{theme.name}</span>
+                            <span className="text-lg font-bold text-gray-800 dark:text-gray-100">{theme.name}</span>
                         </div>
-                        <button
-                            onClick={() => setShowSettings(!showSettings)}
-                            className="p-2 -mr-2 text-gray-400 hover:text-[#A67B5B] dark:hover:text-gray-300 transition-colors"
-                        >
-                            {showSettings ? <CloseIcon /> : <SettingsIcon />}
-                        </button>
+                        <button onClick={() => setShowSettings(!showSettings)} className="p-2 text-gray-400 hover:text-[#A67B5B]"><SettingsIcon /></button>
                     </div>
 
                     <div className="relative p-7 pt-5 flex flex-col items-center">
-
-                        {/* Settings Panel */}
                         {showSettings && (
                             <div className="absolute inset-0 bg-[#FDFBF7]/95 dark:bg-zinc-900/95 backdrop-blur-md z-20 p-8 flex flex-col justify-center rounded-[2.5rem]">
-                                <h3 className="text-lg font-bold mb-5 text-gray-800 dark:text-gray-200">음료 설정 (타이머)</h3>
-                                <div className="space-y-5">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">집중 시간 (분)</label>
-                                        <input
-                                            type="number"
-                                            value={focusDuration}
-                                            onChange={(e) => setFocusDuration(Math.max(1, parseInt(e.target.value) || 25))}
-                                            className="w-16 text-center border-b-2 border-gray-300 dark:border-zinc-600 bg-transparent text-gray-800 dark:text-gray-200 font-bold p-1 focus:outline-none focus:border-[#A67B5B]"
-                                            min="1"
-                                        />
+                                <h3 className="font-bold mb-5">설정</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between"><label className="text-sm">집중(분)</label><input type="number" value={focusDuration} onChange={e => setFocusDuration(e.target.value)} className="w-12 bg-transparent border-b text-right" /></div>
+                                    <div className="flex justify-between"><label className="text-sm">휴식(분)</label><input type="number" value={breakDuration} onChange={e => setBreakDuration(e.target.value)} className="w-12 bg-transparent border-b text-right" /></div>
+                                    <div className="flex justify-between pt-4">
+                                        {Object.values(THEMES).map(t => <button key={t.id} onClick={() => setThemeId(t.id)} className={`w-6 h-6 rounded-full ${t.bg} ${themeId === t.id ? 'ring-2 ring-offset-2 ring-black' : ''}`} />)}
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">휴식 시간 (분)</label>
-                                        <input
-                                            type="number"
-                                            value={breakDuration}
-                                            onChange={(e) => setBreakDuration(Math.max(1, parseInt(e.target.value) || 5))}
-                                            className="w-16 text-center border-b-2 border-gray-300 dark:border-zinc-600 bg-transparent text-gray-800 dark:text-gray-200 font-bold p-1 focus:outline-none focus:border-[#A67B5B]"
-                                            min="1"
-                                        />
-                                    </div>
-
-                                    {/* 과목 관리 */}
-                                    <div className="pt-4 border-t border-[#EBE8DE] dark:border-zinc-800">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-3">과목 관리</label>
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {subjects.map(s => (
-                                                <span key={s} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F4F0EA] dark:bg-zinc-800 text-xs text-gray-600 dark:text-gray-400">
-                                                    {s}
-                                                    {!DEFAULT_SUBJECTS.includes(s) && (
-                                                        <button onClick={() => setSubjects(prev => prev.filter(x => x !== s))} className="text-gray-400 hover:text-red-400 transition-colors ml-0.5">×</button>
-                                                    )}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <input
-                                                value={newSubject}
-                                                onChange={e => setNewSubject(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && addSubject()}
-                                                placeholder="과목 추가..."
-                                                className="flex-1 text-sm border-b-2 border-gray-300 dark:border-zinc-600 bg-transparent text-gray-800 dark:text-gray-200 p-1 focus:outline-none focus:border-[#A67B5B] placeholder-gray-300 dark:placeholder-zinc-600"
-                                            />
-                                            <button onClick={addSubject} className={`text-xs px-3 py-1 rounded-full text-white ${theme.bg} ${theme.hover} transition-colors`}>추가</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-[#EBE8DE] dark:border-zinc-800">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-3">메뉴 선택 (테마 색상)</label>
-                                        <div className="flex justify-between">
-                                            {Object.values(THEMES).map((t) => (
-                                                <button
-                                                    key={t.id}
-                                                    onClick={() => setThemeId(t.id)}
-                                                    className={`w-9 h-9 rounded-full ${t.bg} shadow-sm transition-all duration-200 focus:outline-none ${themeId === t.id ? `ring-2 ring-offset-2 ring-offset-[#FDFBF7] dark:ring-offset-zinc-900 ${t.ring} scale-110` : 'hover:scale-110'}`}
-                                                    title={t.name}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <button onClick={() => setShowSettings(false)} className="w-full mt-4 py-2 bg-black text-white rounded-xl text-sm">닫기</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* 타이머 모드 탭 */}
-                        <div className="w-full mb-5">
-                            <div className="relative flex bg-[#F4F0EA] dark:bg-zinc-800 rounded-full p-1">
-                                <div
-                                    className={`mode-slider absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-zinc-700 shadow-sm`}
-                                    style={{ transform: timerMode === 'pomodoro' ? 'translateX(0)' : 'translateX(calc(100% + 8px))' }}
-                                />
-                                <button
-                                    onClick={() => switchTimerMode('pomodoro')}
-                                    className={`mode-tab relative z-10 flex-1 text-xs font-bold py-1.5 rounded-full transition-colors ${timerMode === 'pomodoro' ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'} ${isActive ? 'cursor-not-allowed opacity-50' : ''}`}
-                                >
-                                    🍅 뽀모도로
-                                </button>
-                                <button
-                                    onClick={() => switchTimerMode('stopwatch')}
-                                    className={`mode-tab relative z-10 flex-1 text-xs font-bold py-1.5 rounded-full transition-colors ${timerMode === 'stopwatch' ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'} ${isActive ? 'cursor-not-allowed opacity-50' : ''}`}
-                                >
-                                    ⏱ 일반 타이머
-                                </button>
-                            </div>
+                        <div className="w-full mb-5 flex bg-[#F4F0EA] dark:bg-zinc-800 rounded-full p-1 relative">
+                            <div className="mode-slider absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-zinc-700 shadow-sm" style={{ transform: timerMode === 'pomodoro' ? 'translateX(0)' : 'translateX(calc(100% + 8px))' }} />
+                            <button onClick={() => switchTimerMode('pomodoro')} className={`relative z-10 flex-1 py-1.5 text-xs font-bold ${timerMode === 'pomodoro' ? 'text-black' : 'text-gray-400'}`}>뽀모도로</button>
+                            <button onClick={() => switchTimerMode('stopwatch')} className={`relative z-10 flex-1 py-1.5 text-xs font-bold ${timerMode === 'stopwatch' ? 'text-black' : 'text-gray-400'}`}>타이머</button>
                         </div>
 
-                        {/* 과목 선택 드롭다운 */}
                         <div className="w-full mb-4 relative" ref={subjectRef}>
-                            <button
-                                onClick={() => !isActive && setShowSubjectDrop(v => !v)}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all duration-200
-                                    ${selectedSubject
-                                        ? `border-transparent bg-[${theme.hex}18]`
-                                        : 'border-[#EBE8DE] dark:border-zinc-700 bg-white dark:bg-zinc-800'}
-                                    ${isActive ? 'opacity-60 cursor-not-allowed' : 'hover:border-[#D1CBBF] dark:hover:border-zinc-600 cursor-pointer'}`}
-                                style={selectedSubject ? {background: `${theme.hex}15`, borderColor: `${theme.hex}40`} : {}}
-                            >
-                                <span className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    <BookIcon />
-                                    {selectedSubject || <span className="text-gray-400 dark:text-gray-500">과목 선택</span>}
-                                </span>
-                                <span className={`text-gray-400 transition-transform duration-200 ${showSubjectDrop ? 'rotate-180' : ''}`}>
-                                    <ChevronIcon />
-                                </span>
+                            <button onClick={() => !isActive && setShowSubjectDrop(!showSubjectDrop)} className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-800 border dark:border-zinc-700 text-sm">
+                                <span className="flex items-center gap-2"><BookIcon />{selectedSubject || '과목 선택'}</span>
+                                <ChevronIcon />
                             </button>
-
-                            {showSubjectDrop && !isActive && (
+                            {showSubjectDrop && (
                                 <div className="subject-dropdown">
-                                    <div
-                                        className="subject-option text-gray-400 dark:text-gray-500"
-                                        onClick={() => { setSelectedSubject(''); setShowSubjectDrop(false); }}
-                                    >
-                                        선택 안 함
-                                    </div>
-                                    {subjects.map(s => (
-                                        <div
-                                            key={s}
-                                            className={`subject-option font-medium ${selectedSubject === s ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}
-                                            style={selectedSubject === s ? {background: `${theme.hex}18`} : {}}
-                                            onClick={() => { setSelectedSubject(s); setShowSubjectDrop(false); }}
-                                        >
-                                            {selectedSubject === s && <span className="mr-1.5" style={{color: theme.hex}}>✓</span>}
-                                            {s}
-                                        </div>
-                                    ))}
+                                    {subjects.map(s => <div key={s} className="subject-option" onClick={() => {setSelectedSubject(s); setShowSubjectDrop(false);}}>{s}</div>)}
                                 </div>
                             )}
                         </div>
 
-                        {/* Coffee Cup */}
-                        <div className="relative w-56 h-56 flex items-center justify-center mb-1">
-                            <svg viewBox="-20 -20 280 260" className="w-full h-full coffee-cup overflow-visible">
-                                <defs>
-                                    <filter id="cup-shadow" x="-100%" y="-100%" width="300%" height="300%">
-                                        <feDropShadow dx="2" dy="8" stdDeviation="5" floodOpacity="0.08" />
-                                    </filter>
-                                    <clipPath id="coffee-clip">
-                                        <path d={getArcPath(percentage)} />
-                                    </clipPath>
-                                </defs>
-                                <path d="M 170 65 C 225 65, 225 135, 170 135" fill="none" stroke="#FFFFFF" strokeWidth="18" strokeLinecap="round" className="dark:stroke-zinc-800 transition-colors duration-300" filter="url(#cup-shadow)" />
-                                <circle cx="100" cy="100" r="90" fill="#FFFFFF" className="dark:fill-zinc-800 transition-colors duration-300" filter="url(#cup-shadow)" />
-                                <circle cx="100" cy="100" r="80" fill="#F4F0EA" className="dark:fill-zinc-900 transition-colors duration-300" />
-                                <text x="100" y="96" textAnchor="middle" dominantBaseline="middle" fontSize="11" className="fill-[#D1CBBF] dark:fill-zinc-700" fontWeight="bold">
-                                    {timerMode === 'pomodoro'
-                                        ? (phase === 'focus' ? 'Good Job!' : 'Take a rest')
-                                        : (elapsed === 0 ? 'Ready!' : 'Fighting!')}
-                                </text>
+                        <div className="relative w-56 h-56 flex items-center justify-center mb-2">
+                            <svg viewBox="-20 -20 280 260" className="w-full h-full coffee-cup">
+                                <circle cx="100" cy="100" r="90" fill="white" className="dark:fill-zinc-800" />
+                                <circle cx="100" cy="100" r="80" fill="#F4F0EA" className="dark:fill-zinc-900" />
                                 <g clipPath="url(#coffee-clip)">
-                                    <circle cx="100" cy="100" r="80" fill={theme.hex} className="transition-colors duration-500" />
-                                    <circle cx="100" cy="100" r="76" fill="none" stroke="#FFFFFF" strokeWidth="3" opacity="0.15" />
-                                    <path d="M100,135 C100,135 60,105 60,80 C60,50 100,55 100,85 C100,55 140,50 140,80 C140,105 100,135 100,135 Z" fill="#FFF9ED" opacity="0.85" />
+                                    <path d={getArcPath(percentage)} fill={theme.hex} />
+                                    <path d="M100,135 C100,135 60,105 60,80 C60,50 100,55 100,85 C100,55 140,50 140,80 C140,105 100,135 100,135 Z" fill="white" opacity="0.8" />
                                 </g>
-                                <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
+                                <clipPath id="coffee-clip"><circle cx="100" cy="100" r="80" /></clipPath>
                             </svg>
+                            <div className="absolute font-bold text-4xl tabular-nums">{timerMode === 'pomodoro' ? formatTime(timeLeft) : formatTime(elapsed)}</div>
                         </div>
 
-                        {/* 시간 표시 */}
-                        <div className="font-sans text-[2.5rem] leading-none font-bold tracking-tight text-gray-800 dark:text-gray-100 mb-1 tabular-nums">
-                            {displayTime}
+                        <div className="flex w-full space-x-3 mt-4">
+                            <button onClick={toggleTimer} className={`flex-1 py-3.5 rounded-2xl font-bold text-sm text-white ${theme.bg} ${theme.hover}`}>{isActive ? '일시정지' : '시작'}</button>
+                            {timerMode === 'stopwatch' && <button onClick={stopStopwatch} className="px-5 py-3.5 rounded-2xl bg-gray-100 dark:bg-zinc-800"><StopIcon /></button>}
+                            {timerMode === 'pomodoro' && <button onClick={() => {setIsActive(false); setTimeLeft(focusDuration*60);}} className="px-5 py-3.5 rounded-2xl bg-gray-100 dark:bg-zinc-800"><SkipIcon /></button>}
                         </div>
-
-                        <div className="mb-4" />
-
-                        {/* Controls */}
-                        <div className="flex w-full space-x-3">
-                            <button
-                                onClick={toggleTimer}
-                                className={`flex-1 flex items-center justify-center space-x-2 py-3.5 rounded-[1.25rem] font-bold text-sm transition-all duration-200 shadow-sm
-                                    ${isActive
-                                        ? 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700'
-                                        : `${theme.bg} text-white ${theme.hover} shadow-md`
-                                    }`}
-                            >
-                                {isActive ? (
-                                    <><PauseIcon /><span>{timerMode === 'pomodoro' ? (phase === 'focus' ? '잠깐 쉬기' : '잠깐 멈추기') : '잠깐 쉬기'}</span></>
-                                ) : (
-                                    <><PlayIcon /><span>
-                                        {timerMode === 'pomodoro'
-                                            ? (timeLeft === currentDuration
-                                                ? (phase === 'focus' ? '집중 시작' : '휴식 시작')
-                                                : '계속하기')
-                                            : (elapsed === 0 ? '공부 시작' : '계속하기')}
-                                    </span></>
-                                )}
-                            </button>
-
-                            {/* 뽀모도로: 스킵 / 스톱워치: 종료(기록) */}
-                            {timerMode === 'pomodoro' ? (
-                                <button
-                                    onClick={skipPomo}
-                                    className="px-5 py-3.5 flex items-center justify-center rounded-[1.25rem] bg-white dark:bg-zinc-800 text-gray-500 hover:text-[#A67B5B] border border-gray-200 dark:border-zinc-700 dark:text-gray-400 dark:hover:text-[#D4A373] dark:hover:bg-zinc-700 transition-colors duration-200 shadow-sm"
-                                    title="건너뛰기"
-                                >
-                                    <SkipIcon />
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={stopStopwatch}
-                                    disabled={elapsed === 0}
-                                    className={`px-5 py-3.5 flex items-center justify-center rounded-[1.25rem] border transition-colors duration-200 shadow-sm
-                                        ${elapsed > 0
-                                            ? 'bg-white dark:bg-zinc-800 text-gray-500 hover:text-red-400 border-gray-200 dark:border-zinc-700 dark:text-gray-400 dark:hover:bg-zinc-700'
-                                            : 'bg-gray-50 dark:bg-zinc-800 text-gray-300 dark:text-zinc-600 border-gray-100 dark:border-zinc-700 cursor-not-allowed'}`}
-                                    title="종료 및 기록"
-                                >
-                                    <StopIcon />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* 뽀모도로 모드일 때 안내 */}
-                        {timerMode === 'pomodoro' && (
-                            <p className="text-xs text-gray-400 dark:text-gray-600 mt-3 text-center">
-                                뽀모도로 종료 시 총 집중 시간이 기록됩니다
-                            </p>
-                        )}
-
                     </div>
-
-                    {/* Toast */}
-                    {toast && (
-                        <div className="toast absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-gray-800 dark:bg-zinc-700 text-white text-xs font-medium shadow-lg whitespace-nowrap z-50">
-                            {toast}
-                        </div>
-                    )}
+                    {toast && <div className="toast absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black text-white text-xs z-50">{toast}</div>}
                 </div>
             );
         };
