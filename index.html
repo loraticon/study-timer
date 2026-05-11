@@ -570,8 +570,8 @@ const App = () => {
                             {/* 타이머 모드 탭 */}
                             <div className="w-full mb-5">
                                 <div className="relative flex bg-[#F4F0EA] rounded-full p-1">
-                                    <div className="mode-slider absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm"
-                                        style={{ transform: timerMode==='pomodoro' ? 'translateX(0)' : 'translateX(calc(100% + 8px))' }}/>
+                                    <div className="mode-slider absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm"
+                                        style={{ transform: timerMode==='pomodoro' ? 'translateX(0)' : 'translateX(100%)' }}/>
                                     <button onClick={() => switchTimerMode('pomodoro')}
                                         className={`mode-tab relative z-10 flex-1 text-xs font-bold py-1.5 rounded-full transition-colors ${timerMode==='pomodoro' ? 'text-gray-800' : 'text-gray-400'} ${isActive ? 'cursor-not-allowed opacity-50' : ''}`}>
                                         🍅 뽀모도로
