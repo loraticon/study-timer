@@ -343,7 +343,7 @@ const App = () => {
         setSaving(true);
         try {
             const properties = {
-                '이름': { title: [{ text: { content: pageTitle } }] }, // 노션 기록 제목 자동 생성
+                'title': { title: [{ text: { content: pageTitle } }] }, // 속성명과 무관하게 노션의 기본 제목(Aa) 칸에 강제 입력
                 '순공시간': { number: rec.minutes },         // 분 단위, 초 없음
                 '날짜':     { date: { start: rec.startIso } },
                 '모드':     { select: { name: modeLabel === 'pomodoro' ? '🍅 뽀모도로' : '⏱ 일반' } },
