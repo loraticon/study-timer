@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-<div id="root" class="w-full h-full flex justify-center items-center p-10"></div>
+<div id="root" class="w-full h-full flex justify-center items-center p-4"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
@@ -429,7 +429,7 @@ const App = () => {
 
     /* ══════════ 초기 설정 화면 ══════════ */
     if (showSetup) return (
-        <div className="w-full max-w-[340px] bg-[#FDFBF7] rounded-[2.5rem] shadow-2xl border border-[#EBE8DE] overflow-hidden">
+        <div className="w-full max-w-[340px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] overflow-hidden">
             <div className="p-8">
                 <div className="flex items-center gap-2 mb-1">
                     <NotionIcon/>
@@ -485,7 +485,7 @@ const App = () => {
 
     /* ══════════ 메인 앱 ══════════ */
     return (
-        <div className="w-full max-w-[340px] bg-[#FDFBF7] rounded-[2.5rem] shadow-2xl border border-[#EBE8DE] relative overflow-hidden">
+        <div className="w-full max-w-[340px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] relative overflow-hidden">
 
             {/* 헤더 */}
             <div className="flex justify-between items-center px-7 pt-6 pb-0">
