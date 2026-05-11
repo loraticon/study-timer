@@ -97,9 +97,35 @@ const toNotionMinutes = (sec) => Math.floor(sec / 60);
 const fmtHHMM = (iso) => new Date(iso).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:false });
 const todayStr = () => new Date().toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
 
-/* ── 로컬스토리지 ── */
+/* ── 로컬스토리지 & URL 파라미터 ── */
 const LS_CONFIG = 'cozy_timer_config';
-const loadConfig = () => { try { return JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; } catch { return {}; } };
+const loadConfig = () => {
+    try {
+        // 1. URL 파라미터가 있는지 먼저 확인 (우선순위 높음)
+        const params = new URLSearchParams(window.location.search);
+        
+        // API 키와 Record DB ID가 URL에 있다면 URL 설정을 사용
+        if (params.has('apiKey') && params.has('recordDbId')) {
+            const urlConfig = {
+                proxyUrl: params.get('proxyUrl') || '',
+                apiKey: params.get('apiKey') || '',
+                recordDbId: params.get('recordDbId') || '',
+                subjectDbId: params.get('subjectDbId') || '',
+                subjectNameProp: params.get('subjectNameProp') || '이름',
+                saved: true // 설정 완료 상태로 인식
+            };
+            
+            // 향후 파라미터 없는 URL로 접속할 때를 대비해 로컬스토리지에도 백업 저장
+            localStorage.setItem(LS_CONFIG, JSON.stringify(urlConfig));
+            return urlConfig;
+        }
+
+        // 2. URL 파라미터가 없으면 기존처럼 로컬스토리지 확인
+        return JSON.parse(localStorage.getItem(LS_CONFIG)) || {};
+    } catch {
+        return {};
+    }
+};
 const saveConfig = (cfg) => localStorage.setItem(LS_CONFIG, JSON.stringify(cfg));
 
 /* ══════════════════════════════════════════════════════════ */
