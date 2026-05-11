@@ -88,6 +88,7 @@ const fmtMin = (sec) => {
     const totalMin = Math.floor(sec / 60);
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
+    if (h === 0 && m === 0) return '0분';
     if (h > 0 && m > 0) return `${h}시간 ${m}분`;
     if (h > 0) return `${h}시간`;
     return `${m}분`;
@@ -101,10 +102,7 @@ const todayStr = () => new Date().toLocaleDateString('ko-KR', { month:'long', da
 const LS_CONFIG = 'cozy_timer_config';
 const loadConfig = () => {
     try {
-        // 1. URL 파라미터가 있는지 먼저 확인 (우선순위 높음)
         const params = new URLSearchParams(window.location.search);
-        
-        // API 키와 Record DB ID가 URL에 있다면 URL 설정을 사용
         if (params.has('apiKey') && params.has('recordDbId')) {
             const urlConfig = {
                 proxyUrl: params.get('proxyUrl') || '',
@@ -112,15 +110,11 @@ const loadConfig = () => {
                 recordDbId: params.get('recordDbId') || '',
                 subjectDbId: params.get('subjectDbId') || '',
                 subjectNameProp: params.get('subjectNameProp') || '이름',
-                saved: true // 설정 완료 상태로 인식
+                saved: true 
             };
-            
-            // 향후 파라미터 없는 URL로 접속할 때를 대비해 로컬스토리지에도 백업 저장
             localStorage.setItem(LS_CONFIG, JSON.stringify(urlConfig));
             return urlConfig;
         }
-
-        // 2. URL 파라미터가 없으면 기존처럼 로컬스토리지 확인
         return JSON.parse(localStorage.getItem(LS_CONFIG)) || {};
     } catch {
         return {};
@@ -144,22 +138,22 @@ const App = () => {
     /* ── 과목 (Notion DB에서 로드) ── */
     const [subjects, setSubjects]               = useState([]);
     const [subjectsLoading, setSubjectsLoading] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState(null); // { id, name }
+    const [selectedSubject, setSelectedSubject] = useState(null); 
     const [showSubjectDrop, setShowSubjectDrop] = useState(false);
     const subjectRef = useRef(null);
 
     /* ── 타이머 모드 ── */
     const [timerMode, setTimerMode] = useState('pomodoro');
 
-    /* ── 뽀모도로 (deadline 기준 — 로라티콘님 수정본) ── */
+    /* ── 뽀모도로 ── */
     const [pomoPhase, setPomoPhase]         = useState('focus');
     const [timeLeft, setTimeLeft]           = useState(25 * 60);
     const [focusDuration, setFocusDuration] = useState(25);
     const [breakDuration, setBreakDuration] = useState(5);
     const pomoDeadlineRef   = useRef(null);
-    const pomoFocusAccum    = useRef(0); // 이번 집중 세션 누적 초
+    const pomoFocusAccum    = useRef(0);
 
-    /* ── 스톱워치 (오프셋 보정 기준 — 로라티콘님 수정본) ── */
+    /* ── 스톱워치 ── */
     const [elapsed, setElapsed]       = useState(0);
     const [startTime, setStartTime]   = useState(null);
     const swOffsetRef     = useRef(0);
@@ -172,12 +166,13 @@ const App = () => {
 
     /* ── 기록 ── */
     const [records, setRecords] = useState([]);
+    const [recordsLoading, setRecordsLoading] = useState(false);
     const [saving, setSaving]   = useState(false);
     const [toast, setToast]     = useState(null);
 
     const theme = THEMES[themeId];
 
-    /* ── Notion API 호출 (Cloudflare Workers 프록시 경유) ── */
+    /* ── Notion API 호출 프록시 ── */
     const notionFetch = useCallback(async (path, options = {}) => {
         const { proxyUrl, apiKey } = config;
         if (!proxyUrl || !apiKey) throw new Error('설정이 필요해요');
@@ -222,7 +217,62 @@ const App = () => {
         }
     }, [config, notionFetch]);
 
-    useEffect(() => { loadSubjects(); }, [loadSubjects]);
+    /* ── 오늘의 기록 노션에서 불러오기 ── */
+    const loadTodayRecords = useCallback(async () => {
+        if (!config.saved || !config.recordDbId) return;
+        setRecordsLoading(true);
+        try {
+            // 최근 100개 기록 가져오기
+            const data = await notionFetch(`/v1/databases/${config.recordDbId}/query`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    sorts: [{ property: '날짜', direction: 'descending' }],
+                    page_size: 100
+                }),
+            });
+
+            const todayStrKst = new Date().toLocaleDateString();
+            
+            const loaded = data.results.map(page => {
+                // 노션의 기본 Title 속성(Aa)을 찾아 값 추출
+                const titleProp = Object.values(page.properties).find(p => p.type === 'title');
+                const titleText = titleProp?.title?.[0]?.plain_text || '미선택';
+                // "[과목명] 날짜" 형식에서 정규식을 이용해 과목명 부분만 추출
+                const subjMatch = titleText.match(/^\[(.*?)\]/);
+                const subject = subjMatch ? subjMatch[1] : '미선택';
+
+                const minutes = page.properties['순공시간']?.number || 0;
+                const startIso = page.properties['날짜']?.date?.start || page.created_time;
+                const modeName = page.properties['모드']?.select?.name || '';
+                const modeLabel = modeName.includes('뽀모도로') ? 'pomodoro' : 'stopwatch';
+
+                return {
+                    id: page.id,        // 노션의 고유 Page ID 
+                    subject,
+                    seconds: minutes * 60,
+                    startIso,
+                    modeLabel,
+                    synced: true        // 노션에서 불러온 것이므로 동기화 완료 상태
+                };
+            }).filter(r => new Date(r.startIso).toLocaleDateString() === todayStrKst); // '오늘' 날짜인 것만 남김
+
+            // 아직 서버에 저장 중이어서(synced:false) 덮어씌워지면 안 되는 로컬 기록은 유지하고 결합
+            setRecords(prev => {
+                const unsynced = prev.filter(r => !r.synced);
+                return [...unsynced, ...loaded];
+            });
+        } catch (e) {
+            console.error("Failed to load today's records:", e);
+        } finally {
+            setRecordsLoading(false);
+        }
+    }, [config, notionFetch]);
+
+    // 초기 마운트 시 데이터 로드
+    useEffect(() => { 
+        loadSubjects(); 
+        loadTodayRecords(); 
+    }, [loadSubjects, loadTodayRecords]);
 
     /* ── 설정 저장 & 연결 테스트 ── */
     const handleSetupSave = async () => {
@@ -250,7 +300,7 @@ const App = () => {
         }
     };
 
-    /* ── 뽀모도로 타이머 (deadline 기준) ── */
+    /* ── 뽀모도로 타이머 로직 ── */
     useEffect(() => {
         if (timerMode !== 'pomodoro' || !isActive) return;
         if (!pomoDeadlineRef.current) {
@@ -263,7 +313,6 @@ const App = () => {
                 clearInterval(iv);
                 pomoDeadlineRef.current = null;
                 if (pomoPhase === 'focus') {
-                    // 집중 완료 → 기록 저장
                     saveRecord(pomoFocusAccum.current, 'pomodoro');
                     pomoFocusAccum.current = 0;
                     setPomoPhase('break');
@@ -282,13 +331,12 @@ const App = () => {
         return () => clearInterval(iv);
     }, [isActive, pomoPhase, focusDuration, breakDuration, timerMode]);
 
-    /* ── 뽀모도로 일시정지 ── */
     useEffect(() => {
         if (timerMode !== 'pomodoro') return;
         if (!isActive) pomoDeadlineRef.current = null;
     }, [isActive, timerMode]);
 
-    /* ── 스톱워치 (오프셋 보정 기준) ── */
+    /* ── 스톱워치 로직 ── */
     useEffect(() => {
         if (timerMode !== 'stopwatch' || !isActive) return;
         const iv = setInterval(() => {
@@ -299,16 +347,14 @@ const App = () => {
         return () => clearInterval(iv);
     }, [isActive, timerMode, startTime]);
 
-    /* ── 설정 변경 시 뽀모도로 리셋 ── */
     useEffect(() => {
         if (!isActive && timerMode === 'pomodoro') {
             setTimeLeft(focusDuration * 60);
             setPomoPhase('focus');
             pomoFocusAccum.current = 0;
         }
-    }, [focusDuration, breakDuration]); // eslint-disable-line
+    }, [focusDuration, breakDuration]); 
 
-    /* ── 드롭다운 외부 클릭 닫기 ── */
     useEffect(() => {
         const h = (e) => { if (subjectRef.current && !subjectRef.current.contains(e.target)) setShowSubjectDrop(false); };
         document.addEventListener('mousedown', h);
@@ -328,38 +374,42 @@ const App = () => {
         const pageTitle = `[${subjName}] ${titleDate}`;
 
         const rec = {
-            id: Date.now(),
+            id: Date.now(), // 통신 전 임시 ID
             subject: subjName,
             subjectId: selectedSubject?.id || null,
             seconds,
-            minutes: toNotionMinutes(seconds), // 노션 저장용 (분, 초 없음)
+            minutes: toNotionMinutes(seconds), 
             startIso: d.toISOString(),
             modeLabel,
             synced: false,
         };
+        // 1. 낙관적으로 화면에 먼저 기록 표시
         setRecords(prev => [rec, ...prev]);
         if (!config.saved) return;
 
         setSaving(true);
         try {
             const properties = {
-                'title': { title: [{ text: { content: pageTitle } }] }, // 속성명과 무관하게 노션의 기본 제목(Aa) 칸에 강제 입력
-                '순공시간': { number: rec.minutes },         // 분 단위, 초 없음
+                'title': { title: [{ text: { content: pageTitle } }] }, // 속성명 무관 강제 제목 입력
+                '순공시간': { number: rec.minutes },         
                 '날짜':     { date: { start: rec.startIso } },
                 '모드':     { select: { name: modeLabel === 'pomodoro' ? '🍅 뽀모도로' : '⏱ 일반' } },
             };
-            // 과목: Relation (page_id로 연결)
             if (rec.subjectId) {
                 properties['과목'] = { relation: [{ id: rec.subjectId }] };
             }
-            await notionFetch('/v1/pages', {
+            
+            // 2. 노션 DB에 데이터 POST
+            const resData = await notionFetch('/v1/pages', {
                 method: 'POST',
                 body: JSON.stringify({
                     parent: { database_id: config.recordDbId },
                     properties,
                 }),
             });
-            setRecords(prev => prev.map(r => r.id === rec.id ? { ...r, synced: true } : r));
+            
+            // 3. 임시 ID를 노션의 실제 Page ID로 교체하고 동기화 완료 처리
+            setRecords(prev => prev.map(r => r.id === rec.id ? { ...r, id: resData.id, synced: true } : r));
             showToast(`☕ ${fmtMin(seconds)} 노션에 기록됐어요!`);
         } catch (e) {
             showToast('노션 저장 실패: ' + e.message);
@@ -368,7 +418,6 @@ const App = () => {
         }
     };
 
-    /* ── 스톱워치 종료 ── */
     const stopStopwatch = () => {
         setIsActive(false);
         if (elapsed >= 60) {
@@ -380,7 +429,6 @@ const App = () => {
         swOffsetRef.current = 0; swPauseStartRef.current = null;
     };
 
-    /* ── 토글 (로라티콘님 오프셋 보정 로직 유지) ── */
     const toggleTimer = () => {
         if (timerMode === 'stopwatch') {
             if (!isActive) {
@@ -417,8 +465,25 @@ const App = () => {
         setIsActive(false); pomoDeadlineRef.current = null;
     };
 
-    const deleteRecord  = (id) => setRecords(prev => prev.filter(r => r.id !== id));
-    const clearRecords  = () => setRecords([]);
+    /* ── 기록 삭제 (노션 휴지통 연동) ── */
+    const deleteRecord = async (id) => {
+        const rec = records.find(r => r.id === id);
+        // 화면에서 즉시 제거
+        setRecords(prev => prev.filter(r => r.id !== id));
+        
+        // 노션과 연동된 기록이라면 (ID가 문자열 UUID인 경우)
+        if (rec && typeof id === 'string' && config.saved) {
+            try {
+                await notionFetch(`/v1/pages/${id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ archived: true })
+                });
+                showToast('기록이 삭제되었습니다.');
+            } catch (e) {
+                showToast('노션 데이터 삭제 실패: ' + e.message);
+            }
+        }
+    };
 
     const totalSeconds  = records.reduce((a, r) => a + r.seconds, 0);
     const subjectTotals = records.reduce((acc, r) => { acc[r.subject] = (acc[r.subject]||0) + r.seconds; return acc; }, {});
@@ -634,7 +699,7 @@ const App = () => {
                                 )}
                             </div>
 
-                            {/* 커피잔 */}
+                            {/* 커피잔: translate-x-3 으로 시각적 중앙 정렬 */}
                             <div className="relative w-56 h-56 flex items-center justify-center mb-1 translate-x-3">
                                 <svg viewBox="-20 -20 280 260" className="w-full h-full coffee-cup overflow-visible">
                                     <defs>
@@ -697,19 +762,25 @@ const App = () => {
                     <div className="screen">
                         <div className="p-7 pt-5 flex flex-col" style={{ minHeight:'520px' }}>
                             <div className="flex items-center justify-between mb-4">
-                                <span className="text-xs font-semibold text-gray-400">{todayStr()}</span>
-                                {records.length > 0 && (
-                                    <button onClick={clearRecords} className="text-xs text-gray-300 hover:text-red-400 transition-colors flex items-center gap-1">
-                                        <TrashIcon/> 전체 삭제
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-gray-400">{todayStr()}</span>
+                                    {config.saved && (
+                                        <button onClick={loadTodayRecords} className={`text-gray-300 hover:text-[#A67B5B] transition-colors p-0.5 ${recordsLoading ? 'spin' : ''}`} title="노션에서 동기화">
+                                            <RefreshIcon/>
+                                        </button>
+                                    )}
+                                </div>
+                                {/* 삭제 연동으로 인해 전체 삭제 버튼은 안전상 숨김 */}
                             </div>
 
                             {/* 총 순공시간 카드 */}
                             <div className="rounded-2xl p-4 mb-4 flex items-center justify-between"
                                 style={{ background:`${theme.hex}12`, border:`1px solid ${theme.hex}30` }}>
                                 <div>
-                                    <div className="text-xs font-semibold text-gray-400 mb-0.5">오늘 총 순공시간</div>
+                                    <div className="text-xs font-semibold text-gray-400 mb-0.5 flex items-center gap-1.5">
+                                        오늘 총 순공시간
+                                        {recordsLoading && <span className="spin inline-block w-2.5 h-2.5 border border-gray-400 border-t-transparent rounded-full"/>}
+                                    </div>
                                     <div className="text-2xl font-bold tabular-nums" style={{ color:theme.hex }}>
                                         {totalSeconds >= 60 ? fmtMin(totalSeconds) : '0분'}
                                     </div>
@@ -749,8 +820,8 @@ const App = () => {
                                                         {rec.subject}
                                                         {config.saved && (
                                                             rec.synced
-                                                                ? <span className="text-green-400"><CheckIcon/></span>
-                                                                : <span className="spin inline-block w-3 h-3 border border-gray-300 border-t-transparent rounded-full"/>
+                                                                ? <span className="text-green-400" title="노션 동기화됨"><CheckIcon/></span>
+                                                                : <span className="spin inline-block w-3 h-3 border border-gray-300 border-t-transparent rounded-full" title="저장 중..."/>
                                                         )}
                                                     </div>
                                                     <div className="text-xs text-gray-400 flex items-center gap-1.5">
@@ -764,7 +835,8 @@ const App = () => {
                                                     {fmtMin(rec.seconds)}
                                                 </span>
                                                 <button onClick={() => deleteRecord(rec.id)}
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400 p-1">
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400 p-1"
+                                                    title="기록 삭제 (노션 DB에서도 삭제됩니다)">
                                                     <TrashIcon/>
                                                 </button>
                                             </div>
