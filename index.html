@@ -170,6 +170,9 @@ const App = () => {
     const [saving, setSaving]   = useState(false);
     const [toast, setToast]     = useState(null);
 
+    /* ── 오디오 추가 (알람) ── */
+    const alarmSound = useRef(typeof Audio !== "undefined" ? new Audio('./alarm_1.mp3') : null);
+
     const theme = THEMES[themeId];
 
     /* ── Notion API 호출 프록시 ── */
@@ -312,6 +315,12 @@ const App = () => {
             if (remaining <= 0) {
                 clearInterval(iv);
                 pomoDeadlineRef.current = null;
+                
+                // 알람 오디오 재생
+                if (alarmSound.current) {
+                    alarmSound.current.play().catch(e => console.log("알람 재생 실패:", e));
+                }
+
                 if (pomoPhase === 'focus') {
                     saveRecord(pomoFocusAccum.current, 'pomodoro');
                     pomoFocusAccum.current = 0;
