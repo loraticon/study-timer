@@ -320,13 +320,20 @@ const App = () => {
     /* ── Notion DB에 기록 저장 ── */
     const saveRecord = async (seconds, modeLabel) => {
         if (seconds < 60) return; // 1분 미만 기록 안 함
+        
+        // 제목(Title) 자동 생성을 위한 날짜 포맷 (예: 24년 5월 11일)
+        const d = startTime ? new Date(startTime) : new Date();
+        const titleDate = `${String(d.getFullYear()).slice(-2)}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+        const subjName = selectedSubject?.name || '미선택';
+        const pageTitle = `[${subjName}] ${titleDate}`;
+
         const rec = {
             id: Date.now(),
-            subject: selectedSubject?.name || '미선택',
+            subject: subjName,
             subjectId: selectedSubject?.id || null,
             seconds,
             minutes: toNotionMinutes(seconds), // 노션 저장용 (분, 초 없음)
-            startIso: startTime || new Date().toISOString(),
+            startIso: d.toISOString(),
             modeLabel,
             synced: false,
         };
@@ -336,6 +343,7 @@ const App = () => {
         setSaving(true);
         try {
             const properties = {
+                '이름': { title: [{ text: { content: pageTitle } }] }, // 노션 기록 제목 자동 생성
                 '순공시간': { number: rec.minutes },         // 분 단위, 초 없음
                 '날짜':     { date: { start: rec.startIso } },
                 '모드':     { select: { name: modeLabel === 'pomodoro' ? '🍅 뽀모도로' : '⏱ 일반' } },
