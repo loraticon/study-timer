@@ -180,9 +180,14 @@ const App = () => {
         // 모드 비율 (전체 기준)
         let pomo = 0, norm = 0;
         records.forEach(r => { if(r.mode === 'pomodoro') pomo += r.minutes; else norm += r.minutes; });
-        const pomoPct = (pomo + norm) > 0 ? Math.round((pomo / (pomo + norm)) * 100) : 0;
+        const totalMins = pomo + norm;
+        const pomoPct = totalMins > 0 ? Math.round((pomo / totalMins) * 100) : 0;
+        const normPct = totalMins > 0 ? Math.round((norm / totalMins) * 100) : 0;
+        
+        const preferredMode = norm > pomo ? '일반' : '뽀모도로';
+        const preferredPct = norm > pomo ? normPct : pomoPct;
 
-        return { streak, topSubj, topTimeLabel, pomoPct };
+        return { streak, topSubj, topTimeLabel, pomoPct, preferredMode, preferredPct };
     }, [records]);
 
     // 2. 주간 차트
@@ -305,7 +310,9 @@ const App = () => {
                             <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0"><TomatoIcon/></div>
                             <div>
                                 <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중 모드 선호도</div>
-                                <div className="text-lg font-bold text-gray-800 leading-tight">뽀모도로 <span className="text-[#E56B6F]">{highlights.pomoPct}%</span></div>
+                                <div className="text-lg font-bold text-gray-800 leading-tight">
+                                    {highlights.preferredMode} <span className={highlights.preferredMode === '뽀모도로' ? "text-[#E56B6F]" : "text-[#81B29A]"}>{highlights.preferredPct}%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
