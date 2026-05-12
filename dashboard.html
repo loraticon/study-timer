@@ -141,7 +141,7 @@ const App = () => {
     
     // 1. 하이라이트 지표 (연속 학습일, 탑 과목, 시간대, 모드)
     const highlights = useMemo(() => {
-        if (!records.length) return { streak: 0, topSubj: null, topTimeLabel: '-', pomoPct: 0 };
+        if (!records.length) return { streak: 0, topSubj: null, topTimeLabel: '-', pomoPct: 0, preferredMode: '뽀모도로', preferredPct: 0 };
         
         const today = normalizeDate(new Date());
         
@@ -177,13 +177,15 @@ const App = () => {
         const sortedTimes = Object.entries(times).sort((a,b)=>b[1]-a[1]);
         const topTimeLabel = sortedTimes[0][1] > 0 ? sortedTimes[0][0] : '-';
 
-        // 모드 비율 (전체 기준)
+        // 모드 비율 계산 (가장 많이 쓴 모드 판별)
         let pomo = 0, norm = 0;
         records.forEach(r => { if(r.mode === 'pomodoro') pomo += r.minutes; else norm += r.minutes; });
+        
         const totalMins = pomo + norm;
         const pomoPct = totalMins > 0 ? Math.round((pomo / totalMins) * 100) : 0;
         const normPct = totalMins > 0 ? Math.round((norm / totalMins) * 100) : 0;
         
+        // 일반이 많으면 일반으로, 아니면 뽀모도로로 세팅
         const preferredMode = norm > pomo ? '일반' : '뽀모도로';
         const preferredPct = norm > pomo ? normPct : pomoPct;
 
@@ -349,7 +351,7 @@ const App = () => {
                         <div className="bg-white rounded-3xl p-6 flex flex-col soft-card">
                             <h3 className="text-sm font-bold text-gray-800 mb-6">누적 과목 밸런스</h3>
                             {subjectData.total === 0 ? (
-                                <div className="flex-1 flex items-center justify-center text-sm text-gray-400">데이터가 없습니다.</div>
+                                <div className="flex-1 flex items-center justify-center text-sm text-gray-400">데이터가 세팅 중입니다.</div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center flex-1 gap-5">
                                     <div className="relative w-32 h-32">
