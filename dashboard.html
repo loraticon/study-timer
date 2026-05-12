@@ -44,6 +44,7 @@
         
         /* 잔디심기 툴팁 */
         .grass-cell { position: relative; }
+        .grass-cell:hover { z-index: 20; }
         .grass-cell .tooltip {
             visibility: hidden; opacity: 0; transition: opacity 0.2s;
             position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-4px);
@@ -247,7 +248,7 @@ const App = () => {
     }
 
     return (
-        <div className="w-full bg-[#FDFBF7] rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col gap-6" style={{ minHeight: '480px' }}>
+        <div className="w-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6" style={{ minHeight: '480px' }}>
             
             {/* Header */}
             <div className="flex justify-between items-center">
