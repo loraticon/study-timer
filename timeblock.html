@@ -31,10 +31,10 @@
     </script>
     <style>
         body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: transparent; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #EBE8DE; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #D1CBBF; }
+        
+        /* 스크롤바 숨김 처리 */
+        ::-webkit-scrollbar { display: none; } /* 크롬, 사파리, 오페라 등 웹킷 브라우저 */
+        * { -ms-overflow-style: none; scrollbar-width: none; } /* 파이어폭스, IE, 엣지 */
         
         .soft-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .soft-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -199,7 +199,7 @@ const App = () => {
             }
 
             const parsed = data.results.map(page => {
-                // 1. 내용 (Title 속성) - 보통 이름이 다양할 수 있으므로 type이 title인 것을 찾음
+                // 1. 내용 (Title 속성)
                 const titleProp = Object.values(page.properties).find(p => p.type === 'title');
                 const content = titleProp?.title?.[0]?.plain_text || '(내용 없음)';
                 
@@ -212,14 +212,13 @@ const App = () => {
                 let time = '00';
                 if (dateData) {
                     const d = new Date(dateData);
-                    // 시간 추출 (예: '06', '12')
                     time = d.getHours().toString().padStart(2, '0');
                 }
 
                 // 4. 완료 여부 (Checkbox 속성)
                 const done = page.properties['완료']?.checkbox || false;
 
-                return { id: page.id, content, subject, time, done };
+                return { id: page.id, content, subject, time, done, originalDate: dateData };
             });
 
             setTodos(parsed);
@@ -265,6 +264,79 @@ const App = () => {
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
     }, []);
+
+
+    /* ── 드래그 앤 드롭 로직 ── */
+    const [dragOverTime, setDragOverTime] = useState(null);
+
+    const handleDragStart = (e, todo) => {
+        e.dataTransfer.setData('todoId', todo.id);
+        // 드래그 중인 요소를 약간 투명하게
+        setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+    };
+
+    const handleDragEnd = (e) => {
+        e.target.style.opacity = ''; // 투명도 복원
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault(); // 드롭 허용
+    };
+
+    const handleDragEnter = (e, time) => {
+        e.preventDefault();
+        setDragOverTime(time);
+    };
+
+    const handleDragLeave = (e, time) => {
+        e.preventDefault();
+        if (dragOverTime === time) {
+            setDragOverTime(null);
+        }
+    };
+
+    const handleDrop = async (e, newTime) => {
+        e.preventDefault();
+        setDragOverTime(null);
+        
+        const todoId = e.dataTransfer.getData('todoId');
+        if (!todoId) return;
+
+        const todo = todos.find(t => t.id === todoId);
+        if (!todo || todo.time === newTime) return;
+
+        // 1. 낙관적 업데이트: 화면에 먼저 시간 변경 반영
+        setTodos(prev => prev.map(t => t.id === todoId ? { ...t, time: newTime } : t));
+
+        // 2. 노션 DB 시간 변경 API 호출
+        try {
+            // 기존 날짜 정보를 기반으로 시간(Hour)만 덮어쓰고, 분/초는 0으로 정각 세팅
+            const baseDate = todo.originalDate ? new Date(todo.originalDate) : new Date();
+            baseDate.setHours(parseInt(newTime, 10), 0, 0, 0);
+            
+            const newIso = baseDate.toISOString();
+
+            const res = await fetch(`${config.proxyUrl}/v1/pages/${todoId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({
+                    properties: {
+                        '날짜': { date: { start: newIso } }
+                    }
+                })
+            });
+
+            if (!res.ok) throw new Error('업데이트 실패');
+            
+            // 성공 시, 객체의 원본 날짜 데이터도 새 날짜로 갱신
+            setTodos(prev => prev.map(t => t.id === todoId ? { ...t, originalDate: newIso } : t));
+
+        } catch (error) {
+            console.error('시간 업데이트 실패:', error);
+            // 에러 발생 시 원래 데이터로 복구하기 위해 다시 불러오기
+            fetchData();
+        }
+    };
 
 
     /* ── 설정 화면 렌더링 ── */
@@ -347,13 +419,20 @@ const App = () => {
                                     {/* 시간 라벨 */}
                                     <div className="w-[70px] flex-shrink-0 pt-3 flex flex-col items-center">
                                         <div className={`text-sm font-bold flex items-center gap-1 bg-[#FDFBF7] py-1 px-1
-                                            ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 group-hover:text-gray-400 transition-colors'}`}>
+                                            ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 transition-colors'}`}>
                                             {time}:00
                                         </div>
                                     </div>
 
-                                    {/* 해당 시간의 블록 영역 */}
-                                    <div className="flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative">
+                                    {/* 해당 시간의 블록 영역 (드롭존) */}
+                                    <div 
+                                        className={`flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative transition-colors duration-200 
+                                            ${dragOverTime === time ? 'bg-[#EBE8DE]/30 rounded-l-2xl' : ''}`}
+                                        onDragOver={handleDragOver}
+                                        onDragEnter={(e) => handleDragEnter(e, time)}
+                                        onDragLeave={(e) => handleDragLeave(e, time)}
+                                        onDrop={(e) => handleDrop(e, time)}
+                                    >
                                         
                                         {timeTodos.length > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -362,14 +441,17 @@ const App = () => {
                                                     return (
                                                         <div 
                                                             key={todo.id} 
-                                                            className={`soft-card rounded-2xl p-3 flex items-start gap-3 border`}
+                                                            draggable={true}
+                                                            onDragStart={(e) => handleDragStart(e, todo)}
+                                                            onDragEnd={handleDragEnd}
+                                                            className={`soft-card rounded-2xl p-3 flex items-start gap-3 border cursor-grab active:cursor-grabbing`}
                                                             style={{ 
                                                                 backgroundColor: colors.bg, 
                                                                 borderColor: colors.border,
                                                                 opacity: todo.done ? 0.6 : 1
                                                             }}
                                                         >
-                                                            {/* 체크박스 디자인 (표시 전용 - 실제 클릭 액션은 노션에서) */}
+                                                            {/* 체크박스 디자인 */}
                                                             <div 
                                                                 className={`mt-0.5 w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-colors`}
                                                                 style={{
@@ -382,11 +464,11 @@ const App = () => {
 
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded pl-0" style={{ color: colors.text }}>
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded pl-0 pointer-events-none" style={{ color: colors.text }}>
                                                                         {todo.subject}
                                                                     </span>
                                                                 </div>
-                                                                <span className={`text-sm font-bold ${todo.done ? 'line-through decoration-black/20 text-gray-500' : 'text-gray-800'}`}>
+                                                                <span className={`text-sm font-bold pointer-events-none ${todo.done ? 'line-through decoration-black/20 text-gray-500' : 'text-gray-800'}`}>
                                                                     {todo.content}
                                                                 </span>
                                                             </div>
@@ -395,8 +477,8 @@ const App = () => {
                                                 })}
                                             </div>
                                         ) : (
-                                            // 일정이 없는 빈 공간
-                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent group-hover:border-[#F4F0EA] transition-colors flex items-center justify-center">
+                                            // 일정이 없는 빈 공간 (드롭 유도)
+                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent transition-colors flex items-center justify-center">
                                             </div>
                                         )}
                                     </div>
