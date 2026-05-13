@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코지 카페 타임블록</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        latte: {
+                            50: '#F4F0EA',
+                            100: '#EBE8DE',
+                            300: '#D1CBBF',
+                            500: '#A67B5B',
+                            700: '#8B664B',
+                            900: '#5C3A21',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: transparent; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #EBE8DE; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D1CBBF; }
+        
+        .soft-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .soft-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        /* 타임라인 점선 */
+        .timeline-line {
+            position: absolute;
+            left: 56px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            border-left: 2px dashed #F4F0EA;
+            z-index: 0;
+        }
+
+        /* 로딩 스피너 */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; }
+    </style>
+</head>
+<body>
+<div id="root" class="w-full h-full flex justify-center"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* ── 테마 팔레트 (10종) ── */
+const PALETTE = [
+    { bg: '#F2E8E3', text: '#A67B5B', border: '#EBDCD5' }, // 라떼 브라운
+    { bg: '#EAF0E8', text: '#6B8756', border: '#DCE6D8' }, // 코지 그린
+    { bg: '#F8EFE6', text: '#D4A373', border: '#F1E1D1' }, // 샌드
+    { bg: '#F5E6E8', text: '#D98891', border: '#ECD5D8' }, // 로즈
+    { bg: '#F9EBE7', text: '#E07A5F', border: '#F2DCD5' }, // 테라코타
+    { bg: '#FAEDD8', text: '#D4A042', border: '#F1DDBF' }, // 머스타드
+    { bg: '#E8ECF0', text: '#647A8F', border: '#D5DFE8' }, // 슬레이트 블루
+    { bg: '#F0EAF2', text: '#896B99', border: '#E2D8E6' }, // 라벤더
+    { bg: '#EBF3F5', text: '#5D94A6', border: '#D9E8EC' }, // 오션 틸
+    { bg: '#F4F4F4', text: '#737373', border: '#E5E5E5' }, // 애쉬 그레이
+];
+
+/* ── 아이콘 ── */
+const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const SettingsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+const RefreshIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+
+/* ── 로컬스토리지 연동 ── */
+const loadConfig = () => JSON.parse(localStorage.getItem('cozy_timeblock_config')) || { proxyUrl: 'https://notion-api.swo.pe', apiKey: '', dbId: '', saved: false };
+
+const App = () => {
+    const [config, setConfig] = useState(loadConfig());
+    const [isEditing, setIsEditing] = useState(!config.saved);
+    const [todos, setTodos] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const subjectCache = useRef({}); // 추가된 관계형 과목명 캐시
+
+    /* ── 설정 저장 ── */
+    const handleSaveConfig = () => {
+        if (!config.proxyUrl || !config.apiKey || !config.dbId) {
+            alert('모든 항목을 입력해주세요.'); return;
+        }
+        const newConfig = { ...config, saved: true };
+        localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+        setConfig(newConfig);
+        setIsEditing(false);
+        fetchData(newConfig);
+    };
+
+    /* ── 노션 데이터 호출 (오늘 날짜 필터링) ── */
+    const fetchData = useCallback(async (currentConfig = config) => {
+        if (!currentConfig.saved || !currentConfig.proxyUrl || !currentConfig.apiKey || !currentConfig.dbId) return;
+        
+        setLoading(true); setError('');
+        try {
+            // 오늘 시작 시간과 내일 시작 시간 구하기
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+            const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+            const res = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.dbId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ 
+                    filter: {
+                        and: [
+                            { property: '날짜', date: { on_or_after: todayStart } },
+                            { property: '날짜', date: { before: tomorrowStart } }
+                        ]
+                    },
+                    sorts: [{ property: '날짜', direction: 'ascending' }]
+                }),
+            });
+            
+            if (!res.ok) throw new Error('데이터를 불러오지 못했습니다. DB ID와 API Key를 확인해주세요.');
+            const data = await res.json();
+            
+            // --- 관계형 과목명 가져오기 (캐싱 적용) ---
+            const relIdsToFetch = new Set();
+            data.results.forEach(page => {
+                const relId = page.properties['과목']?.relation?.[0]?.id;
+                if (relId && !subjectCache.current[relId]) {
+                    relIdsToFetch.add(relId);
+                }
+            });
+
+            // 누락된 과목 데이터 병렬 요청 (로딩 속도 최적화)
+            if (relIdsToFetch.size > 0) {
+                const fetchPromises = Array.from(relIdsToFetch).map(async (id) => {
+                    try {
+                        const pageRes = await fetch(`${currentConfig.proxyUrl}/v1/pages/${id}`, {
+                            headers: { 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' }
+                        });
+                        if (pageRes.ok) {
+                            const pageData = await pageRes.json();
+                            const titleProp = Object.values(pageData.properties).find(p => p.type === 'title');
+                            subjectCache.current[id] = titleProp?.title?.[0]?.plain_text || '이름 없음';
+                        }
+                    } catch(e) {
+                        console.error('과목 불러오기 실패:', e);
+                    }
+                });
+                await Promise.all(fetchPromises); // 모든 과목 이름을 가져올 때까지 대기
+            }
+
+            const parsed = data.results.map(page => {
+                // 1. 내용 (Title 속성) - 보통 이름이 다양할 수 있으므로 type이 title인 것을 찾음
+                const titleProp = Object.values(page.properties).find(p => p.type === 'title');
+                const content = titleProp?.title?.[0]?.plain_text || '(내용 없음)';
+                
+                // 2. 과목 (Relation 속성)
+                const relId = page.properties['과목']?.relation?.[0]?.id;
+                const subject = relId ? (subjectCache.current[relId] || '이름 없음') : '미지정';
+                
+                // 3. 날짜 및 시간 (Date 속성)
+                const dateData = page.properties['날짜']?.date?.start;
+                let time = '00';
+                if (dateData) {
+                    const d = new Date(dateData);
+                    // 시간 추출 (예: '06', '12')
+                    time = d.getHours().toString().padStart(2, '0');
+                }
+
+                // 4. 완료 여부 (Checkbox 속성)
+                const done = page.properties['완료']?.checkbox || false;
+
+                return { id: page.id, content, subject, time, done };
+            });
+
+            setTodos(parsed);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [config]);
+
+    // 초기 로딩 시 데이터 패치
+    useEffect(() => { 
+        if (config.saved && !isEditing) fetchData(); 
+    }, [config.saved, isEditing, fetchData]);
+
+
+    /* ── 데이터 가공 로직 ── */
+    // 06:00 부터 24:00 까지의 시간 배열 생성
+    const timeSlots = useMemo(() => {
+        const slots = [];
+        for (let i = 6; i <= 24; i++) {
+            slots.push(i.toString().padStart(2, '0'));
+        }
+        return slots;
+    }, []);
+
+    // 과목별 색상 자동 할당 (Palette 순환)
+    const subjectColors = useMemo(() => {
+        const map = {};
+        let colorIdx = 0;
+        todos.forEach(todo => {
+            if (!map[todo.subject]) {
+                map[todo.subject] = PALETTE[colorIdx % PALETTE.length];
+                colorIdx++;
+            }
+        });
+        return map;
+    }, [todos]);
+
+    // 오늘 날짜 포맷팅
+    const todayStr = useMemo(() => {
+        const d = new Date();
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+    }, []);
+
+
+    /* ── 설정 화면 렌더링 ── */
+    if (isEditing) {
+        return (
+            <div className="w-full max-w-[500px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6">
+                <div className="text-center mb-2">
+                    <span className="text-4xl">🗓️</span>
+                    <h2 className="text-xl font-bold text-gray-800 mt-4">타임블록 투두 연동</h2>
+                    <p className="text-sm text-gray-500 mt-1">투두리스트 DB와 연결해 오늘 하루를 시각화하세요.</p>
+                </div>
+                
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">프록시 URL (Cors 문제 해결용)</label>
+                        <input type="text" value={config.proxyUrl} onChange={e => setConfig({...config, proxyUrl: e.target.value})} className="w-full px-4 py-3 bg-white border border-latte-100 rounded-xl text-sm focus:outline-none focus:border-latte-500 transition-colors" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">노션 API Key (Secret)</label>
+                        <input type="password" value={config.apiKey} onChange={e => setConfig({...config, apiKey: e.target.value})} placeholder="secret_..." className="w-full px-4 py-3 bg-white border border-latte-100 rounded-xl text-sm focus:outline-none focus:border-latte-500 transition-colors" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">투두리스트 DB ID</label>
+                        <input type="text" value={config.dbId} onChange={e => setConfig({...config, dbId: e.target.value})} placeholder="32자리 영문/숫자" className="w-full px-4 py-3 bg-white border border-latte-100 rounded-xl text-sm focus:outline-none focus:border-latte-500 transition-colors" />
+                    </div>
+                </div>
+
+                <div className="mt-4 bg-orange-50 p-4 rounded-xl text-xs text-orange-800">
+                    <strong>⚠️ 필수 속성 확인:</strong> 연동하려는 DB에 다음 속성 이름들이 스크린샷과 동일하게 있는지 확인해 주세요.<br/>
+                    1. <code className="bg-orange-100 px-1 rounded">공부 내용</code> (제목 속성, 이름 달라도 무관함)<br/>
+                    2. <code className="bg-orange-100 px-1 rounded">날짜</code> (날짜 속성, '시간 포함' 켜기)<br/>
+                    3. <code className="bg-orange-100 px-1 rounded">과목</code> (관계형 속성)<br/>
+                    4. <code className="bg-orange-100 px-1 rounded">완료</code> (체크박스 속성)
+                </div>
+
+                <button onClick={handleSaveConfig} className="w-full py-3.5 bg-latte-700 hover:bg-latte-900 text-white font-bold rounded-xl transition-colors">
+                    연동 완료하기
+                </button>
+            </div>
+        );
+    }
+
+    /* ── 메인 화면 렌더링 ── */
+    return (
+        <div className="w-full max-w-[800px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6 relative">
+            
+            {/* Header */}
+            <div className="flex justify-between items-end border-b border-[#F4F0EA] pb-5">
+                <div>
+                    <span className="text-xs font-extrabold tracking-widest text-latte-300 uppercase flex items-center gap-2 mb-1">
+                        TODAY'S TIMEBLOCK
+                        {loading && <span className="spin inline-block w-2 h-2 border-2 border-latte-300 border-t-transparent rounded-full"/>}
+                    </span>
+                    <h2 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+                        {todayStr}
+                    </h2>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={() => fetchData()} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
+                        <RefreshIcon />
+                    </button>
+                    <button onClick={() => setIsEditing(true)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
+                        <SettingsIcon />
+                    </button>
+                </div>
+            </div>
+
+            {error ? (
+                <div className="py-10 text-center">
+                    <p className="text-sm text-red-500 font-bold mb-2">오류가 발생했습니다.</p>
+                    <p className="text-xs text-gray-500">{error}</p>
+                </div>
+            ) : (
+                /* Timeline Container */
+                <div className="relative w-full pb-4 mt-2">
+                    <div className="timeline-line"></div>
+
+                    <div className="flex flex-col relative z-10">
+                        {timeSlots.map(time => {
+                            // 해당 시간대의 투두 필터링 (완료 여부에 상관없이 모두 표시, 정렬은 미완료 우선)
+                            const timeTodos = todos.filter(t => t.time === time).sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1);
+                            
+                            return (
+                                <div key={time} className="flex min-h-[64px] group">
+                                    {/* 시간 라벨 */}
+                                    <div className="w-[70px] flex-shrink-0 pt-3 flex flex-col items-center">
+                                        <div className={`text-sm font-bold flex items-center gap-1 bg-[#FDFBF7] py-1 px-1
+                                            ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 group-hover:text-gray-400 transition-colors'}`}>
+                                            {time}:00
+                                        </div>
+                                    </div>
+
+                                    {/* 해당 시간의 블록 영역 */}
+                                    <div className="flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative">
+                                        
+                                        {timeTodos.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {timeTodos.map(todo => {
+                                                    const colors = subjectColors[todo.subject] || PALETTE[0];
+                                                    return (
+                                                        <div 
+                                                            key={todo.id} 
+                                                            className={`soft-card rounded-2xl p-3 flex items-start gap-3 border`}
+                                                            style={{ 
+                                                                backgroundColor: colors.bg, 
+                                                                borderColor: colors.border,
+                                                                opacity: todo.done ? 0.6 : 1
+                                                            }}
+                                                        >
+                                                            {/* 체크박스 디자인 (표시 전용 - 실제 클릭 액션은 노션에서) */}
+                                                            <div 
+                                                                className={`mt-0.5 w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-colors`}
+                                                                style={{
+                                                                    borderColor: todo.done ? colors.text : 'rgba(0,0,0,0.1)',
+                                                                    backgroundColor: todo.done ? colors.text : 'transparent'
+                                                                }}
+                                                            >
+                                                                {todo.done && <span style={{ color: colors.bg }}><CheckIcon /></span>}
+                                                            </div>
+
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded pl-0" style={{ color: colors.text }}>
+                                                                        {todo.subject}
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`text-sm font-bold ${todo.done ? 'line-through decoration-black/20 text-gray-500' : 'text-gray-800'}`}>
+                                                                    {todo.content}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            // 일정이 없는 빈 공간
+                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent group-hover:border-[#F4F0EA] transition-colors flex items-center justify-center">
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
