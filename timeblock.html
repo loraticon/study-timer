@@ -90,7 +90,7 @@ const getInitialConfig = () => {
     // URL에 파라미터가 있으면 우선 적용 (노션 임베드용)
     if (urlKey && urlDb) {
         return {
-            proxyUrl: urlProxy || 'https://notion-api.swo.pe',
+            proxyUrl: urlProxy || '',
             apiKey: urlKey,
             dbId: urlDb,
             saved: true,
@@ -98,7 +98,7 @@ const getInitialConfig = () => {
         };
     }
     // URL에 없으면 브라우저 로컬 스토리지 확인
-    return JSON.parse(localStorage.getItem('cozy_timeblock_config')) || { proxyUrl: 'https://notion-api.swo.pe', apiKey: '', dbId: '', saved: false, fromUrl: false };
+    return JSON.parse(localStorage.getItem('cozy_timeblock_config')) || { proxyUrl: '', apiKey: '', dbId: '', saved: false, fromUrl: false };
 };
 
 const App = () => {
@@ -110,21 +110,7 @@ const App = () => {
 
     const subjectCache = useRef({}); // 추가된 관계형 과목명 캐시
 
-    /* ── 설정 저장 및 링크 복사 ── */
-    const handleSaveConfig = () => {
-        if (!config.proxyUrl || !config.apiKey || !config.dbId) {
-            alert('모든 항목을 입력해주세요.'); return;
-        }
-        const newConfig = { ...config, saved: true };
-        // URL에서 불러온 상태가 아닐 때만 로컬 스토리지에 저장
-        if (!config.fromUrl) {
-            localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
-        }
-        setConfig(newConfig);
-        setIsEditing(false);
-        fetchData(newConfig);
-    };
-
+    /* ── 설정 링크 복사 ── */
     const handleCopyEmbedLink = () => {
         if (!config.proxyUrl || !config.apiKey || !config.dbId) {
             alert('모든 항목을 먼저 입력해주세요.'); return;
@@ -141,6 +127,15 @@ const App = () => {
         try {
             document.execCommand('copy');
             alert('복사 완료! 노션에 붙여넣기(Ctrl+V) 한 후 [임베드 생성]을 클릭하세요.');
+            
+            // 복사 성공 시 화면도 연동된 상태로 전환 (미리보기)
+            const newConfig = { ...config, saved: true };
+            if (!config.fromUrl) {
+                localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+            }
+            setConfig(newConfig);
+            setIsEditing(false);
+            fetchData(newConfig);
         } catch (err) {
             alert('복사에 실패했습니다. 브라우저 주소창 뒤에 파라미터를 직접 붙여주세요.');
         }
@@ -297,21 +292,10 @@ const App = () => {
                     </div>
                 </div>
 
-                <div className="mt-4 bg-orange-50 p-4 rounded-xl text-xs text-orange-800">
-                    <strong>⚠️ 필수 속성 확인:</strong> 연동하려는 DB에 다음 속성 이름들이 스크린샷과 동일하게 있는지 확인해 주세요.<br/>
-                    1. <code className="bg-orange-100 px-1 rounded">공부 내용</code> (제목 속성, 이름 달라도 무관함)<br/>
-                    2. <code className="bg-orange-100 px-1 rounded">날짜</code> (날짜 속성, '시간 포함' 켜기)<br/>
-                    3. <code className="bg-orange-100 시-1 rounded">과목</code> (관계형 속성)<br/>
-                    4. <code className="bg-orange-100 px-1 rounded">완료</code> (체크박스 속성)
-                </div>
-
-                <div className="flex flex-col gap-2 mt-2">
+                <div className="flex flex-col gap-2 mt-6">
                     <button onClick={handleCopyEmbedLink} className="w-full py-3.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         노션 임베드 링크 복사
-                    </button>
-                    <button onClick={handleSaveConfig} className="w-full py-3.5 bg-latte-700 hover:bg-latte-900 text-white font-bold rounded-xl transition-colors">
-                        이 브라우저에서만 보기 (테스트용)
                     </button>
                 </div>
             </div>
