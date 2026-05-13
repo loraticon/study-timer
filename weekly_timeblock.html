@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코지 카페 위클리 타임블록</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        latte: {
+                            50: '#F4F0EA',
+                            100: '#EBE8DE',
+                            300: '#D1CBBF',
+                            500: '#A67B5B',
+                            700: '#8B664B',
+                            900: '#5C3A21',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: transparent; }
+        
+        /* 스크롤바 숨김 처리 */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .soft-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .soft-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        /* 타임라인 점선 */
+        .timeline-line {
+            position: absolute;
+            left: 56px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            border-left: 2px dashed #F4F0EA;
+            z-index: 0;
+        }
+
+        /* 로딩 스피너 */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; }
+    </style>
+</head>
+<body>
+<div id="root" class="w-full h-full flex justify-center"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* ── 테마 팔레트 (10종) ── */
+const PALETTE = [
+    { bg: '#F2E8E3', text: '#A67B5B', border: '#EBDCD5' },
+    { bg: '#EAF0E8', text: '#6B8756', border: '#DCE6D8' },
+    { bg: '#F8EFE6', text: '#D4A373', border: '#F1E1D1' },
+    { bg: '#F5E6E8', text: '#D98891', border: '#ECD5D8' },
+    { bg: '#F9EBE7', text: '#E07A5F', border: '#F2DCD5' },
+    { bg: '#FAEDD8', text: '#D4A042', border: '#F1DDBF' },
+    { bg: '#E8ECF0', text: '#647A8F', border: '#D5DFE8' },
+    { bg: '#F0EAF2', text: '#896B99', border: '#E2D8E6' },
+    { bg: '#EBF3F5', text: '#5D94A6', border: '#D9E8EC' },
+    { bg: '#F4F4F4', text: '#737373', border: '#E5E5E5' },
+];
+
+/* ── 아이콘 ── */
+const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const SettingsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+const RefreshIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+
+/* ── 유틸 함수 ── */
+const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+const getDayNameKOR = (date) => ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+
+/* ── 로컬스토리지 및 URL 파라미터 자동 연동 (핵심) ── */
+const getInitialConfig = () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlProxy = params.get('proxyUrl');
+    const urlKey = params.get('apiKey');
+    const urlDb = params.get('dbId');
+    const urlWeekStart = params.get('weekStart'); // 'monday' | 'sunday'
+
+    // 1. URL 파라미터가 최우선 (노션 임베드 시)
+    if (urlKey && urlDb) {
+        return {
+            proxyUrl: urlProxy || '',
+            apiKey: urlKey,
+            dbId: urlDb,
+            weekStart: urlWeekStart || 'monday',
+            saved: true,
+            fromUrl: true
+        };
+    }
+    
+    // 2. 브라우저에 "데일리 타임블록" 설정이 남아있다면 그대로 상속!
+    const localConfig = JSON.parse(localStorage.getItem('cozy_timeblock_config'));
+    if (localConfig && localConfig.apiKey && localConfig.dbId) {
+        return {
+            ...localConfig,
+            weekStart: localConfig.weekStart || 'monday',
+            saved: true,
+            fromUrl: false
+        };
+    }
+
+    // 설정이 없으면 빈 상태 반환
+    return { saved: false };
+};
+
+const App = () => {
+    const [config, setConfig] = useState(getInitialConfig());
+    const [isEditing, setIsEditing] = useState(false); // 설정창 기본 숨김
+    const [todos, setTodos] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const subjectCache = useRef({});
+
+    /* ── 날짜(이번 주) 계산 로직 ── */
+    const weekDates = useMemo(() => {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const dates = [];
+        
+        let diff = 0;
+        if (config.weekStart === 'monday') {
+            diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        } else {
+            diff = -dayOfWeek;
+        }
+
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() + diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            dates.push(d);
+        }
+        return dates;
+    }, [config.weekStart]);
+
+    const [selectedTabIdx, setSelectedTabIdx] = useState(0);
+
+    // weekDates가 변경될 때마다(예: 월/일 시작 변경 시) 탭을 오늘 날짜로 맞춤
+    useEffect(() => {
+        const todayIdx = weekDates.findIndex(d => isSameDay(d, new Date()));
+        setSelectedTabIdx(todayIdx >= 0 ? todayIdx : 0);
+    }, [weekDates]);
+
+    const currentViewDate = weekDates[selectedTabIdx];
+    const currentViewDateStr = useMemo(() => {
+        return `${currentViewDate.getMonth() + 1}월 ${currentViewDate.getDate()}일 ${getDayNameKOR(currentViewDate)}요일`;
+    }, [currentViewDate]);
+
+
+    /* ── 요일 시작 변경 핸들러 ── */
+    const toggleWeekStart = () => {
+        const newStart = config.weekStart === 'monday' ? 'sunday' : 'monday';
+        const newConfig = { ...config, weekStart: newStart };
+        setConfig(newConfig);
+        if (!newConfig.fromUrl) {
+            localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+        }
+    };
+
+    /* ── 설정 링크 복사 ── */
+    const handleCopyEmbedLink = () => {
+        if (!config.apiKey || !config.dbId) {
+            alert('필수 설정이 없습니다. 데일리 타임블록이 올바르게 연결되었는지 확인해주세요.'); return;
+        }
+        const baseUrl = window.location.href.split('?')[0];
+        // proxyUrl이 없더라도 파라미터 구조는 유지
+        const embedUrl = `${baseUrl}?proxyUrl=${encodeURIComponent(config.proxyUrl || '')}&apiKey=${encodeURIComponent(config.apiKey)}&dbId=${encodeURIComponent(config.dbId)}&weekStart=${config.weekStart}`;
+        
+        const textArea = document.createElement("textarea");
+        textArea.value = embedUrl;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert('복사 완료! 노션에 붙여넣기(Ctrl+V) 한 후 [임베드 생성]을 클릭하세요.');
+            
+            const newConfig = { ...config, saved: true };
+            if (!config.fromUrl) localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+            setConfig(newConfig);
+            setIsEditing(false);
+            fetchData(newConfig);
+        } catch (err) {
+            alert('복사에 실패했습니다. 브라우저 주소창 뒤에 파라미터를 직접 붙여주세요.');
+        }
+        document.body.removeChild(textArea);
+    };
+
+    /* ── 노션 데이터 호출 (이번 주 필터링) ── */
+    const fetchData = useCallback(async (currentConfig = config) => {
+        if (!currentConfig.saved || !currentConfig.apiKey || !currentConfig.dbId) return;
+        
+        setLoading(true); setError('');
+        try {
+            // 이번 주 전체 범위로 쿼리
+            const weekStartIso = weekDates[0].toISOString();
+            const nextWeekStart = new Date(weekDates[6]);
+            nextWeekStart.setDate(nextWeekStart.getDate() + 1);
+            nextWeekStart.setHours(0,0,0,0);
+            const nextWeekStartIso = nextWeekStart.toISOString();
+
+            // proxyUrl이 없을 경우를 대비 (물론 실제로 통신하려면 대부분 필요합니다)
+            const baseUrl = currentConfig.proxyUrl || 'https://notion-api.swo.pe'; 
+
+            const res = await fetch(`${baseUrl}/v1/databases/${currentConfig.dbId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ 
+                    filter: {
+                        and: [
+                            { property: '날짜', date: { on_or_after: weekStartIso } },
+                            { property: '날짜', date: { before: nextWeekStartIso } }
+                        ]
+                    },
+                    sorts: [{ property: '날짜', direction: 'ascending' }]
+                }),
+            });
+            
+            if (!res.ok) throw new Error('데이터를 불러오지 못했습니다. DB ID와 API Key를 확인해주세요.');
+            const data = await res.json();
+            
+            // 과목명 캐싱
+            const relIdsToFetch = new Set();
+            data.results.forEach(page => {
+                const relId = page.properties['과목']?.relation?.[0]?.id;
+                if (relId && !subjectCache.current[relId]) relIdsToFetch.add(relId);
+            });
+
+            if (relIdsToFetch.size > 0) {
+                const fetchPromises = Array.from(relIdsToFetch).map(async (id) => {
+                    try {
+                        const pageRes = await fetch(`${baseUrl}/v1/pages/${id}`, { headers: { 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' } });
+                        if (pageRes.ok) {
+                            const pageData = await pageRes.json();
+                            const titleProp = Object.values(pageData.properties).find(p => p.type === 'title');
+                            subjectCache.current[id] = titleProp?.title?.[0]?.plain_text || '이름 없음';
+                        }
+                    } catch(e) {}
+                });
+                await Promise.all(fetchPromises);
+            }
+
+            const parsed = data.results.map(page => {
+                const titleProp = Object.values(page.properties).find(p => p.type === 'title');
+                const content = titleProp?.title?.[0]?.plain_text || '(내용 없음)';
+                
+                const relId = page.properties['과목']?.relation?.[0]?.id;
+                const subject = relId ? (subjectCache.current[relId] || '이름 없음') : '미지정';
+                
+                const dateData = page.properties['날짜']?.date?.start;
+                let time = '00';
+                if (dateData) {
+                    const d = new Date(dateData);
+                    time = d.getHours().toString().padStart(2, '0');
+                }
+                const done = page.properties['완료']?.checkbox || false;
+
+                return { id: page.id, content, subject, time, done, originalDate: dateData };
+            });
+
+            setTodos(parsed);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [config, weekDates]);
+
+    useEffect(() => { 
+        if (config.saved && !isEditing) fetchData(); 
+    }, [config.saved, isEditing, fetchData]);
+
+    // 06:00 부터 24:00 까지의 시간 배열
+    const timeSlots = useMemo(() => {
+        const slots = [];
+        for (let i = 6; i <= 24; i++) slots.push(i.toString().padStart(2, '0'));
+        return slots;
+    }, []);
+
+    const subjectColors = useMemo(() => {
+        const map = {};
+        let colorIdx = 0;
+        todos.forEach(todo => {
+            if (!map[todo.subject]) {
+                map[todo.subject] = PALETTE[colorIdx % PALETTE.length];
+                colorIdx++;
+            }
+        });
+        return map;
+    }, [todos]);
+
+
+    /* ── 드래그 앤 드롭 로직 ── */
+    const [dragOverTime, setDragOverTime] = useState(null);
+    const [dragOverTabIdx, setDragOverTabIdx] = useState(null);
+
+    const handleDragStart = (e, todo) => {
+        e.dataTransfer.setData('todoId', todo.id);
+        setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
+    };
+
+    const handleDragEnd = (e) => { e.target.style.opacity = ''; };
+    const handleDragOver = (e) => { e.preventDefault(); };
+
+    // 시간 영역 드롭 핸들러
+    const handleTimeDrop = async (e, newTime) => {
+        e.preventDefault();
+        setDragOverTime(null);
+        
+        const todoId = e.dataTransfer.getData('todoId');
+        if (!todoId) return;
+
+        const todo = todos.find(t => t.id === todoId);
+        // 드롭한 요일(현재 뷰)과 시간이 모두 같으면 아무것도 안 함
+        const isSameD = todo.originalDate && isSameDay(new Date(todo.originalDate), currentViewDate);
+        if (todo && todo.time === newTime && isSameD) return;
+
+        // 1. 낙관적 업데이트
+        const baseDate = new Date(currentViewDate);
+        baseDate.setHours(parseInt(newTime, 10), 0, 0, 0);
+        const newIso = baseDate.toISOString();
+        
+        setTodos(prev => prev.map(t => t.id === todoId ? { ...t, time: newTime, originalDate: newIso } : t));
+
+        // 2. API 호출
+        try {
+            const baseUrl = config.proxyUrl || 'https://notion-api.swo.pe'; 
+            await fetch(`${baseUrl}/v1/pages/${todoId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ properties: { '날짜': { date: { start: newIso } } } })
+            });
+        } catch (error) {
+            console.error('시간 업데이트 실패:', error);
+            fetchData();
+        }
+    };
+
+    // 요일 탭 영역 드롭 핸들러 (다른 요일로 이동)
+    const handleTabDrop = async (e, targetDateIdx) => {
+        e.preventDefault();
+        setDragOverTabIdx(null);
+        
+        const todoId = e.dataTransfer.getData('todoId');
+        if (!todoId) return;
+
+        const targetDate = weekDates[targetDateIdx];
+        const todo = todos.find(t => t.id === todoId);
+        if (!todo || (todo.originalDate && isSameDay(new Date(todo.originalDate), targetDate))) return;
+
+        // 낙관적 업데이트
+        const baseDate = new Date(targetDate);
+        baseDate.setHours(parseInt(todo.time, 10), 0, 0, 0);
+        const newIso = baseDate.toISOString();
+        
+        setTodos(prev => prev.map(t => t.id === todoId ? { ...t, originalDate: newIso } : t));
+        
+        // 이동된 탭으로 뷰 자동 전환
+        setSelectedTabIdx(targetDateIdx);
+
+        try {
+            const baseUrl = config.proxyUrl || 'https://notion-api.swo.pe'; 
+            await fetch(`${baseUrl}/v1/pages/${todoId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ properties: { '날짜': { date: { start: newIso } } } })
+            });
+        } catch (error) {
+            fetchData();
+        }
+    };
+
+
+    /* ── 미연동 시 안내 화면 ── */
+    if (!config.saved) {
+        return (
+            <div className="w-full max-w-[800px] h-[300px] bg-[#FDFBF7] rounded-[2.5rem] flex flex-col items-center justify-center border border-[#EBE8DE]">
+                <span className="text-4xl mb-4">🗓️</span>
+                <p className="text-gray-400 font-bold text-[15px]">데일리 타임블록 위젯에서 투두리스트 DB를 먼저 연결해 주세요.</p>
+            </div>
+        );
+    }
+
+    /* ── 설정 화면 렌더링 ── */
+    if (isEditing) {
+        return (
+            <div className="w-full max-w-[500px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6">
+                <div className="text-center mb-2">
+                    <span className="text-4xl">🗓️</span>
+                    <h2 className="text-xl font-bold text-gray-800 mt-4">위클리 타임블록 설정</h2>
+                    <p className="text-sm text-green-500 font-bold mt-1 flex items-center justify-center gap-1">
+                        <CheckIcon /> 데일리 타임블록의 설정이 자동 연동되었습니다.
+                    </p>
+                </div>
+                
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">기본 한 주 시작 요일</label>
+                        <div className="flex gap-2">
+                            <button onClick={() => {
+                                const newConfig = {...config, weekStart: 'monday'};
+                                setConfig(newConfig);
+                                if (!newConfig.fromUrl) localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+                            }} 
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors border ${config.weekStart === 'monday' ? 'bg-latte-700 text-white border-latte-700' : 'bg-white text-gray-500 border-latte-100 hover:bg-latte-50'}`}>
+                                월요일
+                            </button>
+                            <button onClick={() => {
+                                const newConfig = {...config, weekStart: 'sunday'};
+                                setConfig(newConfig);
+                                if (!newConfig.fromUrl) localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
+                            }}
+                                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors border ${config.weekStart === 'sunday' ? 'bg-latte-700 text-white border-latte-700' : 'bg-white text-gray-500 border-latte-100 hover:bg-latte-50'}`}>
+                                일요일
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-4">
+                    <button onClick={handleCopyEmbedLink} className="w-full py-3.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        노션 임베드 링크 복사
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="w-full py-2 mt-1 text-gray-400 hover:text-gray-600 text-sm font-bold transition-colors">
+                        돌아가기
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    /* ── 메인 화면 렌더링 ── */
+    return (
+        <div className="w-full max-w-[800px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-4 relative">
+            
+            {/* Header */}
+            <div className="flex justify-between items-end pb-2">
+                <div>
+                    <span className="text-xs font-extrabold tracking-widest text-latte-300 uppercase flex items-center gap-2 mb-1">
+                        WEEKLY TIMEBLOCK
+                        {loading && <span className="spin inline-block w-2 h-2 border-2 border-latte-300 border-t-transparent rounded-full"/>}
+                    </span>
+                    <h2 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+                        {currentViewDateStr}
+                    </h2>
+                </div>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={toggleWeekStart} 
+                        className="h-9 px-3 flex items-center justify-center text-[12px] font-bold text-latte-600 hover:bg-latte-50 transition-colors bg-white rounded-full shadow-sm hover:shadow-md border border-[#F4F0EA]"
+                        title="클릭 시 주 시작 기준 변경"
+                    >
+                        {config.weekStart === 'monday' ? '월 시작' : '일 시작'}
+                    </button>
+                    <button onClick={() => fetchData()} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
+                        <RefreshIcon />
+                    </button>
+                    <button onClick={() => setIsEditing(true)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
+                        <SettingsIcon />
+                    </button>
+                </div>
+            </div>
+
+            {/* Week Tabs */}
+            <div className="flex gap-2 w-full pb-3 border-b border-[#F4F0EA]">
+                {weekDates.map((date, idx) => {
+                    const isSelected = selectedTabIdx === idx;
+                    const isToday = isSameDay(date, new Date());
+                    const isDragOver = dragOverTabIdx === idx;
+                    return (
+                        <button
+                            key={idx}
+                            onClick={() => setSelectedTabIdx(idx)}
+                            onDragOver={handleDragOver}
+                            onDragEnter={(e) => { e.preventDefault(); setDragOverTabIdx(idx); }}
+                            onDragLeave={(e) => { e.preventDefault(); if (dragOverTabIdx === idx) setDragOverTabIdx(null); }}
+                            onDrop={(e) => handleTabDrop(e, idx)}
+                            className={`flex-1 flex flex-col items-center py-2.5 px-1 rounded-xl transition-all border 
+                                ${isSelected ? 'bg-latte-700 text-white shadow-md border-transparent' 
+                                : isDragOver ? 'bg-[#EBE8DE]/50 border-dashed border-latte-300'
+                                : 'bg-white hover:bg-latte-50 border-transparent'}`}
+                            style={!isSelected && isToday && !isDragOver ? { borderColor: '#EBE8DE', backgroundColor: '#FAFAFA' } : {}}
+                        >
+                            <span className={`text-[11px] font-bold mb-0.5 ${isSelected ? 'text-latte-100' : 'text-gray-400'}`}>
+                                {getDayNameKOR(date)}
+                            </span>
+                            <span className={`text-base font-extrabold ${isSelected ? 'text-white' : (isToday ? 'text-latte-700' : 'text-gray-600')}`}>
+                                {date.getDate()}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {error ? (
+                <div className="py-10 text-center">
+                    <p className="text-sm text-red-500 font-bold mb-2">오류가 발생했습니다.</p>
+                    <p className="text-xs text-gray-500">{error}</p>
+                </div>
+            ) : (
+                /* Timeline Container */
+                <div className="relative w-full pb-4 mt-2">
+                    <div className="timeline-line"></div>
+
+                    <div className="flex flex-col relative z-10">
+                        {timeSlots.map(time => {
+                            // 현재 보고 있는 요일(currentViewDate)의 데이터만 필터링
+                            const timeTodos = todos.filter(t => {
+                                if (!t.originalDate) return false;
+                                return isSameDay(new Date(t.originalDate), currentViewDate) && t.time === time;
+                            }).sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1);
+                            
+                            return (
+                                <div key={time} className="flex min-h-[64px] group">
+                                    <div className="w-[70px] flex-shrink-0 pt-3 flex flex-col items-center">
+                                        <div className={`text-sm font-bold flex items-center gap-1 bg-[#FDFBF7] py-1 px-1
+                                            ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 transition-colors'}`}>
+                                            {time}:00
+                                        </div>
+                                    </div>
+
+                                    {/* 드롭존 영역 */}
+                                    <div 
+                                        className={`flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative transition-colors duration-200 
+                                            ${dragOverTime === time ? 'bg-[#EBE8DE]/30 rounded-l-2xl' : ''}`}
+                                        onDragOver={handleDragOver}
+                                        onDragEnter={(e) => { e.preventDefault(); setDragOverTime(time); }}
+                                        onDragLeave={(e) => { e.preventDefault(); if (dragOverTime === time) setDragOverTime(null); }}
+                                        onDrop={(e) => handleTimeDrop(e, time)}
+                                    >
+                                        {timeTodos.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {timeTodos.map(todo => {
+                                                    const colors = subjectColors[todo.subject] || PALETTE[0];
+                                                    return (
+                                                        <div 
+                                                            key={todo.id} 
+                                                            draggable={true}
+                                                            onDragStart={(e) => handleDragStart(e, todo)}
+                                                            onDragEnd={handleDragEnd}
+                                                            className={`soft-card rounded-2xl p-3 flex items-start gap-3 border cursor-grab active:cursor-grabbing`}
+                                                            style={{ 
+                                                                backgroundColor: colors.bg, 
+                                                                borderColor: colors.border,
+                                                                opacity: todo.done ? 0.6 : 1
+                                                            }}
+                                                        >
+                                                            <div 
+                                                                className={`mt-0.5 w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-colors`}
+                                                                style={{
+                                                                    borderColor: todo.done ? colors.text : 'rgba(0,0,0,0.1)',
+                                                                    backgroundColor: todo.done ? colors.text : 'transparent'
+                                                                }}
+                                                            >
+                                                                {todo.done && <span style={{ color: colors.bg }}><CheckIcon /></span>}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded pl-0 pointer-events-none" style={{ color: colors.text }}>
+                                                                        {todo.subject}
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`text-sm font-bold pointer-events-none ${todo.done ? 'line-through decoration-black/20 text-gray-500' : 'text-gray-800'}`}>
+                                                                    {todo.content}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent transition-colors flex items-center justify-center">
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
