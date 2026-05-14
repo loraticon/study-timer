@@ -33,8 +33,8 @@
         body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: transparent; }
         
         /* 스크롤바 숨김 처리 */
-        ::-webkit-scrollbar { display: none; } /* 크롬, 사파리, 오페라 등 웹킷 브라우저 */
-        * { -ms-overflow-style: none; scrollbar-width: none; } /* 파이어폭스, IE, 엣지 */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
         
         .soft-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .soft-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -50,7 +50,6 @@
             z-index: 0;
         }
 
-        /* 로딩 스피너 */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
     </style>
@@ -63,16 +62,16 @@ const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 /* ── 테마 팔레트 (10종) ── */
 const PALETTE = [
-    { bg: '#F2E8E3', text: '#A67B5B', border: '#EBDCD5' }, // 라떼 브라운
-    { bg: '#EAF0E8', text: '#6B8756', border: '#DCE6D8' }, // 코지 그린
-    { bg: '#F8EFE6', text: '#D4A373', border: '#F1E1D1' }, // 샌드
-    { bg: '#F5E6E8', text: '#D98891', border: '#ECD5D8' }, // 로즈
-    { bg: '#F9EBE7', text: '#E07A5F', border: '#F2DCD5' }, // 테라코타
-    { bg: '#FAEDD8', text: '#D4A042', border: '#F1DDBF' }, // 머스타드
-    { bg: '#E8ECF0', text: '#647A8F', border: '#D5DFE8' }, // 슬레이트 블루
-    { bg: '#F0EAF2', text: '#896B99', border: '#E2D8E6' }, // 라벤더
-    { bg: '#EBF3F5', text: '#5D94A6', border: '#D9E8EC' }, // 오션 틸
-    { bg: '#F4F4F4', text: '#737373', border: '#E5E5E5' }, // 애쉬 그레이
+    { bg: '#F2E8E3', text: '#A67B5B', border: '#EBDCD5' },
+    { bg: '#EAF0E8', text: '#6B8756', border: '#DCE6D8' },
+    { bg: '#F8EFE6', text: '#D4A373', border: '#F1E1D1' },
+    { bg: '#F5E6E8', text: '#D98891', border: '#ECD5D8' },
+    { bg: '#F9EBE7', text: '#E07A5F', border: '#F2DCD5' },
+    { bg: '#FAEDD8', text: '#D4A042', border: '#F1DDBF' },
+    { bg: '#E8ECF0', text: '#647A8F', border: '#D5DFE8' },
+    { bg: '#F0EAF2', text: '#896B99', border: '#E2D8E6' },
+    { bg: '#EBF3F5', text: '#5D94A6', border: '#D9E8EC' },
+    { bg: '#F4F4F4', text: '#737373', border: '#E5E5E5' },
 ];
 
 /* ── 아이콘 ── */
@@ -80,24 +79,15 @@ const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="no
 const SettingsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
 const RefreshIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
 
-/* ── 로컬스토리지 및 URL 파라미터 연동 ── */
 const getInitialConfig = () => {
     const params = new URLSearchParams(window.location.search);
     const urlProxy = params.get('proxyUrl');
     const urlKey = params.get('apiKey');
     const urlDb = params.get('dbId');
 
-    // URL에 파라미터가 있으면 우선 적용 (노션 임베드용)
     if (urlKey && urlDb) {
-        return {
-            proxyUrl: urlProxy || '',
-            apiKey: urlKey,
-            dbId: urlDb,
-            saved: true,
-            fromUrl: true
-        };
+        return { proxyUrl: urlProxy || '', apiKey: urlKey, dbId: urlDb, saved: true, fromUrl: true };
     }
-    // URL에 없으면 브라우저 로컬 스토리지 확인
     return JSON.parse(localStorage.getItem('cozy_timeblock_config')) || { proxyUrl: '', apiKey: '', dbId: '', saved: false, fromUrl: false };
 };
 
@@ -108,9 +98,8 @@ const App = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const subjectCache = useRef({}); // 추가된 관계형 과목명 캐시
+    const subjectCache = useRef({});
 
-    /* ── 설정 링크 복사 ── */
     const handleCopyEmbedLink = () => {
         if (!config.proxyUrl || !config.apiKey || !config.dbId) {
             alert('모든 항목을 먼저 입력해주세요.'); return;
@@ -118,7 +107,6 @@ const App = () => {
         const baseUrl = window.location.href.split('?')[0];
         const embedUrl = `${baseUrl}?proxyUrl=${encodeURIComponent(config.proxyUrl)}&apiKey=${encodeURIComponent(config.apiKey)}&dbId=${encodeURIComponent(config.dbId)}`;
         
-        // iframe 내 복사 지원을 위한 로직
         const textArea = document.createElement("textarea");
         textArea.value = embedUrl;
         document.body.appendChild(textArea);
@@ -127,28 +115,22 @@ const App = () => {
         try {
             document.execCommand('copy');
             alert('복사 완료! 노션에 붙여넣기(Ctrl+V) 한 후 [임베드 생성]을 클릭하세요.');
-            
-            // 복사 성공 시 화면도 연동된 상태로 전환 (미리보기)
             const newConfig = { ...config, saved: true };
-            if (!config.fromUrl) {
-                localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
-            }
+            if (!config.fromUrl) localStorage.setItem('cozy_timeblock_config', JSON.stringify(newConfig));
             setConfig(newConfig);
             setIsEditing(false);
             fetchData(newConfig);
         } catch (err) {
-            alert('복사에 실패했습니다. 브라우저 주소창 뒤에 파라미터를 직접 붙여주세요.');
+            alert('복사에 실패했습니다. 주소창의 URL 파라미터를 복사해주세요.');
         }
         document.body.removeChild(textArea);
     };
 
-    /* ── 노션 데이터 호출 (오늘 날짜 필터링) ── */
     const fetchData = useCallback(async (currentConfig = config) => {
         if (!currentConfig.saved || !currentConfig.proxyUrl || !currentConfig.apiKey || !currentConfig.dbId) return;
         
         setLoading(true); setError('');
         try {
-            // 오늘 시작 시간과 내일 시작 시간 구하기
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
             const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
@@ -170,16 +152,12 @@ const App = () => {
             if (!res.ok) throw new Error('데이터를 불러오지 못했습니다. DB ID와 API Key를 확인해주세요.');
             const data = await res.json();
             
-            // --- 관계형 과목명 가져오기 (캐싱 적용) ---
             const relIdsToFetch = new Set();
             data.results.forEach(page => {
                 const relId = page.properties['과목']?.relation?.[0]?.id;
-                if (relId && !subjectCache.current[relId]) {
-                    relIdsToFetch.add(relId);
-                }
+                if (relId && !subjectCache.current[relId]) relIdsToFetch.add(relId);
             });
 
-            // 누락된 과목 데이터 병렬 요청 (로딩 속도 최적화)
             if (relIdsToFetch.size > 0) {
                 const fetchPromises = Array.from(relIdsToFetch).map(async (id) => {
                     try {
@@ -191,61 +169,74 @@ const App = () => {
                             const titleProp = Object.values(pageData.properties).find(p => p.type === 'title');
                             subjectCache.current[id] = titleProp?.title?.[0]?.plain_text || '이름 없음';
                         }
-                    } catch(e) {
-                        console.error('과목 불러오기 실패:', e);
-                    }
+                    } catch(e) { console.error('과목 불러오기 실패:', e); }
                 });
-                await Promise.all(fetchPromises); // 모든 과목 이름을 가져올 때까지 대기
+                await Promise.all(fetchPromises);
             }
 
             const parsed = data.results.map(page => {
-                // 1. 내용 (Title 속성)
                 const titleProp = Object.values(page.properties).find(p => p.type === 'title');
                 const content = titleProp?.title?.[0]?.plain_text || '(내용 없음)';
                 
-                // 2. 과목 (Relation 속성)
                 const relId = page.properties['과목']?.relation?.[0]?.id;
                 const subject = relId ? (subjectCache.current[relId] || '이름 없음') : '미지정';
                 
-                // 3. 날짜 및 시간 (Date 속성)
+                const done = page.properties['완료']?.checkbox || false;
                 const dateData = page.properties['날짜']?.date?.start;
-                let time = '00';
-                if (dateData) {
+                
+                /* [핵심 변경] 시간 분리 및 분(minute) 처리 로직 */
+                let time = '00'; // 타임블록 배치용 시간 (예: '09')
+                let exactTimeStr = ''; // 카드에 표시할 정확한 시간 (예: '09:30')
+                const timeProp = page.properties['시간']; 
+                let timePropType = timeProp ? timeProp.type : null;
+
+                if (timeProp) {
+                    let rawStr = '';
+                    if (timeProp.type === 'number' && timeProp.number !== null) rawStr = timeProp.number.toString();
+                    else if (timeProp.type === 'select' && timeProp.select) rawStr = timeProp.select.name;
+                    else if (timeProp.type === 'rich_text' && timeProp.rich_text.length > 0) rawStr = timeProp.rich_text[0].plain_text;
+
+                    const nums = rawStr.replace(/[^0-9]/g, ''); // 숫자만 추출
+                    
+                    if (nums.length > 0) {
+                        if (nums.length <= 2) {
+                            time = nums.padStart(2, '0');
+                        } else {
+                            // 930 -> 0930, 1430 -> 1430
+                            const padded = nums.length === 3 ? '0' + nums : nums;
+                            time = padded.substring(0, 2);
+                            const min = padded.substring(2, 4);
+                            if (min !== '00') exactTimeStr = `${time}:${min}`;
+                        }
+                    }
+                } 
+                
+                // 시간 속성이 없거나 비어있다면, 기존처럼 '날짜' 속성에서 추출 (하위 호환)
+                if (time === '00' && dateData) {
                     const d = new Date(dateData);
                     time = d.getHours().toString().padStart(2, '0');
+                    const min = d.getMinutes().toString().padStart(2, '0');
+                    if (min !== '00') exactTimeStr = `${time}:${min}`;
                 }
 
-                // 4. 완료 여부 (Checkbox 속성)
-                const done = page.properties['완료']?.checkbox || false;
-
-                return { id: page.id, content, subject, time, done, originalDate: dateData };
+                return { id: page.id, content, subject, time, exactTimeStr, done, originalDate: dateData, timePropType };
             });
 
             setTodos(parsed);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { setError(e.message); } 
+        finally { setLoading(false); }
     }, [config]);
 
-    // 초기 로딩 시 데이터 패치
     useEffect(() => { 
         if (config.saved && !isEditing) fetchData(); 
     }, [config.saved, isEditing, fetchData]);
 
-
-    /* ── 데이터 가공 로직 ── */
-    // 06:00 부터 24:00 까지의 시간 배열 생성
     const timeSlots = useMemo(() => {
         const slots = [];
-        for (let i = 6; i <= 24; i++) {
-            slots.push(i.toString().padStart(2, '0'));
-        }
+        for (let i = 6; i <= 24; i++) slots.push(i.toString().padStart(2, '0'));
         return slots;
     }, []);
 
-    // 과목별 색상 자동 할당 (Palette 순환)
     const subjectColors = useMemo(() => {
         const map = {};
         let colorIdx = 0;
@@ -258,31 +249,23 @@ const App = () => {
         return map;
     }, [todos]);
 
-    // 오늘 날짜 포맷팅
     const todayStr = useMemo(() => {
         const d = new Date();
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
     }, []);
 
-
-    /* ── 드래그 앤 드롭 로직 ── */
+    /* ── 드래그 앤 드롭 로직 (시간 속성 분리 반영) ── */
     const [dragOverTime, setDragOverTime] = useState(null);
 
     const handleDragStart = (e, todo) => {
         e.dataTransfer.setData('todoId', todo.id);
-        // 드래그 중인 요소를 약간 투명하게
         setTimeout(() => { e.target.style.opacity = '0.5'; }, 0);
     };
 
-    const handleDragEnd = (e) => {
-        e.target.style.opacity = ''; // 투명도 복원
-    };
-
-    const handleDragOver = (e) => {
-        e.preventDefault(); // 드롭 허용
-    };
-
+    const handleDragEnd = (e) => e.target.style.opacity = '';
+    const handleDragOver = (e) => e.preventDefault();
+    
     const handleDragEnter = (e, time) => {
         e.preventDefault();
         setDragOverTime(time);
@@ -290,9 +273,7 @@ const App = () => {
 
     const handleDragLeave = (e, time) => {
         e.preventDefault();
-        if (dragOverTime === time) {
-            setDragOverTime(null);
-        }
+        if (dragOverTime === time) setDragOverTime(null);
     };
 
     const handleDrop = async (e, newTime) => {
@@ -305,41 +286,47 @@ const App = () => {
         const todo = todos.find(t => t.id === todoId);
         if (!todo || todo.time === newTime) return;
 
-        // 1. 낙관적 업데이트: 화면에 먼저 시간 변경 반영
-        setTodos(prev => prev.map(t => t.id === todoId ? { ...t, time: newTime } : t));
+        // 1. 낙관적 업데이트 (이동 시 분 표시는 초기화됨)
+        setTodos(prev => prev.map(t => t.id === todoId ? { ...t, time: newTime, exactTimeStr: '' } : t));
 
-        // 2. 노션 DB 시간 변경 API 호출
-        try {
-            // 기존 날짜 정보를 기반으로 시간(Hour)만 덮어쓰고, 분/초는 0으로 정각 세팅
+        // 2. 노션 DB 업데이트 로직 분기 ('시간' 속성이 있는지 파악)
+        let patchProperties = {};
+
+        // 드래그앤드롭 시 해당 시간대의 정각으로 초기화 (예: 10시로 드롭하면 1000 또는 "10:00")
+        if (todo.timePropType === 'number') {
+            patchProperties['시간'] = { number: parseInt(newTime + "00", 10) };
+        } else if (todo.timePropType === 'select') {
+            patchProperties['시간'] = { select: { name: `${newTime}:00` } };
+        } else if (todo.timePropType === 'rich_text') {
+            patchProperties['시간'] = { rich_text: [{ text: { content: `${newTime}:00` } }] };
+        } else {
+            // '시간' 속성이 없다면 기존처럼 '날짜' 속성 덮어쓰기
             const baseDate = todo.originalDate ? new Date(todo.originalDate) : new Date();
             baseDate.setHours(parseInt(newTime, 10), 0, 0, 0);
-            
-            const newIso = baseDate.toISOString();
+            patchProperties['날짜'] = { date: { start: baseDate.toISOString() } };
+        }
 
+        try {
             const res = await fetch(`${config.proxyUrl}/v1/pages/${todoId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
-                body: JSON.stringify({
-                    properties: {
-                        '날짜': { date: { start: newIso } }
-                    }
-                })
+                body: JSON.stringify({ properties: patchProperties })
             });
 
             if (!res.ok) throw new Error('업데이트 실패');
             
-            // 성공 시, 객체의 원본 날짜 데이터도 새 날짜로 갱신
-            setTodos(prev => prev.map(t => t.id === todoId ? { ...t, originalDate: newIso } : t));
-
+            if (!todo.timePropType) {
+                // 날짜를 업데이트 했을 경우 로컬 데이터 원본 날짜도 갱신
+                const baseDate = todo.originalDate ? new Date(todo.originalDate) : new Date();
+                baseDate.setHours(parseInt(newTime, 10), 0, 0, 0);
+                setTodos(prev => prev.map(t => t.id === todoId ? { ...t, originalDate: baseDate.toISOString() } : t));
+            }
         } catch (error) {
-            console.error('시간 업데이트 실패:', error);
-            // 에러 발생 시 원래 데이터로 복구하기 위해 다시 불러오기
-            fetchData();
+            console.error('업데이트 실패:', error);
+            fetchData(); // 롤백
         }
     };
 
-
-    /* ── 설정 화면 렌더링 ── */
     if (isEditing) {
         return (
             <div className="w-full max-w-[500px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6">
@@ -351,11 +338,11 @@ const App = () => {
                 
                 <div className="flex flex-col gap-4">
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">프록시 URL (Cors 문제 해결용)</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">프록시 URL</label>
                         <input type="text" value={config.proxyUrl} onChange={e => setConfig({...config, proxyUrl: e.target.value})} className="w-full px-4 py-3 bg-white border border-latte-100 rounded-xl text-sm focus:outline-none focus:border-latte-500 transition-colors" />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">노션 API Key (Secret)</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 ml-1">노션 API Key</label>
                         <input type="password" value={config.apiKey} onChange={e => setConfig({...config, apiKey: e.target.value})} placeholder="secret_..." className="w-full px-4 py-3 bg-white border border-latte-100 rounded-xl text-sm focus:outline-none focus:border-latte-500 transition-colors" />
                     </div>
                     <div>
@@ -374,11 +361,8 @@ const App = () => {
         );
     }
 
-    /* ── 메인 화면 렌더링 ── */
     return (
         <div className="w-full max-w-[800px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6 relative">
-            
-            {/* Header */}
             <div className="flex justify-between items-end border-b border-[#F4F0EA] pb-5">
                 <div>
                     <span className="text-xs font-extrabold tracking-widest text-latte-300 uppercase flex items-center gap-2 mb-1">
@@ -390,12 +374,8 @@ const App = () => {
                     </h2>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => fetchData()} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
-                        <RefreshIcon />
-                    </button>
-                    <button onClick={() => setIsEditing(true)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
-                        <SettingsIcon />
-                    </button>
+                    <button onClick={() => fetchData()} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md"><RefreshIcon /></button>
+                    <button onClick={() => setIsEditing(true)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md"><SettingsIcon /></button>
                 </div>
             </div>
 
@@ -405,66 +385,41 @@ const App = () => {
                     <p className="text-xs text-gray-500">{error}</p>
                 </div>
             ) : (
-                /* Timeline Container */
                 <div className="relative w-full pb-4 mt-2">
                     <div className="timeline-line"></div>
-
                     <div className="flex flex-col relative z-10">
                         {timeSlots.map(time => {
-                            // 해당 시간대의 투두 필터링 (완료 여부에 상관없이 모두 표시, 정렬은 미완료 우선)
                             const timeTodos = todos.filter(t => t.time === time).sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1);
                             
                             return (
                                 <div key={time} className="flex min-h-[64px] group">
-                                    {/* 시간 라벨 */}
                                     <div className="w-[70px] flex-shrink-0 pt-3 flex flex-col items-center">
-                                        <div className={`text-sm font-bold flex items-center gap-1 bg-[#FDFBF7] py-1 px-1
-                                            ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 transition-colors'}`}>
+                                        <div className={`text-sm font-bold flex items-center gap-1 bg-[#FDFBF7] py-1 px-1 ${timeTodos.length > 0 ? 'text-latte-700' : 'text-gray-300 transition-colors'}`}>
                                             {time}:00
                                         </div>
                                     </div>
-
-                                    {/* 해당 시간의 블록 영역 (드롭존) */}
                                     <div 
-                                        className={`flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative transition-colors duration-200 
-                                            ${dragOverTime === time ? 'bg-[#EBE8DE]/30 rounded-l-2xl' : ''}`}
-                                        onDragOver={handleDragOver}
-                                        onDragEnter={(e) => handleDragEnter(e, time)}
-                                        onDragLeave={(e) => handleDragLeave(e, time)}
-                                        onDrop={(e) => handleDrop(e, time)}
+                                        className={`flex-1 border-t border-[#F4F0EA] pt-3 pb-6 pl-6 flex flex-col gap-2 relative transition-colors duration-200 ${dragOverTime === time ? 'bg-[#EBE8DE]/30 rounded-l-2xl' : ''}`}
+                                        onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, time)} onDragLeave={(e) => handleDragLeave(e, time)} onDrop={(e) => handleDrop(e, time)}
                                     >
-                                        
                                         {timeTodos.length > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {timeTodos.map(todo => {
                                                     const colors = subjectColors[todo.subject] || PALETTE[0];
                                                     return (
-                                                        <div 
-                                                            key={todo.id} 
-                                                            draggable={true}
-                                                            onDragStart={(e) => handleDragStart(e, todo)}
-                                                            onDragEnd={handleDragEnd}
-                                                            className={`soft-card rounded-2xl p-3 flex items-start gap-3 border cursor-grab active:cursor-grabbing`}
-                                                            style={{ 
-                                                                backgroundColor: colors.bg, 
-                                                                borderColor: colors.border,
-                                                                opacity: todo.done ? 0.6 : 1
-                                                            }}
+                                                        <div key={todo.id} draggable={true} onDragStart={(e) => handleDragStart(e, todo)} onDragEnd={handleDragEnd}
+                                                            className="soft-card rounded-2xl p-3 flex items-start gap-3 border cursor-grab active:cursor-grabbing"
+                                                            style={{ backgroundColor: colors.bg, borderColor: colors.border, opacity: todo.done ? 0.6 : 1 }}
                                                         >
-                                                            {/* 체크박스 디자인 */}
-                                                            <div 
-                                                                className={`mt-0.5 w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-colors`}
-                                                                style={{
-                                                                    borderColor: todo.done ? colors.text : 'rgba(0,0,0,0.1)',
-                                                                    backgroundColor: todo.done ? colors.text : 'transparent'
-                                                                }}
+                                                            <div className="mt-0.5 w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0 border-2 transition-colors"
+                                                                style={{ borderColor: todo.done ? colors.text : 'rgba(0,0,0,0.1)', backgroundColor: todo.done ? colors.text : 'transparent' }}
                                                             >
                                                                 {todo.done && <span style={{ color: colors.bg }}><CheckIcon /></span>}
                                                             </div>
-
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-1.5 mb-0.5">
                                                                     <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded pl-0 pointer-events-none" style={{ color: colors.text }}>
+                                                                        {todo.exactTimeStr && <span className="opacity-70 mr-1.5">{todo.exactTimeStr}</span>}
                                                                         {todo.subject}
                                                                     </span>
                                                                 </div>
@@ -477,9 +432,7 @@ const App = () => {
                                                 })}
                                             </div>
                                         ) : (
-                                            // 일정이 없는 빈 공간 (드롭 유도)
-                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent transition-colors flex items-center justify-center">
-                                            </div>
+                                            <div className="w-full h-full min-h-[40px] rounded-2xl border-2 border-dashed border-transparent transition-colors flex items-center justify-center"></div>
                                         )}
                                     </div>
                                 </div>
