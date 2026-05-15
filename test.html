@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코지 카페 단어 테스트</title>
+    <title>단어 테스트</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -157,18 +157,49 @@ const App = () => {
                 } catch (e) { console.warn("과목 로드 실패", e); }
             }
 
-            // 2. 테스트 DB에서 '오늘 복습 필요'가 체크된 항목만 가져오기
-            const testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    filter: { property: '오늘 복습 필요', checkbox: { equals: true } },
-                    page_size: 100
-                })
-            });
+            // 2. 테스트 DB 데이터 가져오기
+            // '오늘 복습 필요' 속성이 일반 체크박스일 수도 있고, 수식(Formula)일 수도 있으므로 분기 처리합니다.
+            let testRes;
+            try {
+                // 시도 1: 일반 체크박스로 필터링
+                testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        filter: { property: '오늘 복습 필요', checkbox: { equals: true } },
+                        page_size: 100
+                    })
+                });
+            } catch (err1) {
+                try {
+                    // 시도 2: 수식(Formula) 결과로 필터링 (복습 템플릿의 경우 대부분 이 경우에 해당)
+                    testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            filter: { property: '오늘 복습 필요', formula: { checkbox: { equals: true } } },
+                            page_size: 100
+                        })
+                    });
+                } catch (err2) {
+                    // 시도 3: 둘 다 실패 시 필터 없이 가져와서 JS에서 자체 필터링
+                    testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
+                        method: 'POST',
+                        body: JSON.stringify({ page_size: 100 })
+                    });
+                }
+            }
 
-            const parsedQuestions = testRes.results.map(page => {
+            const parsedQuestions = [];
+            testRes.results.forEach(page => {
                 const props = page.properties;
                 
+                // 안전장치: JS 메모리에서 한 번 더 필터링 검증
+                const isDueCheckbox = props['오늘 복습 필요']?.checkbox === true;
+                const isDueFormula = props['오늘 복습 필요']?.formula?.boolean === true;
+                
+                if (props['오늘 복습 필요'] !== undefined && !isDueCheckbox && !isDueFormula) {
+                    return; // 체크되지 않은 항목은 제외
+                }
+
                 // 속성 매핑 (이미지 참고)
                 const summary = props['문제 요약']?.rich_text?.[0]?.plain_text || '요약 없음';
                 const content = props['문제 내용']?.rich_text?.[0]?.plain_text || '내용 없음';
@@ -181,8 +212,9 @@ const App = () => {
                     subject = subjectMap[subjectRelation[0].id] || '과목명 불러오기 실패';
                 }
 
-                // 날짜 비교로 Today / Pending 분류
-                const nextDateIso = props['다음 복습일']?.date?.start;
+                // 날짜 비교로 Today / Pending 분류 (다음 복습일 역시 수식일 수 있음)
+                const nextDateProp = props['다음 복습일'];
+                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
                 const nextDateObj = nextDateIso ? new Date(nextDateIso) : new Date();
                 const todayObj = new Date();
                 
@@ -192,7 +224,7 @@ const App = () => {
                 
                 const category = nextDateObj.getTime() < todayObj.getTime() ? 'pending' : 'today';
 
-                return { id: page.id, category, subject, summary, content, answer };
+                parsedQuestions.push({ id: page.id, category, subject, summary, content, answer });
             });
             
             setAllQuestions(parsedQuestions);
