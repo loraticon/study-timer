@@ -106,7 +106,6 @@ const App = () => {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [appState, setAppState] = useState('ready'); // 'ready' -> 'testing' -> 'result'
     const [allQuestions, setAllQuestions] = useState([]);
-    const [fetchedTotal, setFetchedTotal] = useState(0); // 가져온 전체 데이터 개수 (디버깅용)
     
     /* ── 테스트 진행 상태 ── */
     const [testQueue, setTestQueue] = useState([]);
@@ -150,7 +149,6 @@ const App = () => {
                 try {
                     const subjRes = await notionFetch(`/v1/databases/${config.subjectDbId}/query`, { method: 'POST', body: JSON.stringify({ page_size: 100 }) });
                     subjRes.results.forEach(page => {
-                        // 과목 이름은 보통 '이름' 타이틀 속성에 있습니다
                         const nameProp = Object.values(page.properties).find(p => p.type === 'title');
                         const name = nameProp?.title?.[0]?.plain_text || '미선택';
                         subjectMap[page.id] = name;
@@ -158,89 +156,60 @@ const App = () => {
                 } catch (e) { console.warn("과목 로드 실패", e); }
             }
 
-            // 2. 테스트 DB 데이터 가져오기 (페이지네이션 적용)
+            // 2. 테스트 DB 데이터 가져오기 (수식 정렬 오류 방지를 위해 필터 없이 전체 데이터를 순회하여 가져옴)
             let allFetchedResults = [];
-            try {
-                let hasMore = true;
-                let cursor = undefined;
-                let pagesFetched = 0;
-                
-                // 오름차순 정렬하여 가장 복습이 시급한 데이터부터 최대 300개(3페이지)를 가져옵니다.
-                while (hasMore && pagesFetched < 3) {
-                    const testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            sorts: [{ property: '다음 복습일', direction: 'ascending' }],
-                            page_size: 100,
-                            start_cursor: cursor
-                        })
-                    });
-                    allFetchedResults = allFetchedResults.concat(testRes.results);
-                    hasMore = testRes.has_more;
-                    cursor = testRes.next_cursor;
-                    pagesFetched++;
-                }
-            } catch (err1) {
-                // 수식 정렬 오류 시: 필터/정렬 없이 전체 데이터를 순회하여 가져옵니다 (최대 1000개)
-                let hasMore = true;
-                let cursor = undefined;
-                let pagesFetched = 0;
-                
-                while (hasMore && pagesFetched < 10) {
-                    const testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
-                        method: 'POST',
-                        body: JSON.stringify({ page_size: 100, start_cursor: cursor })
-                    });
-                    allFetchedResults = allFetchedResults.concat(testRes.results);
-                    hasMore = testRes.has_more;
-                    cursor = testRes.next_cursor;
-                    pagesFetched++;
-                }
-            }
+            let hasMore = true;
+            let cursor = undefined;
+            let pagesFetched = 0;
             
-            setFetchedTotal(allFetchedResults.length);
+            while (hasMore && pagesFetched < 10) { // 최대 1000개 로드
+                const bodyParams = { page_size: 100 };
+                if (cursor) bodyParams.start_cursor = cursor;
+                
+                const testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
+                    method: 'POST',
+                    body: JSON.stringify(bodyParams)
+                });
+                
+                if (testRes.results) {
+                    allFetchedResults = allFetchedResults.concat(testRes.results);
+                }
+                hasMore = testRes.has_more;
+                cursor = testRes.next_cursor;
+                pagesFetched++;
+            }
 
             const parsedQuestions = [];
             const todayObj = new Date();
-            todayObj.setHours(0, 0, 0, 0);
+            const todayYMD = todayObj.getFullYear() + '-' + todayObj.getMonth() + '-' + todayObj.getDate();
 
             allFetchedResults.forEach(page => {
                 const props = page.properties;
                 
-                // --- 복습 필요 여부 및 카테고리(오늘/밀린) 자체 계산 로직 ---
-                let isDue = false;
-                let category = 'today';
-                
-                const nextDateProp = props['다음 복습일'];
-                // 일반 날짜 속성이든, 수식으로 계산된 날짜든 모두 정상적으로 추출합니다.
-                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
-                
+                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목만 추출)
                 const dueProp = props['오늘 복습 필요'];
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
+
+                if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
+
+                // 2. 다음 복습일에 따라 '오늘'과 '밀린 복습' 분류
+                let category = 'today'; // 기본값 (날짜가 없어도 오늘 해야 함)
+                const nextDateProp = props['다음 복습일'];
+                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
 
                 if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
                     if (!isNaN(nextDateObj.getTime())) {
-                        nextDateObj.setHours(0, 0, 0, 0);
+                        const nextYMD = nextDateObj.getFullYear() + '-' + nextDateObj.getMonth() + '-' + nextDateObj.getDate();
                         
-                        // 1. 다음 복습일이 오늘이거나 과거이면 복습 대상으로 지정
-                        if (nextDateObj.getTime() <= todayObj.getTime()) {
-                            isDue = true;
-                            // 과거이면 '밀린 복습', 오늘이면 '오늘의 테스트'로 정확히 분류
-                            category = nextDateObj.getTime() < todayObj.getTime() ? 'pending' : 'today';
+                        // 사용자의 요청: 다음 복습일이 '오늘'과 일치하지 않는다면 무조건 '밀린 복습' 처리
+                        if (nextYMD !== todayYMD) {
+                            category = 'pending';
                         }
                     }
                 }
 
-                // 2. 만약 날짜상으로는 아니지만 (또는 날짜가 비어있지만) Notion '오늘 복습 필요' 속성이 명시적으로 체크되어 있는 경우 보완
-                if (!isDue && isDueByProp) {
-                    isDue = true;
-                    category = 'today'; 
-                }
-
-                if (!isDue) return; // 오늘 복습 대상이 아니면 건너뜀
-
-                // 속성 매핑 (이미지 참고)
+                // 속성 매핑
                 const summary = props['문제 요약']?.rich_text?.[0]?.plain_text || '요약 없음';
                 const content = props['문제 내용']?.rich_text?.[0]?.plain_text || '내용 없음';
                 const answer = props['정답']?.rich_text?.[0]?.plain_text || props['정답']?.title?.[0]?.plain_text || '정답 없음';
@@ -256,6 +225,7 @@ const App = () => {
             });
             
             setAllQuestions(parsedQuestions);
+            
         } catch (e) {
             console.error(e);
             alert("데이터를 불러오는 중 오류가 발생했습니다: " + e.message);
@@ -521,12 +491,6 @@ const App = () => {
                                 </div>
                             )}
                         </div>
-
-                        {(!hasToday && !hasPending) && (
-                            <div className="text-center text-[11px] text-gray-400 mt-2">
-                                (노션과 동기화된 전체 단어: {fetchedTotal}개)
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
