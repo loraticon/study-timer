@@ -158,47 +158,60 @@ const App = () => {
             }
 
             // 2. 테스트 DB 데이터 가져오기
-            // '오늘 복습 필요' 속성이 일반 체크박스일 수도 있고, 수식(Formula)일 수도 있으므로 분기 처리합니다.
             let testRes;
             try {
-                // 시도 1: 일반 체크박스로 필터링
+                // API 수식 필터 오류를 방지하기 위해 필터 없이 '다음 복습일' 기준으로 오름차순 정렬하여 가장 시급한 100개를 가져옵니다.
                 testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
                     method: 'POST',
                     body: JSON.stringify({
-                        filter: { property: '오늘 복습 필요', checkbox: { equals: true } },
+                        sorts: [{ property: '다음 복습일', direction: 'ascending' }],
                         page_size: 100
                     })
                 });
             } catch (err1) {
-                try {
-                    // 시도 2: 수식(Formula) 결과로 필터링 (복습 템플릿의 경우 대부분 이 경우에 해당)
-                    testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            filter: { property: '오늘 복습 필요', formula: { checkbox: { equals: true } } },
-                            page_size: 100
-                        })
-                    });
-                } catch (err2) {
-                    // 시도 3: 둘 다 실패 시 필터 없이 가져와서 JS에서 자체 필터링
-                    testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
-                        method: 'POST',
-                        body: JSON.stringify({ page_size: 100 })
-                    });
-                }
+                // '다음 복습일' 속성이 없거나 이름이 다를 경우를 대비한 안전장치
+                testRes = await notionFetch(`/v1/databases/${config.testDbId}/query`, {
+                    method: 'POST',
+                    body: JSON.stringify({ page_size: 100 })
+                });
             }
 
             const parsedQuestions = [];
+            const todayObj = new Date();
+            todayObj.setHours(0, 0, 0, 0);
+
             testRes.results.forEach(page => {
                 const props = page.properties;
                 
-                // 안전장치: JS 메모리에서 한 번 더 필터링 검증
-                const isDueCheckbox = props['오늘 복습 필요']?.checkbox === true;
-                const isDueFormula = props['오늘 복습 필요']?.formula?.boolean === true;
+                // --- 복습 필요 여부 및 카테고리(오늘/밀린) 자체 계산 로직 ---
+                let isDue = false;
+                let category = 'today';
                 
-                if (props['오늘 복습 필요'] !== undefined && !isDueCheckbox && !isDueFormula) {
-                    return; // 체크되지 않은 항목은 제외
+                const nextDateProp = props['다음 복습일'];
+                // 일반 날짜 속성이든, 수식으로 계산된 날짜든 모두 정상적으로 추출합니다.
+                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+                
+                if (nextDateIso) {
+                    const nextDateObj = new Date(nextDateIso);
+                    nextDateObj.setHours(0, 0, 0, 0);
+                    
+                    // 1. 다음 복습일이 오늘이거나 과거이면 복습 대상으로 지정
+                    if (nextDateObj.getTime() <= todayObj.getTime()) {
+                        isDue = true;
+                        // 과거이면 '밀린 복습', 오늘이면 '오늘의 테스트'로 정확히 분류
+                        category = nextDateObj.getTime() < todayObj.getTime() ? 'pending' : 'today';
+                    }
                 }
+
+                // 2. 만약 날짜상으로는 아니지만 (또는 날짜가 비어있지만) Notion '오늘 복습 필요' 속성이 명시적으로 체크되어 있는 경우 보완
+                const dueProp = props['오늘 복습 필요'];
+                if (dueProp?.checkbox === true || dueProp?.formula?.boolean === true) {
+                    isDue = true;
+                    // 날짜 없이 강제로 지정된 경우 보통 오늘 해야 할 항목으로 간주
+                    if (!nextDateIso) category = 'today'; 
+                }
+
+                if (!isDue) return; // 오늘 복습 대상이 아니면 건너뜀
 
                 // 속성 매핑 (이미지 참고)
                 const summary = props['문제 요약']?.rich_text?.[0]?.plain_text || '요약 없음';
@@ -211,18 +224,6 @@ const App = () => {
                 if (subjectRelation && subjectRelation.length > 0) {
                     subject = subjectMap[subjectRelation[0].id] || '과목명 불러오기 실패';
                 }
-
-                // 날짜 비교로 Today / Pending 분류 (다음 복습일 역시 수식일 수 있음)
-                const nextDateProp = props['다음 복습일'];
-                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
-                const nextDateObj = nextDateIso ? new Date(nextDateIso) : new Date();
-                const todayObj = new Date();
-                
-                // 시간 자정으로 초기화 후 비교
-                nextDateObj.setHours(0,0,0,0);
-                todayObj.setHours(0,0,0,0);
-                
-                const category = nextDateObj.getTime() < todayObj.getTime() ? 'pending' : 'today';
 
                 parsedQuestions.push({ id: page.id, category, subject, summary, content, answer });
             });
