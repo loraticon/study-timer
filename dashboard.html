@@ -90,7 +90,27 @@ const getDayKOR = (dayIdx) => ['일', '월', '화', '수', '목', '금', '토'][
 const normalizeDate = (d) => { const nd = new Date(d); nd.setHours(0,0,0,0); return nd.getTime(); };
 
 /* ── 로컬스토리지 연동 ── */
-const loadConfig = () => JSON.parse(localStorage.getItem('cozy_timer_config')) || {};
+const LS_CONFIG = 'cozy_timer_config';
+const loadConfig = () => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('apiKey') && params.has('recordDbId')) {
+            const urlConfig = {
+                proxyUrl: params.get('proxyUrl') || '',
+                apiKey: params.get('apiKey') || '',
+                recordDbId: params.get('recordDbId') || '',
+                subjectDbId: params.get('subjectDbId') || '',
+                subjectNameProp: params.get('subjectNameProp') || '이름',
+                saved: true 
+            };
+            localStorage.setItem(LS_CONFIG, JSON.stringify(urlConfig));
+            return urlConfig;
+        }
+        return JSON.parse(localStorage.getItem(LS_CONFIG)) || {};
+    } catch {
+        return {};
+    }
+};
 
 const App = () => {
     const [config, setConfig] = useState(loadConfig());
@@ -104,7 +124,33 @@ const App = () => {
             setLoading(false); return;
         }
         setLoading(true); setError('');
+        
         try {
+            // 1. 과목 DB 데이터 가져오기 (매핑용 Map 생성)
+            const subjectMap = {};
+            if (config.subjectDbId) {
+                try {
+                    const subjRes = await fetch(`${config.proxyUrl}/v1/databases/${config.subjectDbId}/query`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                        body: JSON.stringify({ page_size: 100 }),
+                    });
+                    
+                    if (subjRes.ok) {
+                        const subjData = await subjRes.json();
+                        const nameProp = config.subjectNameProp || '이름';
+                        subjData.results.forEach(page => {
+                            const prop = page.properties[nameProp];
+                            const name = prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '미선택';
+                            subjectMap[page.id] = name; // ID를 키로 하여 이름 저장
+                        });
+                    }
+                } catch (subjErr) {
+                    console.error("과목 정보를 불러오는데 실패했습니다.", subjErr);
+                }
+            }
+
+            // 2. 기록 DB 가져오기
             const res = await fetch(`${config.proxyUrl}/v1/databases/${config.recordDbId}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
@@ -114,10 +160,21 @@ const App = () => {
             const data = await res.json();
             
             const parsed = data.results.map(page => {
-                const titleProp = Object.values(page.properties).find(p => p.type === 'title');
-                const titleText = titleProp?.title?.[0]?.plain_text || '미선택';
-                const subjMatch = titleText.match(/^\[(.*?)\]/);
-                const subject = subjMatch ? subjMatch[1] : '기타';
+                let subject = '기타';
+                
+                // [우선순위 1] '과목' 이라는 관계형(Relation) 속성에서 과목 ID 추출 후 매핑
+                const subjectRelation = page.properties['과목']?.relation;
+                if (subjectRelation && subjectRelation.length > 0) {
+                    const subjId = subjectRelation[0].id;
+                    subject = subjectMap[subjId] || '기타';
+                } else {
+                    // [우선순위 2 - Fallback] 관계형이 비어있다면 기존처럼 제목(Title)의 대괄호에서 추출
+                    const titleProp = Object.values(page.properties).find(p => p.type === 'title');
+                    const titleText = titleProp?.title?.[0]?.plain_text || '';
+                    const subjMatch = titleText.match(/^\[(.*?)\]/);
+                    if (subjMatch) subject = subjMatch[1];
+                }
+
                 const minutes = page.properties['순공시간']?.number || 0;
                 
                 // 날짜, 시간, 모드 파싱
