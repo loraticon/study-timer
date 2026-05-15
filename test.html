@@ -183,6 +183,21 @@ const App = () => {
             const todayObj = new Date();
             const todayYMD = todayObj.getFullYear() + '-' + todayObj.getMonth() + '-' + todayObj.getDate();
 
+            // 일반 텍스트, 타이틀 및 롤업 속성에서 안전하게 텍스트를 추출하는 헬퍼 함수
+            const extractText = (prop) => {
+                if (!prop) return null;
+                // 기본 title이나 rich_text 속성일 경우
+                if (prop.title && prop.title.length > 0) return prop.title[0].plain_text;
+                if (prop.rich_text && prop.rich_text.length > 0) return prop.rich_text[0].plain_text;
+                // rollup 속성일 경우
+                if (prop.rollup && prop.rollup.array && prop.rollup.array.length > 0) {
+                    const firstItem = prop.rollup.array[0];
+                    if (firstItem.title && firstItem.title.length > 0) return firstItem.title[0].plain_text;
+                    if (firstItem.rich_text && firstItem.rich_text.length > 0) return firstItem.rich_text[0].plain_text;
+                }
+                return null;
+            };
+
             allFetchedResults.forEach(page => {
                 const props = page.properties;
                 
@@ -209,10 +224,10 @@ const App = () => {
                     }
                 }
 
-                // 속성 매핑
-                const summary = props['문제 요약']?.rich_text?.[0]?.plain_text || '요약 없음';
-                const content = props['문제 내용']?.rich_text?.[0]?.plain_text || '내용 없음';
-                const answer = props['정답']?.rich_text?.[0]?.plain_text || props['정답']?.title?.[0]?.plain_text || '정답 없음';
+                // 속성 매핑 (extractText 헬퍼 함수 사용)
+                const summary = extractText(props['문제 요약']) || '요약 없음';
+                const content = extractText(props['문제 내용']) || '내용 없음';
+                const answer = extractText(props['정답']) || '정답 없음';
                 
                 // 과목 매핑 (관계형)
                 let subject = '미분류';
