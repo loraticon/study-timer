@@ -183,8 +183,15 @@ const App = () => {
             }
 
             const parsedQuestions = [];
-            const todayObj = new Date();
-            const todayYMD = todayObj.getFullYear() + '-' + todayObj.getMonth() + '-' + todayObj.getDate();
+            
+            // KST 등 로컬 타임존 기준으로 정확한 YYYY-MM-DD 문자열 생성
+            const getLocalYMD = (dateObj) => {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            const todayYMD = getLocalYMD(new Date());
 
             // 일반 텍스트, 타이틀 및 롤업 속성에서 안전하게 텍스트를 추출하는 헬퍼 함수
             const extractText = (prop) => {
@@ -211,17 +218,19 @@ const App = () => {
                 if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
 
                 // 2. 다음 복습일에 따라 '오늘'과 '밀린 복습' 분류
-                let category = 'today'; // 기본값 (날짜가 없어도 오늘 해야 함)
+                let category = 'pending'; // 기본값을 '밀린 복습'으로 변경 (명확히 오늘인 경우만 today 배정)
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
 
                 if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
                     if (!isNaN(nextDateObj.getTime())) {
-                        const nextYMD = nextDateObj.getFullYear() + '-' + nextDateObj.getMonth() + '-' + nextDateObj.getDate();
+                        const nextYMD = getLocalYMD(nextDateObj);
                         
-                        // 사용자의 요청: 다음 복습일이 '오늘'과 일치하지 않는다면 무조건 '밀린 복습' 처리
-                        if (nextYMD !== todayYMD) {
+                        // 다음 복습일이 정확히 '오늘'과 일치할 때만 '오늘의 테스트'에 추가
+                        if (nextYMD === todayYMD) {
+                            category = 'today';
+                        } else {
                             category = 'pending';
                         }
                     }
@@ -557,8 +566,10 @@ const App = () => {
         const isExactMatch = answerOptions.includes(normalizedUserInput);
         
         // 상단 라벨 (어떤 세션인지 표시)
-        const sessionLabel = sessionType === 'today' ? '오늘의 테스트' : '밀린 복습';
-        const sessionIcon = sessionType === 'today' ? '☀️' : '📦';
+        let sessionLabel = '밀린 복습';
+        let sessionIcon = '📦';
+        if (sessionType === 'new') { sessionLabel = '오늘의 테스트'; sessionIcon = '⚡'; }
+        else if (sessionType === 'today') { sessionLabel = '오늘의 복습'; sessionIcon = '☀️'; }
 
         return (
             <div className="w-full max-w-[420px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] flex flex-col min-h-[580px] soft-shadow overflow-hidden relative">
