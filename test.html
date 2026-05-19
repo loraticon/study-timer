@@ -109,7 +109,7 @@ const App = () => {
     
     /* ── 테스트 진행 상태 ── */
     const [testQueue, setTestQueue] = useState([]);
-    const [sessionType, setSessionType] = useState('today'); // 'today' or 'pending'
+    const [sessionType, setSessionType] = useState('today'); // 'new', 'today' or 'pending'
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userInput, setUserInput] = useState('');
     const [isRevealed, setIsRevealed] = useState(false);
@@ -217,21 +217,25 @@ const App = () => {
 
                 if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
 
-                // 2. 다음 복습일에 따라 '오늘'과 '밀린 복습' 분류
-                let category = 'pending'; // 기본값을 '밀린 복습'으로 변경 (명확히 오늘인 경우만 today 배정)
+                // 누적 통과 횟수 추출
+                const passCount = props['누적 통과 횟수']?.number || 0;
+
+                // 2. 3가지 카테고리로 분류: 오늘의 테스트(새 문제), 오늘의 복습(오늘 날짜), 밀린 복습(과거 날짜)
+                let category = 'pending'; 
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
 
-                if (nextDateIso) {
+                if (passCount === 0) {
+                    category = 'new'; // 누적 통과 횟수가 0이면 '오늘의 테스트' (새로운 문제)
+                } else if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
                     if (!isNaN(nextDateObj.getTime())) {
                         const nextYMD = getLocalYMD(nextDateObj);
                         
-                        // 다음 복습일이 정확히 '오늘'과 일치할 때만 '오늘의 테스트'에 추가
                         if (nextYMD === todayYMD) {
-                            category = 'today';
+                            category = 'today'; // '오늘의 복습'
                         } else {
-                            category = 'pending';
+                            category = 'pending'; // '밀린 복습'
                         }
                     }
                 }
@@ -240,9 +244,6 @@ const App = () => {
                 const summary = extractText(props['문제 요약']) || '요약 없음';
                 const content = extractText(props['문제 내용']) || '내용 없음';
                 const answer = extractText(props['정답']) || '정답 없음';
-                
-                // 누적 통과 횟수 추출 (버튼 클릭 업데이트를 위해 필요)
-                const passCount = props['누적 통과 횟수']?.number || 0;
                 
                 // 과목 매핑 (관계형)
                 let subject = '미분류';
@@ -322,11 +323,16 @@ const App = () => {
 
 
     /* ── 테스트 로직 ── */
+    const newQuestions = allQuestions.filter(q => q.category === 'new');
     const todayQuestions = allQuestions.filter(q => q.category === 'today');
     const pendingQuestions = allQuestions.filter(q => q.category === 'pending');
 
     const startTest = (type, limit) => {
-        const sourceQueue = type === 'today' ? todayQuestions : pendingQuestions;
+        let sourceQueue = [];
+        if (type === 'new') sourceQueue = newQuestions;
+        else if (type === 'today') sourceQueue = todayQuestions;
+        else sourceQueue = pendingQuestions;
+        
         const queue = limit ? sourceQueue.slice(0, limit) : [...sourceQueue];
         
         setSessionType(type);
@@ -449,8 +455,9 @@ const App = () => {
         </div>
     );
 
-    /* ══════ 화면 1: 준비 화면 (두 영역으로 분리) ══════ */
+    /* ══════ 화면 1: 준비 화면 (세 영역으로 분리) ══════ */
     if (appState === 'ready') {
+        const hasNew = newQuestions.length > 0;
         const hasToday = todayQuestions.length > 0;
         const hasPending = pendingQuestions.length > 0;
         const isPendingOverloaded = pendingQuestions.length > BATCH_SIZE;
@@ -473,20 +480,47 @@ const App = () => {
                         <span className="text-sm text-gray-400">데이터를 불러오는 중...</span>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-5">
-                        {/* 오늘의 테스트 섹션 (우선순위 1) */}
+                    <div className="flex flex-col gap-4 overflow-y-auto pb-4">
+                        {/* 1. 오늘의 테스트 섹션 (새 문제) */}
                         <div className="bg-white rounded-3xl p-5 border-2 border-latte-100 flex flex-col relative overflow-hidden soft-shadow">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasToday ? 'bg-latte-50 text-latte-500' : 'bg-gray-50 text-gray-300'}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasNew ? 'bg-latte-50 text-latte-500' : 'bg-gray-50 text-gray-300'}`}>
+                                        <ZapIcon />
+                                    </div>
+                                    <div>
+                                        <h2 className={`font-bold ${hasNew ? 'text-gray-800' : 'text-gray-400'}`}>오늘의 테스트</h2>
+                                        <p className="text-[11px] text-gray-400 font-medium">{hasNew ? '새롭게 익혀야 할 단어들' : '새로운 문제가 없어요!'}</p>
+                                    </div>
+                                </div>
+                                <div className={`text-2xl font-black ${hasNew ? 'text-latte-500' : 'text-gray-300'}`}>
+                                    {newQuestions.length}
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => startTest('new')}
+                                disabled={!hasNew}
+                                className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
+                                    ${hasNew ? 'bg-latte-500 hover:bg-latte-700 text-white shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                            >
+                                {hasNew ? '오늘의 테스트 시작' : '완료됨'}
+                            </button>
+                        </div>
+
+                        {/* 2. 오늘의 복습 섹션 (누적>0, 날짜=오늘) */}
+                        <div className="bg-white rounded-3xl p-5 border border-gray-200 flex flex-col relative overflow-hidden">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasToday ? 'bg-[#F0F4ED] text-[#849F71]' : 'bg-gray-50 text-gray-300'}`}>
                                         <SunIcon />
                                     </div>
                                     <div>
-                                        <h2 className={`font-bold ${hasToday ? 'text-gray-800' : 'text-gray-400'}`}>오늘의 테스트</h2>
-                                        <p className="text-[11px] text-gray-400 font-medium">{hasToday ? '가장 먼저 끝내야 할 미션' : '모두 완료했어요!'}</p>
+                                        <h2 className={`font-bold ${hasToday ? 'text-gray-800' : 'text-gray-400'}`}>오늘의 복습</h2>
+                                        <p className="text-[11px] text-gray-400 font-medium">{hasToday ? '잊어버리기 전에 다시 한번!' : '오늘 복습은 끝났어요!'}</p>
                                     </div>
                                 </div>
-                                <div className={`text-2xl font-black ${hasToday ? 'text-latte-500' : 'text-gray-300'}`}>
+                                <div className={`text-2xl font-black ${hasToday ? 'text-[#849F71]' : 'text-gray-300'}`}>
                                     {todayQuestions.length}
                                 </div>
                             </div>
@@ -495,13 +529,13 @@ const App = () => {
                                 onClick={() => startTest('today')}
                                 disabled={!hasToday}
                                 className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
-                                    ${hasToday ? 'bg-latte-500 hover:bg-latte-700 text-white shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                                    ${hasToday ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
                             >
-                                {hasToday ? '오늘의 테스트 시작' : '완료됨'}
+                                {hasToday ? '오늘의 복습 시작' : '완료됨'}
                             </button>
                         </div>
 
-                        {/* 밀린 복습 섹션 (우선순위 2) */}
+                        {/* 3. 밀린 복습 섹션 (우선순위 3) */}
                         <div className="bg-[#F4F0EA] rounded-3xl p-5 border border-[#EBE8DE] flex flex-col">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-2">
