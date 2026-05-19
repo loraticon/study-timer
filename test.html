@@ -348,17 +348,22 @@ const App = () => {
         // 2. 백그라운드 API 호출 (Notion 데이터베이스 업데이트)
         // 통과면 누적 횟수 + 1, 다시 학습이면 0으로 초기화
         const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
-        const nowIsoString = new Date().toISOString(); 
+        
+        const propertiesToUpdate = {
+            '누적 통과 횟수': { number: newPassCount }
+        };
+        
+        // 통과(isPass === true)일 때만 날짜를 오늘로 업데이트
+        if (isPass) {
+            propertiesToUpdate['날짜'] = { date: { start: new Date().toISOString() } };
+        }
         
         setSyncingCount(c => c + 1); // 스피너 표시 시작
         
         notionFetch(`/v1/pages/${currentQ.id}`, {
             method: 'PATCH',
             body: JSON.stringify({
-                properties: {
-                    '누적 통과 횟수': { number: newPassCount },
-                    '날짜': { date: { start: nowIsoString } }
-                }
+                properties: propertiesToUpdate
             })
         }).catch(err => {
             console.error("DB 업데이트 오류:", err);
@@ -545,7 +550,11 @@ const App = () => {
     /* ══════ 화면 2: 테스트 진행 화면 ══════ */
     if (appState === 'testing') {
         const currentQ = testQueue[currentIndex];
-        const isExactMatch = userInput.replace(/\s+/g, '') === currentQ.answer.replace(/\s+/g, '');
+        
+        // 정답 검증 로직 변경 (쉼표로 구분된 다중 정답 중 하나라도 맞으면 정답 처리)
+        const normalizedUserInput = userInput.replace(/\s+/g, '');
+        const answerOptions = currentQ.answer.split(',').map(ans => ans.replace(/\s+/g, ''));
+        const isExactMatch = answerOptions.includes(normalizedUserInput);
         
         // 상단 라벨 (어떤 세션인지 표시)
         const sessionLabel = sessionType === 'today' ? '오늘의 테스트' : '밀린 복습';
