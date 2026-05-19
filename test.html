@@ -225,19 +225,22 @@ const App = () => {
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
 
-                if (passCount === 0) {
-                    category = 'new'; // 누적 통과 횟수가 0이면 '오늘의 테스트' (새로운 문제)
-                } else if (nextDateIso) {
+                if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
                     if (!isNaN(nextDateObj.getTime())) {
                         const nextYMD = getLocalYMD(nextDateObj);
                         
-                        if (nextYMD === todayYMD) {
-                            category = 'today'; // '오늘의 복습'
-                        } else {
-                            category = 'pending'; // '밀린 복습'
+                        if (nextYMD < todayYMD) {
+                            // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
+                            category = 'pending';
+                        } else if (nextYMD === todayYMD) {
+                            // 2. 복습일이 정확히 오늘이라면, 통과 횟수에 따라 분리
+                            category = passCount === 0 ? 'new' : 'today';
                         }
                     }
+                } else {
+                    // 날짜가 아예 없는 경우 (새로 추가한 문제일 확률이 높음)
+                    category = passCount === 0 ? 'new' : 'pending';
                 }
 
                 // 속성 매핑 (extractText 헬퍼 함수 사용)
