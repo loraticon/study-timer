@@ -357,6 +357,22 @@ const App = () => {
         setIsRevealed(true);
     };
 
+    // 중간에 풀기를 멈추고 결과 화면으로 가는 기능
+    const handleEarlyExit = () => {
+        if (currentIndex === 0) {
+            // 아직 하나도 풀지 않고 나갈 경우
+            setAppState('ready');
+        } else {
+            // 이미 푼 문제들만 분리해서 저장 처리
+            const completedQueue = testQueue.slice(0, currentIndex);
+            const completedIds = completedQueue.map(q => q.id);
+            
+            setTestQueue(completedQueue); // 대기열을 푼 만큼으로 축소시킴 (결과 화면에서 모수 계산을 위해)
+            setAllQuestions(prev => prev.filter(q => !completedIds.includes(q.id))); // 전체 목록에서 풀었던 문제 제거
+            setAppState('result');
+        }
+    };
+
     const handleResult = (isPass) => {
         const currentQ = testQueue[currentIndex];
         
@@ -625,9 +641,18 @@ const App = () => {
                                 <span className="spin inline-block w-2.5 h-2.5 border-2 border-latte-300 border-t-transparent rounded-full ml-1" title="DB에 저장 중..." />
                             )}
                         </span>
-                        <span className="text-sm font-bold text-latte-300">
-                            {currentIndex + 1} / {testQueue.length}
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-latte-300">
+                                {currentIndex + 1} / {testQueue.length}
+                            </span>
+                            {/* 중간 종료 버튼 */}
+                            <button 
+                                onClick={handleEarlyExit} 
+                                className="text-[10px] text-gray-400 border border-[#EBE8DE] bg-white px-2 py-1 rounded-md hover:bg-gray-50 transition-colors"
+                            >
+                                그만 풀기
+                            </button>
+                        </div>
                     </div>
                     <div className="text-[11px] font-bold text-gray-400">과목: {currentQ.subject}</div>
                 </div>
