@@ -67,6 +67,7 @@ const ZapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none
 const SmileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>;
 const GearIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 const NotionIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.887l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933z"/></svg>;
+const RefreshIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
 
 const BATCH_SIZE = 5;
 
@@ -211,54 +212,42 @@ const App = () => {
             allFetchedResults.forEach(page => {
                 const props = page.properties;
                 
-                // 누적 통과 횟수 및 마지막 학습 날짜 확인 (먼저 추출)
-                const passCount = props['누적 통과 횟수']?.number || 0;
-                const lastDateProp = props['날짜'];
-                const lastDateIso = lastDateProp?.date?.start;
-                const hasStudiedBefore = !!lastDateIso;
-                
-                // ⭐ '새 문제'의 기준: 통과 횟수가 0이고 학습한 적이 한 번도 없는 문제
-                const isNewQuestion = passCount === 0 && !hasStudiedBefore;
-
-                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목 추출)
+                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목만 추출)
                 const dueProp = props['오늘 복습 필요'];
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
 
-                // ⭐ 필터링 조건 변경: 복습 대상도 아니고, 새 문제도 아니라면 제외
-                // (기존에는 새 문제더라도 '오늘 복습 필요'가 안 켜져 있으면 버려지는 문제가 있었음)
-                if (!isDueByProp && !isNewQuestion) return; 
+                if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
 
-                // ⭐ 오늘 이미 한 번 학습한 문제(다시 학습 포함)는 오늘 목록에서 아예 제외하여 내일부터 노출되게 함
-                if (hasStudiedBefore) {
-                    const lastDateObj = new Date(lastDateIso);
-                    if (!isNaN(lastDateObj.getTime())) {
-                        const lastYMD = getLocalYMD(lastDateObj);
-                        if (lastYMD === todayYMD) {
-                            return; 
-                        }
-                    }
-                }
+                // 누적 통과 횟수 추출
+                const passCount = props['누적 통과 횟수']?.number || 0;
+
+                // '다시 학습' 체크박스 추출
+                const isRetry = props['다시 학습']?.checkbox === true;
 
                 // 2. 3가지 카테고리로 분류: 오늘의 테스트(새 문제), 오늘의 복습(오늘 날짜), 밀린 복습(과거 날짜)
                 let category = 'pending'; 
-                if (isNewQuestion) {
-                    category = 'new';
-                } else {
-                    const nextDateProp = props['다음 복습일'];
-                    const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
-                    
-                    if (nextDateIso) {
-                        const nextDateObj = new Date(nextDateIso);
-                        if (!isNaN(nextDateObj.getTime())) {
-                            const nextYMD = getLocalYMD(nextDateObj);
-                            
-                            if (nextYMD < todayYMD) {
-                                category = 'pending'; // 과거
-                            } else if (nextYMD === todayYMD) {
-                                category = 'today'; // 오늘
-                            }
+                const nextDateProp = props['다음 복습일'];
+                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+
+                if (nextDateIso) {
+                    const nextDateObj = new Date(nextDateIso);
+                    if (!isNaN(nextDateObj.getTime())) {
+                        const nextYMD = getLocalYMD(nextDateObj);
+                        
+                        if (nextYMD < todayYMD) {
+                            // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
+                            category = 'pending';
+                        } else if (nextYMD === todayYMD) {
+                            // 2. 복습일이 정확히 오늘이라면:
+                            //    - isRetry(다시 학습 플래그)가 true면 → 'today'(오늘의 복습)
+                            //    - passCount === 0이고 isRetry가 false면 → 'new'(오늘의 테스트)
+                            //    - 그 외(passCount > 0) → 'today'(오늘의 복습)
+                            category = (passCount === 0 && !isRetry) ? 'new' : 'today';
                         }
                     }
+                } else {
+                    // 날짜가 아예 없는 경우 (새로 추가한 문제일 확률이 높음)
+                    category = (passCount === 0 && !isRetry) ? 'new' : 'pending';
                 }
 
                 // 속성 매핑 (extractText 헬퍼 함수 사용)
@@ -273,7 +262,7 @@ const App = () => {
                     subject = subjectMap[subjectRelation[0].id] || '과목명 불러오기 실패';
                 }
 
-                parsedQuestions.push({ id: page.id, category, subject, summary, content, answer, passCount });
+                parsedQuestions.push({ id: page.id, category, subject, summary, content, answer, passCount, isRetry });
             });
             
             setAllQuestions(parsedQuestions);
@@ -402,11 +391,21 @@ const App = () => {
         const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
         
         const propertiesToUpdate = {
-            '누적 통과 횟수': { number: newPassCount },
-            // 통과 실패 여부와 무관하게 학습을 진행했으므로 무조건 날짜를 갱신합니다.
-            // 이를 통해 오늘 테스트 목록에서 제외시키고 다음 복습일에 배정되도록 합니다.
-            '날짜': { date: { start: new Date().toISOString() } }
+            '누적 통과 횟수': { number: newPassCount }
         };
+        
+        // 통과(isPass === true)일 때만 날짜를 오늘로 업데이트
+        if (isPass) {
+            propertiesToUpdate['날짜'] = { date: { start: new Date().toISOString() } };
+            propertiesToUpdate['다시 학습'] = { checkbox: false }; // 통과 시 플래그 해제
+        } else {
+            // 다시 학습: 내일 날짜로 설정 + 플래그 ON
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            propertiesToUpdate['날짜'] = { date: { start: tomorrow.toISOString() } };
+            propertiesToUpdate['다시 학습'] = { checkbox: true };
+        }
         
         setSyncingCount(c => c + 1); // 스피너 표시 시작
         
@@ -499,12 +498,17 @@ const App = () => {
 
         return (
             <div className="w-full max-w-[420px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col justify-center min-h-[580px] soft-shadow relative overflow-hidden">
-                {/* 설정 버튼 */}
-                <button onClick={() => setShowSetup(true)} className="absolute top-6 right-6 text-gray-300 hover:text-latte-500 transition-colors">
-                    <GearIcon />
-                </button>
+                {/* 상단 우측 버튼들 */}
+                <div className="absolute top-6 right-6 flex items-center gap-3">
+                    <button onClick={fetchData} className="text-gray-300 hover:text-latte-500 transition-colors" title="데이터 새로고침">
+                        <RefreshIcon />
+                    </button>
+                    <button onClick={() => setShowSetup(true)} className="text-gray-300 hover:text-latte-500 transition-colors" title="설정">
+                        <GearIcon />
+                    </button>
+                </div>
 
-                <div className="mb-6 text-center">
+                <div className="mb-6 text-center mt-2">
                     <h1 className="text-2xl font-bold text-gray-800">단어 테스트</h1>
                     <p className="text-gray-500 text-sm mt-1">오늘도 가볍게 지식을 쌓아봐요 ☕</p>
                 </div>
