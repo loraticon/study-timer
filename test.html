@@ -211,16 +211,22 @@ const App = () => {
             allFetchedResults.forEach(page => {
                 const props = page.properties;
                 
-                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목만 추출)
-                const dueProp = props['오늘 복습 필요'];
-                const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
-
-                if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
-
-                // 마지막으로 학습한 날짜 유무 확인
+                // 누적 통과 횟수 및 마지막 학습 날짜 확인 (먼저 추출)
+                const passCount = props['누적 통과 횟수']?.number || 0;
                 const lastDateProp = props['날짜'];
                 const lastDateIso = lastDateProp?.date?.start;
                 const hasStudiedBefore = !!lastDateIso;
+                
+                // ⭐ '새 문제'의 기준: 통과 횟수가 0이고 학습한 적이 한 번도 없는 문제
+                const isNewQuestion = passCount === 0 && !hasStudiedBefore;
+
+                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목 추출)
+                const dueProp = props['오늘 복습 필요'];
+                const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
+
+                // ⭐ 필터링 조건 변경: 복습 대상도 아니고, 새 문제도 아니라면 제외
+                // (기존에는 새 문제더라도 '오늘 복습 필요'가 안 켜져 있으면 버려지는 문제가 있었음)
+                if (!isDueByProp && !isNewQuestion) return; 
 
                 // ⭐ 오늘 이미 한 번 학습한 문제(다시 학습 포함)는 오늘 목록에서 아예 제외하여 내일부터 노출되게 함
                 if (hasStudiedBefore) {
@@ -233,32 +239,26 @@ const App = () => {
                     }
                 }
 
-                // 누적 통과 횟수 추출
-                const passCount = props['누적 통과 횟수']?.number || 0;
-
                 // 2. 3가지 카테고리로 분류: 오늘의 테스트(새 문제), 오늘의 복습(오늘 날짜), 밀린 복습(과거 날짜)
                 let category = 'pending'; 
-                const nextDateProp = props['다음 복습일'];
-                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
-
-                if (nextDateIso) {
-                    const nextDateObj = new Date(nextDateIso);
-                    if (!isNaN(nextDateObj.getTime())) {
-                        const nextYMD = getLocalYMD(nextDateObj);
-                        
-                        if (nextYMD < todayYMD) {
-                            // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
-                            category = 'pending';
-                        } else if (nextYMD === todayYMD) {
-                            // 2. 복습일이 정확히 오늘이라면 분류
-                            // 이전에 한 번이라도 학습한 기록이 있다면(hasStudiedBefore), 
-                            // 통과 횟수가 0이라도 다시 학습으로 뜬 것이므로 '오늘의 복습'으로 들어갑니다.
-                            category = (passCount === 0 && !hasStudiedBefore) ? 'new' : 'today';
+                if (isNewQuestion) {
+                    category = 'new';
+                } else {
+                    const nextDateProp = props['다음 복습일'];
+                    const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+                    
+                    if (nextDateIso) {
+                        const nextDateObj = new Date(nextDateIso);
+                        if (!isNaN(nextDateObj.getTime())) {
+                            const nextYMD = getLocalYMD(nextDateObj);
+                            
+                            if (nextYMD < todayYMD) {
+                                category = 'pending'; // 과거
+                            } else if (nextYMD === todayYMD) {
+                                category = 'today'; // 오늘
+                            }
                         }
                     }
-                } else {
-                    // 날짜가 아예 없는 경우 (새로 추가한 문제일 확률이 높음)
-                    category = (passCount === 0 && !hasStudiedBefore) ? 'new' : 'pending';
                 }
 
                 // 속성 매핑 (extractText 헬퍼 함수 사용)
