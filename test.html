@@ -224,6 +224,10 @@ const App = () => {
                 let category = 'pending'; 
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+                
+                // 마지막으로 학습한 날짜 유무 확인
+                const lastDateProp = props['날짜'];
+                const hasStudiedBefore = !!(lastDateProp?.date?.start);
 
                 if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
@@ -234,13 +238,15 @@ const App = () => {
                             // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
                             category = 'pending';
                         } else if (nextYMD === todayYMD) {
-                            // 2. 복습일이 정확히 오늘이라면, 통과 횟수에 따라 분리
-                            category = passCount === 0 ? 'new' : 'today';
+                            // 2. 복습일이 정확히 오늘이라면 분류
+                            // 이전에 한 번이라도 학습한 기록이 있다면(hasStudiedBefore), 
+                            // 통과 횟수가 0이라도 다시 학습으로 뜬 것이므로 '오늘의 복습'으로 들어갑니다.
+                            category = (passCount === 0 && !hasStudiedBefore) ? 'new' : 'today';
                         }
                     }
                 } else {
                     // 날짜가 아예 없는 경우 (새로 추가한 문제일 확률이 높음)
-                    category = passCount === 0 ? 'new' : 'pending';
+                    category = (passCount === 0 && !hasStudiedBefore) ? 'new' : 'pending';
                 }
 
                 // 속성 매핑 (extractText 헬퍼 함수 사용)
@@ -384,13 +390,11 @@ const App = () => {
         const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
         
         const propertiesToUpdate = {
-            '누적 통과 횟수': { number: newPassCount }
+            '누적 통과 횟수': { number: newPassCount },
+            // 통과 실패 여부와 무관하게 학습을 진행했으므로 무조건 날짜를 갱신합니다.
+            // 이를 통해 오늘 테스트 목록에서 제외시키고 다음 복습일에 배정되도록 합니다.
+            '날짜': { date: { start: new Date().toISOString() } }
         };
-        
-        // 통과(isPass === true)일 때만 날짜를 오늘로 업데이트
-        if (isPass) {
-            propertiesToUpdate['날짜'] = { date: { start: new Date().toISOString() } };
-        }
         
         setSyncingCount(c => c + 1); // 스피너 표시 시작
         
