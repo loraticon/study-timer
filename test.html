@@ -217,6 +217,22 @@ const App = () => {
 
                 if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
 
+                // 마지막으로 학습한 날짜 유무 확인
+                const lastDateProp = props['날짜'];
+                const lastDateIso = lastDateProp?.date?.start;
+                const hasStudiedBefore = !!lastDateIso;
+
+                // ⭐ 오늘 이미 한 번 학습한 문제(다시 학습 포함)는 오늘 목록에서 아예 제외하여 내일부터 노출되게 함
+                if (hasStudiedBefore) {
+                    const lastDateObj = new Date(lastDateIso);
+                    if (!isNaN(lastDateObj.getTime())) {
+                        const lastYMD = getLocalYMD(lastDateObj);
+                        if (lastYMD === todayYMD) {
+                            return; 
+                        }
+                    }
+                }
+
                 // 누적 통과 횟수 추출
                 const passCount = props['누적 통과 횟수']?.number || 0;
 
@@ -224,10 +240,6 @@ const App = () => {
                 let category = 'pending'; 
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
-                
-                // 마지막으로 학습한 날짜 유무 확인
-                const lastDateProp = props['날짜'];
-                const hasStudiedBefore = !!(lastDateProp?.date?.start);
 
                 if (nextDateIso) {
                     const nextDateObj = new Date(nextDateIso);
