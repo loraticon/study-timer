@@ -212,42 +212,61 @@ const App = () => {
             allFetchedResults.forEach(page => {
                 const props = page.properties;
                 
-                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목만 추출)
-                const dueProp = props['오늘 복습 필요'];
-                const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
-
-                if (!isDueByProp) return; // 체크되어 있지 않은 항목은 제외
-
                 // 누적 통과 횟수 추출
                 const passCount = props['누적 통과 횟수']?.number || 0;
 
                 // '다시 학습' 체크박스 추출
                 const isRetry = props['다시 학습']?.checkbox === true;
 
-                // 2. 3가지 카테고리로 분류: 오늘의 테스트(새 문제), 오늘의 복습(오늘 날짜), 밀린 복습(과거 날짜)
-                let category = 'pending'; 
-                const nextDateProp = props['다음 복습일'];
-                const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+                // '날짜' 필드 추출 (마지막 학습일 또는 등록일)
+                const rawDateProp = props['날짜'];
+                const rawDateIso = rawDateProp?.date?.start;
+                let rawYMD = null;
+                if (rawDateIso) {
+                    const rawDateObj = new Date(rawDateIso);
+                    if (!isNaN(rawDateObj.getTime())) rawYMD = getLocalYMD(rawDateObj);
+                }
 
-                if (nextDateIso) {
-                    const nextDateObj = new Date(nextDateIso);
-                    if (!isNaN(nextDateObj.getTime())) {
-                        const nextYMD = getLocalYMD(nextDateObj);
-                        
-                        if (nextYMD < todayYMD) {
-                            // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
-                            category = 'pending';
-                        } else if (nextYMD === todayYMD) {
-                            // 2. 복습일이 정확히 오늘이라면:
-                            //    - isRetry(다시 학습 플래그)가 true면 → 'today'(오늘의 복습)
-                            //    - passCount === 0이고 isRetry가 false면 → 'new'(오늘의 테스트)
-                            //    - 그 외(passCount > 0) → 'today'(오늘의 복습)
-                            category = (passCount === 0 && !isRetry) ? 'new' : 'today';
-                        }
-                    }
+                // 새 문제 판단: passCount === 0이고 isRetry가 false이며,
+                // 날짜가 없거나 오늘인 경우 (오후 9시 등 시간 때문에 오늘 복습 필요가 아직 false일 수 있음)
+                const isNewQuestion = passCount === 0 && !isRetry && (rawYMD === null || rawYMD === todayYMD);
+
+                // 1. 복습 필요 여부 (오늘 복습 필요가 체크되어 있는 항목만 추출)
+                // 단, 새 문제(isNewQuestion)는 오늘 복습 필요 여부와 무관하게 포함
+                const dueProp = props['오늘 복습 필요'];
+                const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
+
+                if (!isDueByProp && !isNewQuestion) return; // 복습 필요도 아니고 새 문제도 아니면 제외
+
+                // 2. 3가지 카테고리로 분류: 오늘의 테스트(새 문제), 오늘의 복습(오늘 날짜), 밀린 복습(과거 날짜)
+                let category = 'pending';
+
+                if (isNewQuestion) {
+                    // 새 문제는 오늘 복습 필요 여부와 무관하게 무조건 'new'
+                    category = 'new';
                 } else {
-                    // 날짜가 아예 없는 경우 (새로 추가한 문제일 확률이 높음)
-                    category = (passCount === 0 && !isRetry) ? 'new' : 'pending';
+                    const nextDateProp = props['다음 복습일'];
+                    const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start;
+
+                    if (nextDateIso) {
+                        const nextDateObj = new Date(nextDateIso);
+                        if (!isNaN(nextDateObj.getTime())) {
+                            const nextYMD = getLocalYMD(nextDateObj);
+
+                            if (nextYMD < todayYMD) {
+                                // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
+                                category = 'pending';
+                            } else if (nextYMD === todayYMD) {
+                                // 2. 복습일이 정확히 오늘이라면:
+                                //    - isRetry(다시 학습 플래그)가 true면 → 'today'(오늘의 복습)
+                                //    - passCount > 0이면 → 'today'(오늘의 복습)
+                                category = 'today';
+                            }
+                        }
+                    } else {
+                        // 날짜가 아예 없는 경우
+                        category = 'pending';
+                    }
                 }
 
                 // 속성 매핑 (extractText 헬퍼 함수 사용)
