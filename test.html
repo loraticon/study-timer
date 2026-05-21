@@ -230,14 +230,12 @@ const App = () => {
                     if (!isNaN(nextDateObj.getTime())) {
                         const nextYMD = getLocalYMD(nextDateObj);
                         
-                        JavaScript
                         if (nextYMD < todayYMD) {
-                        // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
-                        category = 'pending';
+                            // 1. 복습일이 오늘보다 과거라면 무조건 '밀린 복습'
+                            category = 'pending';
                         } else if (nextYMD === todayYMD) {
-                        // 2. [수정] 복습일이 오늘이라면 통과 횟수와 상관없이 무조건 '오늘의 복습'으로 분류
-                        // (이틀 연속 틀린 문제나 새 문제였다가 틀린 문제 모두 복습으로 들어갑니다)
-                        category = 'today';
+                            // 2. 복습일이 정확히 오늘이라면, 통과 횟수에 따라 분리
+                            category = passCount === 0 ? 'new' : 'today';
                         }
                     }
                 } else {
@@ -389,19 +387,10 @@ const App = () => {
             '누적 통과 횟수': { number: newPassCount }
         };
         
-        // [수정] 통과면 오늘 날짜, 다시 학습이면 내일 날짜로 노션에 저장
-        const updateDate = new Date();
-        if (!isPass) {
-            updateDate.setDate(updateDate.getDate() + 1); // 내일 날짜로 설정
+        // 통과(isPass === true)일 때만 날짜를 오늘로 업데이트
+        if (isPass) {
+            propertiesToUpdate['날짜'] = { date: { start: new Date().toISOString() } };
         }
-
-        // 시차 오류를 방지하기 위해 로컬 날짜 문자열(YYYY-MM-DD) 생성
-        const targetYear = updateDate.getFullYear();
-        const targetMonth = String(updateDate.getMonth() + 1).padStart(2, '0');
-        const targetDay = String(updateDate.getDate()).padStart(2, '0');
-        const ymdString = `${targetYear}-${targetMonth}-${targetDay}`;
-
-        propertiesToUpdate['날짜'] = { date: { start: ymdString } };
         
         setSyncingCount(c => c + 1); // 스피너 표시 시작
         
