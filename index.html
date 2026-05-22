@@ -403,6 +403,7 @@ const App = () => {
                 '순공시간': { number: rec.minutes },         
                 '날짜':     { date: { start: rec.startIso } },
                 '모드':     { select: { name: modeLabel === 'pomodoro' ? '🍅 뽀모도로' : '⏱ 일반' } },
+                '커피 종류': { select: { name: THEMES[themeId].name } }
             };
             if (rec.subjectId) {
                 properties['과목'] = { relation: [{ id: rec.subjectId }] };
