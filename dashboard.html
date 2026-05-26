@@ -12,219 +12,410 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'] },
                     colors: {
-                        latte: {
-                            50: '#F4F0EA',
-                            100: '#EBE8DE',
-                            300: '#D1CBBF',
-                            500: '#A67B5B',
-                            700: '#8B664B',
-                            900: '#5C3A21',
-                        }
+                        latte: { 50: '#F4F0EA', 100: '#EBE8DE', 300: '#D1CBBF', 500: '#A67B5B', 700: '#8B664B', 900: '#5C3A21' },
+                        primary: '#A67B5B', bgLight: '#FDFBF7'
                     }
                 }
             }
         }
     </script>
     <style>
-        body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: transparent; }
-        ::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: #F4F5F7; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #EBE8DE; border-radius: 10px; }
+        * { -ms-overflow-style: none; }
         
-        /* 로딩 스피너 */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
         
-        /* 차트 바 애니메이션 */
         .chart-bar { transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; }
         .chart-bar:hover { opacity: 0.8; }
         
-        /* 잔디심기 툴팁 */
-        .grass-cell { position: relative; }
-        .grass-cell:hover { z-index: 20; }
-        .grass-cell .tooltip {
-            visibility: hidden; opacity: 0; transition: opacity 0.2s;
-            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-4px);
-            background: #4A4A4A; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px;
-            white-space: nowrap; z-index: 10; pointer-events: none; font-weight: bold;
-        }
-        .grass-cell:hover .tooltip { visibility: visible; opacity: 1; }
-        
-        /* 도넛 차트 애니메이션 */
         .donut-segment { transition: stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1), stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* 부드러운 카드 호버 효과 */
         .soft-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .soft-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     </style>
 </head>
-<body>
-<!-- max-w-[960px] 제거하여 화면 전체 너비를 사용하도록 변경 -->
-<div id="root" class="w-full h-full flex justify-center items-center"></div>
+<body class="p-6 md:p-8">
+<div id="root" class="w-full max-w-[1280px] flex flex-col gap-4 mx-auto"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
 
 /* ── 아이콘 ── */
-const RefreshIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const RefreshIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const BookIcon    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>;
 const FireIcon    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07A5F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
 const CrownIcon   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2CC8F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="2 15 2 7 8 11 12 3 16 11 22 7 22 15"/><path d="M2 15h20v4H2z"/></svg>;
 const OwlIcon     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#81B29A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 const TomatoIcon  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E56B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v6"/><path d="M12 8c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8z"/><path d="M12 8c2-2 4-2 6-1"/></svg>;
+const SwapIcon    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>;
+const PlusIcon    = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const HeartIcon   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
+const XIcon       = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const LeftArrow   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
+const RightArrow  = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+const NotionIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.887l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933z"/></svg>;
 
-/* ── 테마 팔레트 (도넛 차트용) ── */
-const CHART_COLORS = ['#A67B5B', '#849F71', '#D4A373', '#D98891', '#E07A5F', '#5C3A21', '#E9C46A', '#7A8B99', '#9CA3AF', '#D1CBBF'];
+const CHART_COLORS = ['#A67B5B', '#849F71', '#D4A373', '#D98891', '#E07A5F', '#5C3A21', '#E9C46A'];
 
-/* ── 포맷 & 유틸 ── */
+/* ── 유틸 ── */
 const fmtMinToHour = (min) => {
-    const h = Math.floor(min / 60);
-    const m = Math.floor(min % 60);
-    if (h === 0) return `${m}분`;
-    if (m === 0) return `${h}시간`;
+    const h = Math.floor(min / 60); const m = Math.floor(min % 60);
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
     return `${h}h ${m}m`;
 };
-const getDayKOR = (dayIdx) => ['일', '월', '화', '수', '목', '금', '토'][dayIdx];
 const normalizeDate = (d) => { const nd = new Date(d); nd.setHours(0,0,0,0); return nd.getTime(); };
+const getDayKOR = (idx) => ['일', '월', '화', '수', '목', '금', '토'][idx];
+const formatKORDate = (d) => `${d.getMonth()+1}월 ${d.getDate()}일 ${getDayKOR(d.getDay())}`;
 
-/* ── 로컬스토리지 연동 ── */
-const LS_CONFIG = 'cozy_timer_config';
+/* ── 설정 로드 ── */
+const LS_CONFIG = 'cozy_dash_config';
 const loadConfig = () => {
-    try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('apiKey') && params.has('recordDbId')) {
-            const urlConfig = {
-                proxyUrl: params.get('proxyUrl') || '',
-                apiKey: params.get('apiKey') || '',
-                recordDbId: params.get('recordDbId') || '',
-                subjectDbId: params.get('subjectDbId') || '',
-                subjectNameProp: params.get('subjectNameProp') || '이름',
-                saved: true 
-            };
-            localStorage.setItem(LS_CONFIG, JSON.stringify(urlConfig));
-            return urlConfig;
-        }
-        return JSON.parse(localStorage.getItem(LS_CONFIG)) || {};
-    } catch {
-        return {};
-    }
+    try { return JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; } catch { return {}; }
 };
 
 const App = () => {
+    /* ── 상태 관리 ── */
     const [config, setConfig] = useState(loadConfig());
-    const [records, setRecords] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [showSetup, setShowSetup] = useState(!loadConfig().saved);
+    const [setupForm, setSetupForm] = useState({ proxyUrl:'', apiKey:'', recordDbId:'', subjectDbId:'', todoDbId:'' });
+    const [setupError, setSetupError] = useState('');
+    const [setupLoading, setSetupLoading] = useState(false);
 
-    /* ── 데이터 호출 및 파싱 ── */
-    const fetchData = useCallback(async () => {
-        if (!config.saved || !config.proxyUrl || !config.apiKey || !config.recordDbId) {
-            setLoading(false); return;
+    const [activeTab, setActiveTab] = useState('home'); // 'home' | 'records'
+    
+    // 캘린더 월 이동 및 날짜 선택 상태
+    const todayNum = normalizeDate(new Date());
+    const [calendarDate, setCalendarDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(todayNum);
+
+    // 투두 추가 및 관리 상태
+    const [isAddingTodo, setIsAddingTodo] = useState(false);
+    const [newTodoTitle, setNewTodoTitle] = useState('');
+    const [todoProps, setTodoProps] = useState({ title: '이름', done: '완료', date: '날짜' });
+
+    // 데이터
+    const [records, setRecords] = useState([]);
+    const [todos, setTodos] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    /* ── 설정 저장 ── */
+    const handleSetupSave = async () => {
+        const { proxyUrl, apiKey, recordDbId, todoDbId } = setupForm;
+        if (!proxyUrl || !apiKey || !recordDbId) {
+            setSetupError('필수 항목(Proxy, API Key, 기록 DB)을 입력해주세요.'); return;
         }
-        setLoading(true); setError('');
+        setSetupLoading(true); setSetupError('');
+        try {
+            const testRes = await fetch(`${proxyUrl}/v1/databases/${recordDbId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'x-api-key':apiKey, 'x-notion-version':'2022-06-28' },
+                body: JSON.stringify({ page_size: 1 }),
+            });
+            if (!testRes.ok) throw new Error('연결 실패 — 설정을 확인해주세요');
+            
+            const newConfig = { ...setupForm, saved: true };
+            setConfig(newConfig);
+            localStorage.setItem(LS_CONFIG, JSON.stringify(newConfig));
+            setShowSetup(false);
+            fetchData(newConfig);
+        } catch (e) {
+            setSetupError(e.message);
+        } finally {
+            setSetupLoading(false);
+        }
+    };
+
+    /* ── 데이터 페칭 (기록 + 투두) ── */
+    const fetchData = useCallback(async (currentConfig = config) => {
+        if (!currentConfig.saved) { setLoading(false); return; }
+        setLoading(true);
         
         try {
-            // 1. 과목 DB 데이터 가져오기 (매핑용 Map 생성)
+            // 1. 과목 맵
             const subjectMap = {};
-            if (config.subjectDbId) {
-                try {
-                    const subjRes = await fetch(`${config.proxyUrl}/v1/databases/${config.subjectDbId}/query`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
-                        body: JSON.stringify({ page_size: 100 }),
+            if (currentConfig.subjectDbId) {
+                const subjRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.subjectDbId}/query`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' }, body: JSON.stringify({ page_size: 100 })
+                });
+                if (subjRes.ok) {
+                    const subjData = await subjRes.json();
+                    subjData.results.forEach(p => {
+                        const nameProp = Object.values(p.properties).find(prop => prop.type === 'title');
+                        subjectMap[p.id] = nameProp?.title?.[0]?.plain_text || '미선택';
                     });
-                    
-                    if (subjRes.ok) {
-                        const subjData = await subjRes.json();
-                        const nameProp = config.subjectNameProp || '이름';
-                        subjData.results.forEach(page => {
-                            const prop = page.properties[nameProp];
-                            const name = prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '미선택';
-                            subjectMap[page.id] = name; // ID를 키로 하여 이름 저장
-                        });
-                    }
-                } catch (subjErr) {
-                    console.error("과목 정보를 불러오는데 실패했습니다.", subjErr);
                 }
             }
 
-            // 2. 기록 DB 가져오기
-            const res = await fetch(`${config.proxyUrl}/v1/databases/${config.recordDbId}/query`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
-                body: JSON.stringify({ sorts: [{ property: '날짜', direction: 'descending' }], page_size: 300 }),
+            // 2. 공부 기록
+            const recRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.recordDbId}/query`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ sorts: [{ property: '날짜', direction: 'descending' }], page_size: 500 })
             });
-            if (!res.ok) throw new Error('데이터를 불러오지 못했습니다.');
-            const data = await res.json();
-            
-            const parsed = data.results.map(page => {
+            const recData = await recRes.json();
+            const parsedRecords = recData.results.map(page => {
                 let subject = '기타';
+                const rel = page.properties['과목']?.relation;
+                if (rel && rel.length > 0) subject = subjectMap[rel[0].id] || '기타';
                 
-                // [우선순위 1] '과목' 이라는 관계형(Relation) 속성에서 과목 ID 추출 후 매핑
-                const subjectRelation = page.properties['과목']?.relation;
-                if (subjectRelation && subjectRelation.length > 0) {
-                    const subjId = subjectRelation[0].id;
-                    subject = subjectMap[subjId] || '기타';
-                } else {
-                    // [우선순위 2 - Fallback] 관계형이 비어있다면 기존처럼 제목(Title)의 대괄호에서 추출
-                    const titleProp = Object.values(page.properties).find(p => p.type === 'title');
-                    const titleText = titleProp?.title?.[0]?.plain_text || '';
-                    const subjMatch = titleText.match(/^\[(.*?)\]/);
-                    if (subjMatch) subject = subjMatch[1];
-                }
-
                 const minutes = page.properties['순공시간']?.number || 0;
-                
-                // 날짜, 시간, 모드 파싱
                 const startIso = page.properties['날짜']?.date?.start || page.created_time;
-                const dObj = new Date(startIso);
                 const modeName = page.properties['모드']?.select?.name || '';
-                const mode = modeName.includes('뽀모도로') ? 'pomodoro' : 'normal';
-
-                return { subject, minutes, date: normalizeDate(startIso), hour: dObj.getHours(), mode };
+                
+                return { subject, minutes, date: normalizeDate(startIso), hour: new Date(startIso).getHours(), mode: modeName.includes('뽀모도로') ? 'pomodoro' : 'normal' };
             });
-            setRecords(parsed);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+            setRecords(parsedRecords);
+
+            // 3. 투두리스트
+            if (currentConfig.todoDbId) {
+                const todoRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.todoDbId}/query`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                    body: JSON.stringify({ sorts: [{ property: '날짜', direction: 'descending' }], page_size: 100 })
+                });
+                if (todoRes.ok) {
+                    const todoData = await todoRes.json();
+                    
+                    let tKey = '이름', cKey = '완료', dKey = '날짜';
+                    if (todoData.results.length > 0) {
+                        const props = todoData.results[0].properties;
+                        tKey = Object.keys(props).find(k => props[k].type === 'title') || tKey;
+                        cKey = Object.keys(props).find(k => props[k].type === 'checkbox') || cKey;
+                        dKey = Object.keys(props).find(k => props[k].type === 'date') || dKey;
+                        setTodoProps({ title: tKey, done: cKey, date: dKey });
+                    }
+
+                    const parsedTodos = todoData.results.map(page => {
+                        const title = page.properties[tKey]?.title?.[0]?.plain_text || '내용 없음';
+                        const done = page.properties[cKey]?.checkbox || false;
+                        const dateIso = page.properties[dKey]?.date?.start || page.created_time;
+                        
+                        let timeStr = null;
+                        let timeSortValue = 9999; // 시간이 없는 항목은 캘린더 최하단으로
+
+                        // 사용자가 별도로 만든 '시간' 속성 파싱 (숫자 6 -> 06:00, 1330 -> 13:30)
+                        const timeField = page.properties['시간'];
+                        let timeRaw = null;
+                        if (timeField) {
+                            if (timeField.type === 'number') timeRaw = timeField.number;
+                            else if (timeField.type === 'rich_text' && timeField.rich_text.length > 0) timeRaw = parseInt(timeField.rich_text[0].plain_text, 10);
+                            else if (timeField.type === 'title' && timeField.title.length > 0) timeRaw = parseInt(timeField.title[0].plain_text, 10);
+                        }
+
+                        if (timeRaw !== null && !isNaN(timeRaw)) {
+                            let h = 0, m = 0;
+                            if (timeRaw < 24) { h = timeRaw; m = 0; } 
+                            else { h = Math.floor(timeRaw / 100); m = timeRaw % 100; }
+                            timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                            timeSortValue = h * 60 + m;
+                        } 
+                        // Fallback: Date 속성 자체에 시간(Time)이 포함되어 있다면 추출
+                        else if (page.properties[dKey]?.date?.start?.includes('T')) {
+                            const d = new Date(dateIso);
+                            timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                            timeSortValue = d.getHours() * 60 + d.getMinutes();
+                        }
+
+                        return { id: page.id, title, done, date: normalizeDate(dateIso), timeStr, timeSortValue };
+                    });
+                    setTodos(parsedTodos);
+                }
+            }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [config]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { if(!showSetup) fetchData(); }, [fetchData, showSetup]);
 
-    /* ══════ 데이터 가공 로직 ══════ */
+    /* ── 투두 상태 토글 (완료/미완료) ── */
+    const toggleTodo = async (todo) => {
+        if (!config.saved || !config.todoDbId) return;
+        
+        // UI 즉각 업데이트 (Optimistic Update)
+        const newDone = !todo.done;
+        setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, done: newDone } : t));
+        
+        try {
+            await fetch(`${config.proxyUrl}/v1/pages/${todo.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({
+                    properties: { [todoProps.done]: { checkbox: newDone } }
+                })
+            });
+        } catch (e) {
+            console.error("체크박스 업데이트 실패:", e);
+            // 실패 시 원상복구
+            setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, done: todo.done } : t));
+            alert('노션 서버 동기화에 실패했습니다.');
+        }
+    };
+
+    /* ── 새로운 투두 추가 (좌측 '오늘의 할 일' 기준 추가이므로 무조건 오늘 날짜) ── */
+    const handleAddTodo = async () => {
+        if (!newTodoTitle.trim() || !config.saved || !config.todoDbId) {
+            setIsAddingTodo(false);
+            return;
+        }
+        
+        const title = newTodoTitle;
+        setNewTodoTitle('');
+        setIsAddingTodo(false);
+        
+        const tempId = 'temp-' + Date.now();
+        const todayKst = new Date();
+        const tzOffset = todayKst.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(todayKst.getTime() - tzOffset)).toISOString().slice(0, 10);
+        
+        // 화면에 즉시 반영 (새 항목은 시간이 없으므로 최하단 배치)
+        const newTodo = { id: tempId, title, done: false, date: todayNum, timeStr: null, timeSortValue: 9999 };
+        setTodos(prev => [newTodo, ...prev]);
+
+        try {
+            const res = await fetch(`${config.proxyUrl}/v1/pages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({
+                    parent: { database_id: config.todoDbId },
+                    properties: {
+                        [todoProps.title]: { title: [{ text: { content: title } }] },
+                        [todoProps.date]: { date: { start: localISOTime } }
+                    }
+                })
+            });
+            const data = await res.json();
+            if(data.id) {
+                setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
+            }
+        } catch (e) {
+            console.error("투두 추가 실패:", e);
+            setTodos(prev => prev.filter(t => t.id !== tempId)); // 롤백
+            alert('할 일을 노션에 추가하지 못했습니다.');
+        }
+    };
+
+
+    /* ══════ 데이터 가공 (HOME 뷰) ══════ */
+    const [showMaxStreak, setShowMaxStreak] = useState(false);
     
-    // 1. 하이라이트 지표 (연속 학습일, 탑 과목, 시간대, 모드)
-    const highlights = useMemo(() => {
-        if (!records.length) return { streak: 0, topSubj: null, topTimeLabel: '-', pomoPct: 0 };
-        
-        const today = normalizeDate(new Date());
-        
-        // 연속 학습일 (어제부터 역추적, 오늘 안 했어도 어제 했으면 유지)
-        let streak = 0;
-        for (let i = 0; i < 300; i++) {
-            const checkD = today - (i * 86400000);
-            const dayMins = records.filter(r => r.date === checkD).reduce((a, b) => a + b.minutes, 0);
-            if (dayMins > 0) {
-                streak++;
-            } else if (i > 0) { 
-                // 오늘(i=0) 기록이 없는 건 괜찮지만, 과거에 끊겼다면 종료
-                break;
+    // 1. 연속 학습일
+    const streakData = useMemo(() => {
+        if (!records.length) return { current: 0, max: 0 };
+        const daysMap = {};
+        records.forEach(r => { if(r.minutes > 0) daysMap[r.date] = true; });
+
+        let current = 0, max = 0, tempStreak = 0;
+        for (let i = 0; i < 365; i++) {
+            const d = todayNum - (i * 86400000);
+            if (daysMap[d]) {
+                tempStreak++;
+                if (tempStreak > max) max = tempStreak;
+                if (i === current) current++; 
+            } else {
+                if (i > 0 && current === i) {} // 오늘 안했어도 어제 했으면 유지
+                tempStreak = 0;
             }
         }
+        return { current, max };
+    }, [records, todayNum]);
 
-        // 이번 주 탑 과목
-        const weekAgo = today - 6 * 86400000;
+    // 2. 주간 스탬프
+    const weeklyStamps = useMemo(() => {
+        const todayObj = new Date();
+        const startOfWeek = todayNum - (todayObj.getDay() * 86400000);
+        
+        const stamps = [];
+        let stampCount = 0;
+        for (let i = 0; i < 7; i++) {
+            const d = startOfWeek + (i * 86400000);
+            const hasRecord = records.some(r => r.date === d && r.minutes > 0);
+            if (hasRecord) stampCount++;
+            stamps.push({ dayIdx: i, hasRecord, isFuture: d > todayNum, isToday: d === todayNum });
+        }
+        return { stamps, stampCount };
+    }, [records, todayNum]);
+
+    // 3. 이번 달 발자취
+    const monthFootprint = useMemo(() => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+        const lastDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        
+        const cells = [];
+        for (let i = 0; i < firstDay; i++) cells.push({ empty: true });
+        for (let i = 1; i <= lastDate; i++) {
+            const dTime = new Date(now.getFullYear(), now.getMonth(), i).getTime();
+            if (dTime > todayNum) { cells.push({ empty: true }); continue; }
+            
+            const mins = records.filter(r => r.date === dTime).reduce((a,b)=>a+b.minutes, 0);
+            let level = 0;
+            if (mins > 0) level = 1;
+            if (mins >= 30) level = 2;
+            if (mins >= 60) level = 3;
+            if (mins >= 120) level = 4;
+            cells.push({ date: i, level, mins });
+        }
+        return cells;
+    }, [records, todayNum]);
+
+    // 4. 캘린더 관련
+    const [coffeeView, setCoffeeView] = useState(false);
+    
+    // 월 이동 컨트롤
+    const handlePrevMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    const handleNextMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+
+    const calendarDays = useMemo(() => {
+        const year = calendarDate.getFullYear(); 
+        const month = calendarDate.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        
+        const days = [];
+        for (let i = 0; i < firstDay; i++) days.push({ empty: true, key: `e${i}` });
+        for (let i = 1; i <= lastDate; i++) {
+            const dTime = new Date(year, month, i).getTime();
+            const hasRecord = records.some(r => r.date === dTime && r.minutes > 0);
+            const hasTodo = todos.some(t => t.date === dTime); // 캘린더 점(dot) 표시용
+            
+            days.push({ 
+                date: i, 
+                isToday: dTime === todayNum, 
+                isSelected: dTime === selectedDate, 
+                hasRecord, 
+                hasTodo, 
+                time: dTime 
+            });
+        }
+        return days;
+    }, [records, todos, todayNum, selectedDate, calendarDate]);
+
+    // [좌측] 오늘의 투두리스트 (무조건 '오늘' 기준)
+    const todaysTodos = useMemo(() => todos.filter(t => t.date === todayNum), [todos, todayNum]);
+    
+    // [우측 하단] 선택한 날짜의 일정 (캘린더에서 클릭한 날짜 기준, 시간순 정렬)
+    const selectedDateTodos = useMemo(() => todos.filter(t => t.date === selectedDate), [todos, selectedDate]);
+    const selectedDateSchedule = useMemo(() => {
+        return [...selectedDateTodos].sort((a, b) => a.timeSortValue - b.timeSortValue);
+    }, [selectedDateTodos]);
+
+
+    /* ══════ 데이터 가공 (RECORDS 뷰) ══════ */
+    const recordStats = useMemo(() => {
+        if (!records.length) return { topSubj: '-', topTime: '-', preferredMode: '-', preferredPct: 0 };
+        
+        const weekAgo = todayNum - 6 * 86400000;
         const weekRecords = records.filter(r => r.date >= weekAgo);
         const subjMap = {};
         weekRecords.forEach(r => subjMap[r.subject] = (subjMap[r.subject] || 0) + r.minutes);
         const sortedSubj = Object.entries(subjMap).sort((a,b)=>b[1]-a[1]);
-        const topSubj = sortedSubj.length > 0 ? sortedSubj[0] : null;
-
-        // 주 활동 시간대 (전체 기준)
+        
         const times = { '새벽':0, '오전':0, '오후':0, '저녁':0 };
         records.forEach(r => {
             if (r.hour >= 0 && r.hour < 6) times['새벽'] += r.minutes;
@@ -232,261 +423,371 @@ const App = () => {
             else if (r.hour >= 12 && r.hour < 18) times['오후'] += r.minutes;
             else times['저녁'] += r.minutes;
         });
-        const sortedTimes = Object.entries(times).sort((a,b)=>b[1]-a[1]);
-        const topTimeLabel = sortedTimes[0][1] > 0 ? sortedTimes[0][0] : '-';
+        const topTime = Object.entries(times).sort((a,b)=>b[1]-a[1])[0];
 
-        // 모드 비율 (전체 기준)
         let pomo = 0, norm = 0;
         records.forEach(r => { if(r.mode === 'pomodoro') pomo += r.minutes; else norm += r.minutes; });
-        const totalMins = pomo + norm;
-        const pomoPct = totalMins > 0 ? Math.round((pomo / totalMins) * 100) : 0;
-        const normPct = totalMins > 0 ? Math.round((norm / totalMins) * 100) : 0;
-        
-        const preferredMode = norm > pomo ? '일반' : '뽀모도로';
-        const preferredPct = norm > pomo ? normPct : pomoPct;
+        const total = pomo + norm;
 
-        return { streak, topSubj, topTimeLabel, pomoPct, preferredMode, preferredPct };
-    }, [records]);
+        return {
+            topSubj: sortedSubj.length > 0 ? sortedSubj[0][0] : '-',
+            topTime: topTime[1] > 0 ? `${topTime[0]}형` : '-',
+            preferredMode: total === 0 ? '-' : (norm > pomo ? '일반' : '뽀모도로'),
+            preferredPct: total === 0 ? 0 : Math.round((Math.max(norm, pomo) / total) * 100)
+        };
+    }, [records, todayNum]);
 
-    // 2. 주간 차트
-    const weeklyData = useMemo(() => {
-        const today = normalizeDate(new Date());
-        const days = [];
-        let maxMin = 1;
+    const barChartData = useMemo(() => {
+        const days = []; let max = 1;
         for (let i = 6; i >= 0; i--) {
-            const dTime = today - (i * 86400000);
-            const dateObj = new Date(dTime);
-            const totalMin = records.filter(r => r.date === dTime).reduce((acc, r) => acc + r.minutes, 0);
-            if (totalMin > maxMin) maxMin = totalMin;
-            days.push({ label: getDayKOR(dateObj.getDay()), totalMin, isToday: i === 0 });
+            const dTime = todayNum - (i * 86400000);
+            const total = records.filter(r => r.date === dTime).reduce((a, r) => a + r.minutes, 0);
+            if (total > max) max = total;
+            days.push({ label: getDayKOR(new Date(dTime).getDay()), total, isToday: i === 0 });
         }
-        return { days, maxMin };
-    }, [records]);
+        return { days, max, totalSum: days.reduce((a,b)=>a+b.total, 0) };
+    }, [records, todayNum]);
 
-    // 3. 과목 도넛 차트 (전체)
-    const subjectData = useMemo(() => {
-        const sums = {};
-        let total = 0;
+    const donutChartData = useMemo(() => {
+        const sums = {}; let total = 0;
         records.forEach(r => { sums[r.subject] = (sums[r.subject] || 0) + r.minutes; total += r.minutes; });
         const list = Object.entries(sums).map(([name, min]) => ({ name, min, percent: total > 0 ? (min/total)*100 : 0 })).sort((a, b) => b.min - a.min);
         return { list, total };
     }, [records]);
 
-    // 4. 잔디 심기 (최근 12주)
-    const heatmapData = useMemo(() => {
-        const today = normalizeDate(new Date());
-        const cells = [];
-        const daysCount = 12 * 7; 
-        const startDate = today - ((daysCount - 1) * 86400000); 
 
-        for (let i = 0; i < daysCount; i++) {
-            const currentDTime = startDate + (i * 86400000);
-            const dObj = new Date(currentDTime);
-            if (currentDTime > today) { cells.push({ empty: true }); continue; }
-
-            const totalMin = records.filter(r => r.date === currentDTime).reduce((acc, r) => acc + r.minutes, 0);
-            let level = 0;
-            if (totalMin > 0) level = 1;
-            if (totalMin >= 30) level = 2;
-            if (totalMin >= 60) level = 3;
-            if (totalMin >= 120) level = 4;
-
-            cells.push({
-                dateStr: `${dObj.getFullYear()}년 ${dObj.getMonth()+1}월 ${dObj.getDate()}일`,
-                totalMin, level
-            });
-        }
-        return cells;
-    }, [records]);
-
-
-    /* ══════ 렌더링 ══════ */
-    if (!config.saved) {
-        return (
-            <div className="w-full h-[300px] bg-[#FDFBF7] rounded-[2.5rem] flex flex-col items-center justify-center">
-                <span className="text-3xl mb-3">☕</span>
-                <p className="text-gray-400 font-medium">타이머 위젯에서 Notion DB를 먼저 연결해 주세요.</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="w-full h-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col gap-6" style={{ minHeight: '480px' }}>
-            
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <span className="text-xs font-extrabold tracking-widest text-latte-300 uppercase flex items-center gap-2">
-                        COZY DASHBOARD
-                        {loading && <span className="spin inline-block w-2.5 h-2.5 border-2 border-latte-300 border-t-transparent rounded-full"/>}
-                    </span>
-                    <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">공부 기록 요약</h2>
-                </div>
-                <button onClick={fetchData} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-latte-500 transition-colors bg-white rounded-full shadow-sm hover:shadow-md">
-                    <RefreshIcon />
+    /* ══════ 렌더링 파트 ══════ */
+    if (showSetup) return (
+        <div className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-xl mx-auto my-10 border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"><NotionIcon/> Notion DB 연결</h2>
+            <div className="space-y-4">
+                <input type="text" placeholder="Cloudflare Proxy URL" value={setupForm.proxyUrl} onChange={e=>setSetupForm(f=>({...f, proxyUrl:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
+                <input type="password" placeholder="Notion API Key" value={setupForm.apiKey} onChange={e=>setSetupForm(f=>({...f, apiKey:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
+                <input type="text" placeholder="공부기록 DB ID (필수)" value={setupForm.recordDbId} onChange={e=>setSetupForm(f=>({...f, recordDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
+                <input type="text" placeholder="투두리스트 DB ID (선택)" value={setupForm.todoDbId} onChange={e=>setSetupForm(f=>({...f, todoDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
+                <input type="text" placeholder="과목 DB ID (선택)" value={setupForm.subjectDbId} onChange={e=>setSetupForm(f=>({...f, subjectDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
+                
+                {setupError && <p className="text-sm text-red-500">{setupError}</p>}
+                
+                <button onClick={handleSetupSave} disabled={setupLoading} className="w-full bg-latte-500 text-white font-bold py-3.5 rounded-xl hover:bg-latte-700 transition mt-2">
+                    {setupLoading ? '확인 중...' : '시작하기'}
                 </button>
             </div>
+        </div>
+    );
 
-            {error ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-10">
-                    <p className="text-sm text-red-400">{error}</p>
-                </div>
-            ) : loading && records.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-10">
-                    <span className="spin w-8 h-8 border-[3px] border-latte-500 border-t-transparent rounded-full mb-3"></span>
-                </div>
-            ) : (
-                <>
-                    {/* 1. 상단 요약 지표 (1 Grid on mobile, 4 Grid on md+) */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* 연속 학습일 */}
-                        <div className="soft-card bg-white rounded-2xl p-4 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0"><FireIcon/></div>
-                            <div>
-                                <div className="text-[11px] font-bold text-gray-400 mb-0.5">연속 학습일</div>
-                                <div className="text-lg font-bold text-gray-800 leading-tight">{highlights.streak > 0 ? `${highlights.streak}일째` : '오늘부터 1일!'}</div>
-                            </div>
-                        </div>
-                        {/* 이번 주 Top */}
-                        <div className="soft-card bg-white rounded-2xl p-4 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0"><CrownIcon/></div>
-                            <div className="overflow-hidden">
-                                <div className="text-[11px] font-bold text-gray-400 mb-0.5">이번 주 Top 과목</div>
-                                <div className="text-lg font-bold text-gray-800 leading-tight truncate">{highlights.topSubj ? highlights.topSubj[0] : '-'}</div>
-                            </div>
-                        </div>
-                        {/* 주 활동 시간대 */}
-                        <div className="soft-card bg-white rounded-2xl p-4 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0"><OwlIcon/></div>
-                            <div>
-                                <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중이 잘 되는 시간</div>
-                                <div className="text-lg font-bold text-gray-800 leading-tight">{highlights.topTimeLabel !== '-' ? `${highlights.topTimeLabel}형` : '-'}</div>
-                            </div>
-                        </div>
-                        {/* 모드 비율 */}
-                        <div className="soft-card bg-white rounded-2xl p-4 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0"><TomatoIcon/></div>
-                            <div>
-                                <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중 모드 선호도</div>
-                                <div className="text-lg font-bold text-gray-800 leading-tight">
-                                    {highlights.preferredMode} <span className={highlights.preferredMode === '뽀모도로' ? "text-[#E56B6F]" : "text-[#81B29A]"}>{highlights.preferredPct}%</span>
-                                </div>
-                            </div>
-                        </div>
+    return (
+        <>
+            {/* GNB 영역 */}
+            <header className="w-full bg-white rounded-[2rem] px-8 py-3.5 flex items-center justify-between shadow-sm border border-gray-100 mb-2">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-latte-50 flex items-center justify-center text-latte-700">
+                        <BookIcon/>
                     </div>
+                    <span className="font-extrabold text-[1.1rem] text-gray-800 tracking-tight">Dashboard</span>
+                </div>
+                
+                <nav className="hidden md:flex items-center gap-8">
+                    <button onClick={() => setActiveTab('home')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>홈</button>
+                    <button onClick={() => setActiveTab('records')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>공부기록</button>
+                    <button className="text-gray-500 font-bold text-[15px] hover:text-gray-800 transition-colors">단어장</button>
+                    <button className="text-gray-500 font-bold text-[15px] hover:text-gray-800 transition-colors">테스트</button>
+                </nav>
 
-                    {/* 2. 메인 차트 영역 (3 Columns) */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                <button onClick={() => fetchData()} className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-800 transition-all">
+                    {loading ? <span className="spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"/> : <RefreshIcon />}
+                </button>
+            </header>
+
+            {/* 메인 컨테이너 */}
+            <main className="w-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 md:p-10 shadow-sm flex flex-col gap-6 min-h-[700px]">
+                
+                {/* 탭 헤더 */}
+                <div className="mb-2">
+                    <span className="text-[11px] font-extrabold tracking-[0.15em] text-latte-300 uppercase mb-1 block">
+                        {activeTab === 'home' ? 'DASHBOARD OVERVIEW' : 'STUDY RECORDS'}
+                    </span>
+                    <h1 className="text-3xl font-bold text-gray-800">
+                        {activeTab === 'home' ? '오늘의 요약' : '상세 공부 기록'}
+                    </h1>
+                </div>
+
+                {/* ── HOME VIEW ── */}
+                {activeTab === 'home' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
-                        {/* Col 1: 최근 7일 추이 */}
-                        <div className="bg-white rounded-3xl p-6 flex flex-col soft-card">
-                            <h3 className="text-sm font-bold text-gray-800 mb-1">최근 7일 순공시간</h3>
-                            <p className="text-2xl font-extrabold text-latte-500 tabular-nums mb-6">{fmtMinToHour(weeklyData.days.reduce((a,b)=>a+b.totalMin, 0))}</p>
-                            
-                            <div className="flex-1 flex items-end justify-between gap-2.5 mt-auto">
-                                {weeklyData.days.map((day, idx) => (
-                                    <div key={idx} className="flex-1 flex flex-col items-center group cursor-default">
-                                        <div className="w-full flex flex-col justify-end h-28 mb-2.5 relative">
-                                            <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold text-latte-700 w-full text-center">
-                                                {day.totalMin > 0 ? `${day.totalMin}m` : ''}
-                                            </div>
-                                            <div 
-                                                className={`chart-bar w-full rounded-lg ${day.isToday ? 'bg-latte-500' : 'bg-[#F4F0EA]'}`}
-                                                style={{ height: `${Math.max((day.totalMin / weeklyData.maxMin) * 100, 6)}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className={`text-[11px] font-bold ${day.isToday ? 'text-gray-800' : 'text-gray-400'}`}>
-                                            {day.label}
-                                        </div>
+                        {/* Col 1 */}
+                        <div className="flex flex-col gap-6">
+                            {/* 연속 학습일 */}
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-5 relative soft-card">
+                                <div className="w-12 h-12 rounded-full bg-[#FFF5F2] flex items-center justify-center"><FireIcon/></div>
+                                <div>
+                                    <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1 cursor-pointer hover:text-gray-600 transition" onClick={() => setShowMaxStreak(!showMaxStreak)}>
+                                        {showMaxStreak ? '최장 연속일' : '연속 학습일'} <SwapIcon/>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Col 2: 누적 과목 밸런스 */}
-                        <div className="bg-white rounded-3xl p-6 flex flex-col soft-card">
-                            <h3 className="text-sm font-bold text-gray-800 mb-6">누적 과목 밸런스</h3>
-                            {subjectData.total === 0 ? (
-                                <div className="flex-1 flex items-center justify-center text-sm text-gray-400">데이터가 없습니다.</div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center flex-1 gap-5">
-                                    <div className="relative w-32 h-32">
-                                        <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#F4F0EA" strokeWidth="14" />
-                                            {(() => {
-                                                let offset = 0; const circ = 2 * Math.PI * 40;
-                                                return subjectData.list.map((item, i) => {
-                                                    const strokeDasharray = `${(item.percent / 100) * circ} ${circ}`;
-                                                    const strokeDashoffset = -offset;
-                                                    offset += (item.percent / 100) * circ;
-                                                    return (
-                                                        <circle key={item.name} cx="50" cy="50" r="40" fill="transparent"
-                                                            stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth="14"
-                                                            strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset}
-                                                            className="donut-segment" strokeLinecap="round" />
-                                                    );
-                                                });
-                                            })()}
-                                        </svg>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-[11px] text-gray-400 font-bold leading-none mb-1">Total</span>
-                                            <span className="text-base font-bold text-gray-800 tabular-nums leading-none">{fmtMinToHour(subjectData.total)}</span>
-                                        </div>
-                                    </div>
-                                    <div className="w-full flex justify-center flex-wrap gap-x-3 gap-y-2 mt-2">
-                                        {subjectData.list.slice(0,4).map((item, i) => (
-                                            <div key={item.name} className="flex items-center gap-1.5 text-[11px]">
-                                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}></span>
-                                                <span className="text-gray-600 font-semibold">{item.name} <span className="text-gray-400">{Math.round(item.percent)}%</span></span>
-                                            </div>
-                                        ))}
+                                    <div className="text-2xl font-bold text-gray-800 mt-0.5">
+                                        {showMaxStreak ? `${streakData.max}일` : `${streakData.current}일째`}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Col 3: 최근 12주 발자취 (히트맵) */}
-                        <div className="bg-white rounded-3xl p-6 flex flex-col soft-card">
-                            <div className="flex justify-between items-start mb-6">
-                                <h3 className="text-sm font-bold text-gray-800">최근 12주 발자취</h3>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] text-gray-300 font-medium">Less</span>
-                                    <div className="flex gap-1">
-                                        <div className="w-2.5 h-2.5 rounded-sm bg-[#F4F0EA]"></div>
-                                        <div className="w-2.5 h-2.5 rounded-sm bg-latte-500 opacity-40"></div>
-                                        <div className="w-2.5 h-2.5 rounded-sm bg-latte-500 opacity-70"></div>
-                                        <div className="w-2.5 h-2.5 rounded-sm bg-latte-500"></div>
-                                        <div className="w-2.5 h-2.5 rounded-sm bg-latte-900"></div>
-                                    </div>
-                                    <span className="text-[10px] text-gray-300 font-medium">More</span>
-                                </div>
                             </div>
-                            
-                            <div className="flex-1 flex items-center justify-center">
-                                <div className="grid grid-rows-7 grid-flow-col gap-1.5">
-                                    {heatmapData.map((cell, idx) => {
-                                        if (cell.empty) return <div key={idx} className="w-[14px] h-[14px] rounded-[4px] bg-transparent"></div>;
-                                        const bgClass = cell.level === 0 ? 'bg-[#F4F0EA]' 
-                                                      : cell.level === 1 ? 'bg-latte-500/40'
-                                                      : cell.level === 2 ? 'bg-latte-500/70'
-                                                      : cell.level === 3 ? 'bg-latte-500'
-                                                      : 'bg-latte-900';
-                                        return (
-                                            <div key={idx} className={`grass-cell w-[14px] h-[14px] rounded-[4px] ${bgClass} transition-transform hover:scale-110 cursor-crosshair`}>
-                                                <div className="tooltip">
-                                                    {cell.dateStr} : {cell.totalMin > 0 ? `${fmtMinToHour(cell.totalMin)}` : '기록 없음'}
+
+                            {/* 오늘의 투두리스트 (항상 오늘 기준) */}
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col min-h-[300px]">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-bold text-gray-800">{formatKORDate(new Date())}</h3>
+                                    <button onClick={() => setIsAddingTodo(true)} className="w-8 h-8 rounded-full bg-[#F4F0EA] flex items-center justify-center text-[#8B664B] hover:bg-[#EBE8DE] transition-colors shadow-sm"><PlusIcon/></button>
+                                </div>
+                                <div className="flex flex-col gap-3">
+                                    {isAddingTodo && (
+                                        <div className="flex items-center gap-2 mb-3 bg-gray-50 p-2.5 rounded-xl border border-gray-200 shadow-inner">
+                                            <input 
+                                                type="text" 
+                                                value={newTodoTitle} 
+                                                onChange={(e) => setNewTodoTitle(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
+                                                autoFocus
+                                                className="flex-1 bg-transparent border-none p-1 text-[15px] font-medium text-gray-700 focus:outline-none placeholder-gray-400"
+                                                placeholder="할 일 입력 (Enter)"
+                                            />
+                                            <button onClick={handleAddTodo} className="bg-latte-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-latte-700 transition">추가</button>
+                                            <button onClick={() => { setIsAddingTodo(false); setNewTodoTitle(''); }} className="text-gray-400 p-1 hover:text-gray-600"><XIcon/></button>
+                                        </div>
+                                    )}
+                                    
+                                    {todaysTodos.length === 0 && !isAddingTodo ? (
+                                        <p className="text-sm text-gray-400 mt-2">오늘의 할 일이 없습니다.</p>
+                                    ) : (
+                                        todaysTodos.map(todo => (
+                                            <div key={todo.id} className="flex items-start gap-3 group">
+                                                <div 
+                                                    onClick={() => toggleTodo(todo)}
+                                                    className={`w-5 h-5 rounded flex-shrink-0 border flex items-center justify-center mt-0.5 cursor-pointer transition-colors ${todo.done ? 'bg-latte-500 border-latte-500' : 'border-gray-300 group-hover:border-latte-400'}`}>
+                                                    {todo.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                                                 </div>
+                                                <span 
+                                                    onClick={() => toggleTodo(todo)}
+                                                    className={`text-[15px] font-medium pt-0.5 cursor-pointer select-none transition-colors ${todo.done ? 'text-gray-400 line-through' : 'text-gray-700 group-hover:text-latte-500'}`}>
+                                                    {todo.title}
+                                                </span>
                                             </div>
-                                        );
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Col 2 */}
+                        <div className="flex flex-col gap-6">
+                            {/* WEEKLY STAMP */}
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                                <div className="flex justify-between items-end mb-6">
+                                    <div>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">WEEKLY STAMP</span>
+                                        <h3 className="text-[15px] font-bold text-gray-800">이번 주 출석 스탬프</h3>
+                                    </div>
+                                    <span className="text-sm font-bold text-gray-300">{weeklyStamps.stampCount}/7일</span>
+                                </div>
+                                <div className="flex justify-between px-2">
+                                    {weeklyStamps.stamps.map((st, i) => (
+                                        <div key={i} className="flex flex-col items-center gap-2">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${st.hasRecord ? 'bg-[#A67B5B] text-white shadow-sm' : st.isFuture ? 'bg-transparent border border-dashed border-gray-200' : 'bg-[#F4F0EA]'}`}>
+                                                {st.hasRecord && <HeartIcon/>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 이번 달의 발자취 (히트맵) */}
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-[15px] font-bold text-gray-800">이번 달의 발자취</h3>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-gray-300 font-medium">Less</span>
+                                        <div className="flex gap-1">
+                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#F4F0EA]"></div>
+                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#D1CBBF]"></div>
+                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#A67B5B] opacity-70"></div>
+                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#A67B5B]"></div>
+                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#5C3A21]"></div>
+                                        </div>
+                                        <span className="text-[10px] text-gray-300 font-medium">More</span>
+                                    </div>
+                                </div>
+                                <div className="calendar-grid flex-1 items-end pb-2">
+                                    {['일','월','화','수','목','금','토'].map(d=><div key={d} className="text-[10px] font-bold text-gray-400 text-center mb-2">{d}</div>)}
+                                    {monthFootprint.map((cell, i) => {
+                                        if (cell.empty) return <div key={`e${i}`} className="w-full aspect-square bg-[#FDFBF7] rounded-[8px]"></div>;
+                                        const bg = cell.level === 0 ? 'bg-[#F4F0EA]' : cell.level === 1 ? 'bg-[#D1CBBF]' : cell.level === 2 ? 'bg-[#A67B5B] opacity-70' : cell.level === 3 ? 'bg-[#A67B5B]' : 'bg-[#5C3A21]';
+                                        return <div key={i} className={`w-full aspect-square ${bg} rounded-[8px] transition-transform hover:scale-105`} title={`${cell.date}일: ${cell.mins}분`}></div>;
                                     })}
                                 </div>
                             </div>
                         </div>
 
+                        {/* Col 3: 캘린더 & 일정 (선택된 날짜 연동) */}
+                        <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card">
+                            {/* 달력 헤더 */}
+                            <div className="flex justify-between items-center mb-6">
+                                <button onClick={handlePrevMonth} className="text-gray-400 cursor-pointer p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><LeftArrow/></button>
+                                <h3 className="text-lg font-bold text-gray-800">{calendarDate.getFullYear()}년 {calendarDate.getMonth()+1}월</h3>
+                                <button onClick={handleNextMonth} className="text-gray-400 cursor-pointer p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><RightArrow/></button>
+                            </div>
+                            
+                            {/* 스티커 보기 토글 */}
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                                    <span className="text-latte-500">☕</span> 스티커 보기
+                                </div>
+                                <div className="w-10 h-5 bg-gray-200 rounded-full relative cursor-pointer" onClick={()=>setCoffeeView(!coffeeView)}>
+                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${coffeeView ? 'left-5 bg-latte-500' : 'left-0.5'}`}></div>
+                                </div>
+                            </div>
+
+                            {/* 미니 캘린더 */}
+                            <div className="calendar-grid mb-8 border-b border-gray-100 pb-4">
+                                {['일','월','화','수','목','금','토'].map(d=><div key={d} className="text-[11px] font-bold text-gray-400 text-center mb-3">{d}</div>)}
+                                {calendarDays.map((d, i) => (
+                                    <div key={d.key || i} className="flex flex-col items-center justify-start aspect-square cursor-pointer group" onClick={() => !d.empty && setSelectedDate(d.time)}>
+                                        {!d.empty && (
+                                            <>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${d.isSelected ? 'bg-[#849F71] text-white shadow-sm' : d.isToday ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-600 group-hover:bg-gray-50'} ${coffeeView && d.hasRecord && !d.isSelected ? 'border border-latte-500 text-latte-500' : ''}`}>
+                                                    {coffeeView && d.hasRecord && !d.isSelected ? '☕' : d.date}
+                                                </div>
+                                                {/* 투두가 있을 경우 아래에 작은 점 표시 */}
+                                                <div className={`w-1 h-1 rounded-full mt-1 ${d.hasTodo ? (d.isSelected ? 'bg-[#849F71]' : 'bg-gray-300') : 'bg-transparent'}`}></div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* 선택된 날짜의 일정 (모든 투두 노출) */}
+                            <div>
+                                <h4 className="text-[15px] font-bold text-gray-800 mb-4">
+                                    {selectedDate === todayNum ? '오늘의 일정' : `${new Date(selectedDate).getMonth() + 1}월 ${new Date(selectedDate).getDate()}일 일정`}
+                                </h4>
+                                <div className="flex flex-col gap-4">
+                                    {selectedDateSchedule.length === 0 ? (
+                                        <p className="text-xs text-gray-400">등록된 일정이 없습니다.</p>
+                                    ) : (
+                                        selectedDateSchedule.map(s => (
+                                            <div key={s.id} className="flex gap-4 items-start">
+                                                <span className="text-xs font-bold text-gray-400 pt-0.5 w-10 shrink-0 text-right">{s.timeStr || '-'}</span>
+                                                <div className="flex-1 flex justify-between items-center border-l-2 border-latte-200 pl-3">
+                                                    <div>
+                                                        <div className={`text-[13px] font-bold ${s.done ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{s.title}</div>
+                                                    </div>
+                                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${s.done ? 'bg-[#849F71] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                        {s.done ? '완료' : '예정'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                </>
-            )}
-        </div>
+                )}
+
+
+                {/* ── RECORDS VIEW ── */}
+                {activeTab === 'records' && (
+                    <div className="flex flex-col gap-6 w-full">
+                        {/* 상단 3개 카드 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="w-12 h-12 rounded-full bg-[#FEF8ED] flex items-center justify-center"><CrownIcon/></div>
+                                <div>
+                                    <div className="text-[11px] font-bold text-gray-400 mb-0.5">이번 주 Top 과목</div>
+                                    <div className="text-xl font-bold text-gray-800">{recordStats.topSubj}</div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="w-12 h-12 rounded-full bg-[#F3F8F5] flex items-center justify-center"><OwlIcon/></div>
+                                <div>
+                                    <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중이 잘 되는 시간</div>
+                                    <div className="text-xl font-bold text-gray-800">{recordStats.topTime}</div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="w-12 h-12 rounded-full bg-[#FDF2F2] flex items-center justify-center"><TomatoIcon/></div>
+                                <div>
+                                    <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중 모드 선호도</div>
+                                    <div className="text-xl font-bold text-gray-800">
+                                        {recordStats.preferredMode} <span className="text-[#E56B6F]">{recordStats.preferredPct}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 하단 2개 차트 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* 최근 7일 순공시간 (막대 차트) */}
+                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[360px]">
+                                <h3 className="text-[13px] font-bold text-gray-800 mb-1">최근 7일 순공시간</h3>
+                                <p className="text-3xl font-extrabold text-[#A67B5B] mb-8">{fmtMinToHour(barChartData.totalSum)}</p>
+                                
+                                <div className="flex-1 flex items-end justify-between gap-4">
+                                    {barChartData.days.map((day, idx) => (
+                                        <div key={idx} className="flex-1 flex flex-col items-center group relative">
+                                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold text-latte-700 whitespace-nowrap">
+                                                {day.total > 0 ? `${day.total}m` : ''}
+                                            </div>
+                                            <div 
+                                                className={`w-full rounded-t-xl transition-all duration-500 ${day.isToday ? 'bg-[#A67B5B]' : 'bg-[#F4F0EA]'}`}
+                                                style={{ height: `${Math.max((day.total / barChartData.max) * 200, 10)}px` }}
+                                            ></div>
+                                            <div className="mt-3 text-xs font-bold text-gray-400">{day.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 누적 과목 밸런스 (도넛 차트) */}
+                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[360px]">
+                                <h3 className="text-[13px] font-bold text-gray-800 mb-6">누적 과목 밸런스</h3>
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <div className="relative w-44 h-44 mb-6">
+                                        <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                                            <circle cx="50" cy="50" r="38" fill="transparent" stroke="#F4F0EA" strokeWidth="16" />
+                                            {(() => {
+                                                let offset = 0; const circ = 2 * Math.PI * 38;
+                                                return donutChartData.list.map((item, i) => {
+                                                    const strokeDasharray = `${(item.percent / 100) * circ} ${circ}`;
+                                                    const strokeDashoffset = -offset;
+                                                    offset += (item.percent / 100) * circ;
+                                                    return (
+                                                        <circle key={item.name} cx="50" cy="50" r="38" fill="transparent"
+                                                            stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth="16"
+                                                            strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset}
+                                                            className="donut-segment" strokeLinecap="butt" />
+                                                    );
+                                                });
+                                            })()}
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-1">Total</span>
+                                            <span className="text-xl font-bold text-gray-800">{fmtMinToHour(donutChartData.total)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+                                        {donutChartData.list.slice(0,4).map((item, i) => (
+                                            <div key={item.name} className="flex items-center gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}></span>
+                                                <span className="text-[13px] font-bold text-gray-600">{item.name} <span className="text-gray-400 font-medium ml-1">{Math.round(item.percent)}%</span></span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
+        </>
     );
 };
 
