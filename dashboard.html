@@ -22,7 +22,7 @@
         }
     </script>
     <style>
-        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: #F4F5F7; }
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: transparent; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #EBE8DE; border-radius: 10px; }
@@ -40,6 +40,24 @@
         .soft-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+
+        /* 노션 위젯 반응형: 좁은 iframe에서 3칼럼 강제 유지 */
+        .home-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 700px) {
+            .home-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 헤더 네비 작은 화면에서도 표시 */
+        @media (max-width: 700px) {
+            .gnb-nav { display: none; }
+        }
     </style>
 </head>
 <body class="p-6 md:p-8">
@@ -76,10 +94,41 @@ const normalizeDate = (d) => { const nd = new Date(d); nd.setHours(0,0,0,0); ret
 const getDayKOR = (idx) => ['일', '월', '화', '수', '목', '금', '토'][idx];
 const formatKORDate = (d) => `${d.getMonth()+1}월 ${d.getDate()}일 ${getDayKOR(d.getDay())}`;
 
-/* ── 설정 로드 ── */
+/* ── 설정 로드: localStorage → sessionStorage → URL params 순서로 시도 ── */
 const LS_CONFIG = 'cozy_dash_config';
+
+const loadConfigFromURL = () => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const proxyUrl = params.get('proxy') || params.get('proxyUrl') || '';
+        const apiKey = params.get('key') || params.get('apiKey') || '';
+        const recordDbId = params.get('record') || params.get('recordDbId') || '';
+        const subjectDbId = params.get('subject') || params.get('subjectDbId') || '';
+        const todoDbId = params.get('todo') || params.get('todoDbId') || '';
+        if (proxyUrl && apiKey && recordDbId) {
+            return { proxyUrl, apiKey, recordDbId, subjectDbId, todoDbId, saved: true };
+        }
+    } catch {}
+    return null;
+};
+
+const safeStorage = {
+    get: (key) => {
+        try { return JSON.parse(localStorage.getItem(key)) || null; } catch {}
+        try { return JSON.parse(sessionStorage.getItem(key)) || null; } catch {}
+        return null;
+    },
+    set: (key, val) => {
+        const str = JSON.stringify(val);
+        try { localStorage.setItem(key, str); return; } catch {}
+        try { sessionStorage.setItem(key, str); } catch {}
+    }
+};
+
 const loadConfig = () => {
-    try { return JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; } catch { return {}; }
+    const urlConfig = loadConfigFromURL();
+    if (urlConfig) return urlConfig;
+    return safeStorage.get(LS_CONFIG) || {};
 };
 
 const App = () => {
@@ -124,7 +173,7 @@ const App = () => {
             
             const newConfig = { ...setupForm, saved: true };
             setConfig(newConfig);
-            localStorage.setItem(LS_CONFIG, JSON.stringify(newConfig));
+            safeStorage.set(LS_CONFIG, newConfig);
             setShowSetup(false);
             fetchData(newConfig);
         } catch (e) {
@@ -459,7 +508,11 @@ const App = () => {
     /* ══════ 렌더링 파트 ══════ */
     if (showSetup) return (
         <div className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-xl mx-auto my-10 border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"><NotionIcon/> Notion DB 연결</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2"><NotionIcon/> Notion DB 연결</h2>
+            <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+                💡 <strong>노션 위젯 사용 시:</strong> URL에 파라미터를 추가하면 설정이 자동 적용됩니다.<br/>
+                <code className="bg-gray-50 px-1 py-0.5 rounded text-[11px] break-all">?proxy=URL&amp;key=API키&amp;record=DB아이디&amp;todo=투두DB아이디</code>
+            </p>
             <div className="space-y-4">
                 <input type="text" placeholder="Cloudflare Proxy URL" value={setupForm.proxyUrl} onChange={e=>setSetupForm(f=>({...f, proxyUrl:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
                 <input type="password" placeholder="Notion API Key" value={setupForm.apiKey} onChange={e=>setSetupForm(f=>({...f, apiKey:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
@@ -487,7 +540,7 @@ const App = () => {
                     <span className="font-extrabold text-[1.1rem] text-gray-800 tracking-tight">Dashboard</span>
                 </div>
                 
-                <nav className="hidden md:flex items-center gap-8">
+                <nav className="gnb-nav flex items-center gap-8">
                     <button onClick={() => setActiveTab('home')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>홈</button>
                     <button onClick={() => setActiveTab('records')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>공부기록</button>
                     <button className="text-gray-500 font-bold text-[15px] hover:text-gray-800 transition-colors">단어장</button>
@@ -504,7 +557,7 @@ const App = () => {
                 
                 {/* 탭 헤더 */}
                 <div className="mb-2">
-                    <span className="text-[11px] font-extrabold tracking-[0.15em] text-latte-300 uppercase mb-1 block">
+                    <span className="text-[11px] font-extrabold tracking-[0.15em] text-gray-400 uppercase mb-1 block">
                         {activeTab === 'home' ? 'DASHBOARD OVERVIEW' : 'STUDY RECORDS'}
                     </span>
                     <h1 className="text-3xl font-bold text-gray-800">
@@ -514,7 +567,7 @@ const App = () => {
 
                 {/* ── HOME VIEW ── */}
                 {activeTab === 'home' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="home-grid">
                         
                         {/* Col 1 */}
                         <div className="flex flex-col gap-6">
