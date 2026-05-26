@@ -22,11 +22,20 @@
         }
     </script>
     <style>
-        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background-color: transparent; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #EBE8DE; border-radius: 10px; }
-        * { -ms-overflow-style: none; }
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: transparent;
+            overflow: hidden;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            box-sizing: border-box;
+        }
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
         
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
@@ -41,27 +50,60 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 
-        /* 노션 위젯 반응형: 좁은 iframe에서 3칼럼 강제 유지 */
+        /* ── 반응형 3단계 ──
+           wide  : 900px+  → 3열 그리드
+           mid   : 560~900 → 2열 그리드 (col1+col2 / col3 아래)
+           narrow: ~560px  → 1열 그리드
+        */
         .home-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 1.5rem;
+            gap: 1.25rem;
             align-items: start;
         }
-        @media (max-width: 700px) {
+        @media (max-width: 900px) {
+            .home-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            /* 3번째 컬럼(캘린더)을 2칸 차지하게 */
+            .home-grid > *:nth-child(3) {
+                grid-column: 1 / -1;
+            }
+        }
+        @media (max-width: 560px) {
             .home-grid {
                 grid-template-columns: 1fr;
             }
+            .home-grid > *:nth-child(3) {
+                grid-column: auto;
+            }
         }
 
-        /* 헤더 네비 작은 화면에서도 표시 */
+        /* ── GNB 반응형 ── */
+        /* wide: 모두 표시 */
+        .gnb-logo-text { display: inline; }
+        .gnb-nav { display: flex; }
+        .gnb-nav-full { display: flex; }   /* 전체 메뉴 */
+        .gnb-nav-compact { display: none; } /* 탭 전용 컴팩트 */
+
         @media (max-width: 700px) {
-            .gnb-nav { display: none; }
+            /* 로고 텍스트 숨김 */
+            .gnb-logo-text { display: none; }
+            /* 전체 메뉴 숨기고 컴팩트 탭만 표시 */
+            .gnb-nav-full { display: none; }
+            .gnb-nav-compact { display: flex; }
+        }
+
+        @media (max-width: 420px) {
+            /* 매우 좁으면 새로고침도 작게 */
+            .gnb-refresh { width: 2rem; height: 2rem; }
+            /* 캘린더 날짜 숫자 작게 */
+            .cal-day-num { width: 1.5rem !important; height: 1.5rem !important; font-size: 11px !important; }
         }
     </style>
 </head>
-<body class="p-6 md:p-8">
-<div id="root" class="w-full max-w-[1280px] flex flex-col gap-4 mx-auto"></div>
+<body>
+<div id="root" class="w-full flex flex-col gap-4" style="padding: 1.25rem; box-sizing: border-box;"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback } = React;
@@ -532,28 +574,36 @@ const App = () => {
     return (
         <>
             {/* GNB 영역 */}
-            <header className="w-full bg-white rounded-[2rem] px-8 py-3.5 flex items-center justify-between shadow-sm border border-gray-100 mb-2">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-latte-50 flex items-center justify-center text-latte-700">
+            <header className="w-full bg-white rounded-[2rem] px-5 py-3 flex items-center justify-between shadow-sm border border-gray-100 mb-2" style={{minWidth:0}}>
+                {/* 로고 */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-latte-50 flex items-center justify-center text-latte-700">
                         <BookIcon/>
                     </div>
-                    <span className="font-extrabold text-[1.1rem] text-gray-800 tracking-tight">Dashboard</span>
+                    <span className="gnb-logo-text font-extrabold text-[1rem] text-gray-800 tracking-tight whitespace-nowrap">Dashboard</span>
                 </div>
                 
-                <nav className="gnb-nav flex items-center gap-8">
-                    <button onClick={() => setActiveTab('home')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>홈</button>
-                    <button onClick={() => setActiveTab('records')} className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-colors ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>공부기록</button>
-                    <button className="text-gray-500 font-bold text-[15px] hover:text-gray-800 transition-colors">단어장</button>
-                    <button className="text-gray-500 font-bold text-[15px] hover:text-gray-800 transition-colors">테스트</button>
+                {/* 전체 메뉴 (700px+) */}
+                <nav className="gnb-nav-full items-center gap-6">
+                    <button onClick={() => setActiveTab('home')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>홈</button>
+                    <button onClick={() => setActiveTab('records')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>공부기록</button>
+                    <button className="text-gray-400 font-bold text-[14px] whitespace-nowrap">단어장</button>
+                    <button className="text-gray-400 font-bold text-[14px] whitespace-nowrap">테스트</button>
                 </nav>
 
-                <button onClick={() => fetchData()} className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-800 transition-all">
+                {/* 컴팩트 탭 메뉴 (~700px) */}
+                <nav className="gnb-nav-compact items-center gap-2">
+                    <button onClick={() => setActiveTab('home')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>홈</button>
+                    <button onClick={() => setActiveTab('records')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>기록</button>
+                </nav>
+
+                <button onClick={() => fetchData()} className="gnb-refresh w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all shrink-0">
                     {loading ? <span className="spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"/> : <RefreshIcon />}
                 </button>
             </header>
 
             {/* 메인 컨테이너 */}
-            <main className="w-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 md:p-10 shadow-sm flex flex-col gap-6 min-h-[700px]">
+            <main className="w-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-6 shadow-sm flex flex-col gap-6">
                 
                 {/* 탭 헤더 */}
                 <div className="mb-2">
@@ -572,22 +622,22 @@ const App = () => {
                         {/* Col 1 */}
                         <div className="flex flex-col gap-6">
                             {/* 연속 학습일 */}
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-5 relative soft-card">
-                                <div className="w-12 h-12 rounded-full bg-[#FFF5F2] flex items-center justify-center"><FireIcon/></div>
-                                <div>
-                                    <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1 cursor-pointer hover:text-gray-600 transition" onClick={() => setShowMaxStreak(!showMaxStreak)}>
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 relative soft-card overflow-hidden">
+                                <div className="w-11 h-11 shrink-0 rounded-full bg-[#FFF5F2] flex items-center justify-center"><FireIcon/></div>
+                                <div className="min-w-0">
+                                    <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1 cursor-pointer hover:text-gray-600 transition whitespace-nowrap" onClick={() => setShowMaxStreak(!showMaxStreak)}>
                                         {showMaxStreak ? '최장 연속일' : '연속 학습일'} <SwapIcon/>
                                     </div>
-                                    <div className="text-2xl font-bold text-gray-800 mt-0.5">
+                                    <div className="text-2xl font-bold text-gray-800 mt-0.5 whitespace-nowrap">
                                         {showMaxStreak ? `${streakData.max}일` : `${streakData.current}일째`}
                                     </div>
                                 </div>
                             </div>
 
                             {/* 오늘의 투두리스트 (항상 오늘 기준) */}
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col min-h-[300px]">
+                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-bold text-gray-800">{formatKORDate(new Date())}</h3>
+                                    <h3 className="text-lg font-bold text-gray-800 whitespace-nowrap">{formatKORDate(new Date())}</h3>
                                     <button onClick={() => setIsAddingTodo(true)} className="w-8 h-8 rounded-full bg-[#F4F0EA] flex items-center justify-center text-[#8B664B] hover:bg-[#EBE8DE] transition-colors shadow-sm"><PlusIcon/></button>
                                 </div>
                                 <div className="flex flex-col gap-3">
@@ -704,7 +754,7 @@ const App = () => {
                                     <div key={d.key || i} className="flex flex-col items-center justify-start aspect-square cursor-pointer group" onClick={() => !d.empty && setSelectedDate(d.time)}>
                                         {!d.empty && (
                                             <>
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${d.isSelected ? 'bg-[#849F71] text-white shadow-sm' : d.isToday ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-600 group-hover:bg-gray-50'} ${coffeeView && d.hasRecord && !d.isSelected ? 'border border-latte-500 text-latte-500' : ''}`}>
+                                <div className={`cal-day-num w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${d.isSelected ? 'bg-[#849F71] text-white shadow-sm' : d.isToday ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-600 group-hover:bg-gray-50'} ${coffeeView && d.hasRecord && !d.isSelected ? 'border border-latte-500 text-latte-500' : ''}`}>
                                                     {coffeeView && d.hasRecord && !d.isSelected ? '☕' : d.date}
                                                 </div>
                                                 {/* 투두가 있을 경우 아래에 작은 점 표시 */}
@@ -779,7 +829,7 @@ const App = () => {
                         {/* 하단 2개 차트 */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* 최근 7일 순공시간 (막대 차트) */}
-                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[360px]">
+                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card">
                                 <h3 className="text-[13px] font-bold text-gray-800 mb-1">최근 7일 순공시간</h3>
                                 <p className="text-3xl font-extrabold text-[#A67B5B] mb-8">{fmtMinToHour(barChartData.totalSum)}</p>
                                 
@@ -800,7 +850,7 @@ const App = () => {
                             </div>
 
                             {/* 누적 과목 밸런스 (도넛 차트) */}
-                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[360px]">
+                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card">
                                 <h3 className="text-[13px] font-bold text-gray-800 mb-6">누적 과목 밸런스</h3>
                                 <div className="flex-1 flex flex-col items-center justify-center">
                                     <div className="relative w-44 h-44 mb-6">
