@@ -86,6 +86,14 @@ const ExternalLinkIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" f
 
 const BATCH_SIZE = 5;
 
+/* ── 타임존 왜곡 없는 로컬 날짜 문자열 추출 함수 (YYYY-MM-DD) ── */
+const getLocalYMD = (dateObj) => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 /* ── 로컬스토리지 & URL 파라미터 연동 ── */
 const LS_CONFIG = 'cozy_test_config';
 const loadConfig = () => {
@@ -242,13 +250,6 @@ const App = () => {
             }
 
             const parsedQuestions = [];
-            
-            const getLocalYMD = (dateObj) => {
-                const year = dateObj.getFullYear();
-                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(dateObj.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
             const todayYMD = getLocalYMD(new Date());
 
             const extractText = (prop) => {
@@ -320,7 +321,6 @@ const App = () => {
                 // --- 📝 관련 학습 노트 ID 추출 (rollup 속성 대응) ---
                 let relatedNoteIds = [];
 
-                // 1순위: 이름이 정확히 '관련 학습 노트' 또는 '관련학습노트'인 relation 속성
                 const exactRelationKey = Object.keys(props).find(k => {
                     const norm = k.replace(/\s+/g, '');
                     return props[k].type === 'relation' && norm === '관련학습노트';
@@ -329,8 +329,6 @@ const App = () => {
                     relatedNoteIds = (props[exactRelationKey].relation || []).map(r => r.id);
                 }
 
-                // 2순위: rollup 속성 중 '관련학습노트'에 해당하는 것 (rollup은 ID를 직접 노출하지 않으므로
-                //         rollup이 array 타입인 경우 각 항목의 relation id를 시도)
                 if (relatedNoteIds.length === 0) {
                     const rollupKey = Object.keys(props).find(k => {
                         const norm = k.replace(/\s+/g, '');
@@ -339,7 +337,6 @@ const App = () => {
                     if (rollupKey) {
                         const arr = props[rollupKey]?.rollup?.array || [];
                         arr.forEach(item => {
-                            // rollup array item이 relation 타입인 경우 (드문 케이스)
                             if (item.type === 'relation' && item.relation) {
                                 item.relation.forEach(r => relatedNoteIds.push(r.id));
                             }
@@ -347,7 +344,6 @@ const App = () => {
                     }
                 }
 
-                // 3순위: 예외 속성('과목', '테스트', '알림')을 제외한 나머지 relation 속성
                 if (relatedNoteIds.length === 0) {
                     for (const key in props) {
                         const normKey = key.replace(/\s+/g, '');
@@ -363,9 +359,7 @@ const App = () => {
                     }
                 }
 
-                // 최대 3개까지 (Notion은 관계형 추가 순서대로 배열하므로 slice로 앞 3개 = 최근 연결 순)
                 relatedNoteIds = relatedNoteIds.slice(0, 1);
-                // --- 추출 완료 ---
 
                 parsedQuestions.push({ 
                     id: page.id, category, subject, summary, content, answer, passCount, isRetry,
@@ -493,14 +487,14 @@ const App = () => {
             '누적 통과 횟수': { number: newPassCount }
         };
         
+        /* ── 🛠️ 타임존 버그 수정: .toISOString() 대신 명확한 YYYY-MM-DD 문자열 전송 ── */
         if (isPass) {
-            propertiesToUpdate['날짜'] = { date: { start: new Date().toISOString() } };
+            propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(new Date()) } };
             propertiesToUpdate['다시 학습'] = { checkbox: false }; 
         } else {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            propertiesToUpdate['날짜'] = { date: { start: tomorrow.toISOString() } };
+            propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(tomorrow) } };
             propertiesToUpdate['다시 학습'] = { checkbox: true };
         }
         
@@ -773,7 +767,6 @@ const App = () => {
                         {currentQ.content}
                     </p>
 
-                    {/* 📝 아코디언 토글 (토글이 열릴 때만 API 호출) */}
                     {currentQ.relatedNoteIds && currentQ.relatedNoteIds.length > 0 && (
                         <div className="mt-3 bg-[#F4F0EA] border border-[#EBE8DE] rounded-2xl overflow-hidden">
                             <button
@@ -790,7 +783,6 @@ const App = () => {
                             <div className={`toggle-content ${isNoteExpanded ? 'open' : ''}`}>
                                 <div className="toggle-inner">
                                     <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
-                                        {/* 토글이 열릴 때만 마운트 → API 호출 발생 */}
                                         {isNoteExpanded && currentQ.relatedNoteIds.map((pageId) => (
                                             <DynamicNoteLink 
                                                 key={pageId} 
