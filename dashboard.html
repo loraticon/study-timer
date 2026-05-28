@@ -185,29 +185,60 @@ const formatKORDateShort = (dNum) => {
     return `${d.getMonth()+1}월 ${d.getDate()}일 (${day})`;
 };
 
-const extractSubjectFromProps = (props, subjectMap) => {
+// ── 데이터 파싱: 복수 하위항목 판별 및 중복 상위항목 정리 ──
+const extractSubjectInfoList = (props, subjectMap) => {
     let targetKey = Object.keys(props).find(k => k === '과목') 
         || Object.keys(props).find(k => k.includes('과목'))
         || Object.keys(props).find(k => props[k].type === 'relation')
         || Object.keys(props).find(k => props[k].type === 'rollup');
         
-    if (!targetKey || !props[targetKey]) return '기타';
+    if (!targetKey || !props[targetKey]) return [];
     
     const p = props[targetKey];
+    const results = [];
+
     if (p.type === 'relation' && p.relation?.length > 0) {
-        return subjectMap[p.relation[0].id] || '기타';
+        p.relation.forEach(rel => {
+            const subj = subjectMap[rel.id];
+            if (subj) results.push({ name: subj.name, parentName: subj.parentName });
+        });
     } else if (p.type === 'rollup' && p.rollup?.array) {
         for (const item of p.rollup.array) {
             if (item.type === 'relation' && item.relation?.length > 0) {
-                return subjectMap[item.relation[0].id] || '기타';
+                item.relation.forEach(rel => {
+                    const subj = subjectMap[rel.id];
+                    if (subj) results.push({ name: subj.name, parentName: subj.parentName });
+                });
             } else if (item.type === 'title' && item.title?.length > 0) {
-                return item.title[0].plain_text || '기타';
+                results.push({ name: item.title[0].plain_text, parentName: null });
             } else if (item.type === 'rich_text' && item.rich_text?.length > 0) {
-                return item.rich_text[0].plain_text || '기타';
+                results.push({ name: item.rich_text[0].plain_text, parentName: null });
             }
         }
     }
-    return '기타';
+
+    if (results.length === 0) return [{ name: '기타', parentName: null }];
+
+    // 이름 기준 중복 제거
+    const unique = [];
+    const seen = new Set();
+    for (const r of results) {
+        if (!seen.has(r.name)) {
+            seen.add(r.name);
+            unique.push(r);
+        }
+    }
+
+    // 만약 사용자가 [경제], [주식(부모:경제)]를 모두 태그한 경우, 깔끔한 표시를 위해 [경제] 단독 태그를 숨김
+    const parentNamesInList = new Set(unique.map(r => r.parentName).filter(Boolean));
+    const filtered = unique.filter(r => !parentNamesInList.has(r.name));
+
+    return filtered.length > 0 ? filtered : [{ name: '기타', parentName: null }];
+};
+
+// 기존 단일 항목 반환용 (타이머 기록 등에 사용)
+const extractSubjectInfo = (props, subjectMap) => {
+    return extractSubjectInfoList(props, subjectMap)[0] || { name: '기타', parentName: null };
 };
 
 /* ── 설정 로드 ── */
@@ -371,9 +402,25 @@ const App = () => {
                                    : iconRaw?.type === 'external' ? { type: 'img', value: iconRaw.external.url }
                                    : iconRaw?.type === 'file' ? { type: 'img', value: iconRaw.file.url }
                                    : null;
-                        subjectMap[p.id] = name;
-                        subjList.push({ id: p.id, name, icon });
+                        
+                        // 상위 항목 찾기
+                        let parentId = null;
+                        const parentProp = p.properties['상위 항목'] || Object.values(p.properties).find(prop => prop.type === 'relation' && prop.name && prop.name.includes('상위'));
+                        if (parentProp && parentProp.relation && parentProp.relation.length > 0) {
+                            parentId = parentProp.relation[0].id;
+                        }
+
+                        subjectMap[p.id] = { id: p.id, name, icon, parentId };
                     });
+
+                    // 부모 이름 매핑
+                    Object.values(subjectMap).forEach(s => {
+                        if (s.parentId && subjectMap[s.parentId]) {
+                            s.parentName = subjectMap[s.parentId].name;
+                        }
+                        subjList.push(s);
+                    });
+                    
                     setSubjects(subjList);
                 }
             }
@@ -384,14 +431,14 @@ const App = () => {
             });
             const recData = await recRes.json();
             const parsedRecords = recData.results.map(page => {
-                const subject = extractSubjectFromProps(page.properties, subjectMap);
+                const subjInfo = extractSubjectInfo(page.properties, subjectMap);
                 
                 const minutes = page.properties['순공시간']?.number || 0;
                 const startIso = page.properties['날짜']?.date?.start || page.created_time;
                 const modeName = page.properties['모드']?.select?.name || '';
                 const coffeeType = page.properties['커피 종류']?.select?.name || null;
                 
-                return { subject, minutes, date: normalizeDate(startIso), hour: new Date(startIso).getHours(), mode: modeName.includes('뽀모도로') ? 'pomodoro' : 'normal', coffeeType };
+                return { subject: subjInfo.name, subjectParent: subjInfo.parentName, minutes, date: normalizeDate(startIso), hour: new Date(startIso).getHours(), mode: modeName.includes('뽀모도로') ? 'pomodoro' : 'normal', coffeeType };
             });
             setRecords(parsedRecords);
 
@@ -427,7 +474,13 @@ const App = () => {
                         
                         const rel = page.properties[sKey]?.relation;
                         const subjectId = rel && rel.length > 0 ? rel[0].id : null;
-                        const subjectName = subjectId ? (subjectMap[subjectId] || '알 수 없는 과목') : '과목 없음';
+                        
+                        let subjectName = '과목 없음';
+                        let subjectParent = null;
+                        if (subjectId && subjectMap[subjectId]) {
+                            subjectName = subjectMap[subjectId].name;
+                            subjectParent = subjectMap[subjectId].parentName;
+                        }
 
                         let timeStr = null;
                         let timeSortValue = 9999; 
@@ -453,7 +506,7 @@ const App = () => {
                             timeSortValue = d.getHours() * 60 + d.getMinutes();
                         }
 
-                        return { id: page.id, title, done, date: normalizeDate(dateIso), timeStr, timeSortValue, subjectId, subjectName };
+                        return { id: page.id, title, done, date: normalizeDate(dateIso), timeStr, timeSortValue, subjectId, subjectName, subjectParent };
                     });
                     setTodos(parsedTodos);
                 }
@@ -490,7 +543,7 @@ const App = () => {
                 } catch (e) { console.warn('통계 DB 로드 실패:', e); }
             }
 
-            // 학습 노트 DB 페칭
+            // 학습 노트 DB 페칭 (복수 과목 처리 적용)
             if (currentConfig.noteDbId) {
                 try {
                     const noteRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.noteDbId}/query`, {
@@ -503,15 +556,15 @@ const App = () => {
                         const parsedNotes = noteJson.results.map(p => {
                             const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                             const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
-                            const subjectName = extractSubjectFromProps(p.properties, subjectMap);
-                            return { id: p.id, title, createdTime: p.created_time, subjectName };
+                            const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
+                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList };
                         });
                         setNotes(parsedNotes);
                     }
                 } catch (e) { console.warn('학습 노트 DB 로드 실패:', e); }
             }
 
-            // 오답 노트 DB 페칭
+            // 오답 노트 DB 페칭 (복수 과목 처리 적용)
             if (currentConfig.wrongDbId) {
                 try {
                     const wrongRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.wrongDbId}/query`, {
@@ -524,8 +577,8 @@ const App = () => {
                         const parsedWrongs = wrongJson.results.map(p => {
                             const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                             const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
-                            const subjectName = extractSubjectFromProps(p.properties, subjectMap);
-                            return { id: p.id, title, createdTime: p.created_time, subjectName };
+                            const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
+                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList };
                         });
                         setWrongs(parsedWrongs);
                     }
@@ -568,13 +621,15 @@ const App = () => {
     };
     const handleChangeTodoSubject = async (todo, newSubjectId) => {
         if (!config.saved || !config.todoDbId) return;
-        const newSubjectName = newSubjectId ? subjects.find(s => s.id === newSubjectId)?.name : '과목 없음';
-        setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, subjectId: newSubjectId, subjectName: newSubjectName } : t));
+        const newSubject = newSubjectId ? subjects.find(s => s.id === newSubjectId) : null;
+        const newSubjectName = newSubject ? newSubject.name : '과목 없음';
+        const newSubjectParent = newSubject ? newSubject.parentName : null;
+        setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, subjectId: newSubjectId, subjectName: newSubjectName, subjectParent: newSubjectParent } : t));
         try {
             await fetch(`${config.proxyUrl}/v1/pages/${todo.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }, body: JSON.stringify({ properties: { [todoProps.subject]: { relation: newSubjectId ? [{ id: newSubjectId }] : [] } } }) });
             showToast('과목이 변경되었습니다.');
         } catch (e) {
-            setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, subjectId: todo.subjectId, subjectName: todo.subjectName } : t));
+            setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, subjectId: todo.subjectId, subjectName: todo.subjectName, subjectParent: todo.subjectParent } : t));
             showToast('과목 변경에 실패했습니다.', 'error');
         }
     };
@@ -604,11 +659,13 @@ const App = () => {
     const handleAddTodo = async () => {
         if (!newTodoTitle.trim() || !config.saved || !config.todoDbId) { setIsAddingTodo(false); return; }
         const title = newTodoTitle; const subjectId = newTodoSubjectId; 
-        const subjectName = subjectId ? subjects.find(s => s.id === subjectId)?.name : '과목 없음';
+        const subjectObj = subjectId ? subjects.find(s => s.id === subjectId) : null;
+        const subjectName = subjectObj ? subjectObj.name : '과목 없음';
+        const subjectParent = subjectObj ? subjectObj.parentName : null;
         setNewTodoTitle(''); setNewTodoSubjectId(''); setIsAddingTodo(false);
         const tempId = 'temp-' + Date.now();
         const localISOTime = (new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))).toISOString().slice(0, 10);
-        const newTodo = { id: tempId, title, done: false, date: todayNum, timeStr: null, timeSortValue: 9999, subjectId, subjectName };
+        const newTodo = { id: tempId, title, done: false, date: todayNum, timeStr: null, timeSortValue: 9999, subjectId, subjectName, subjectParent };
         setTodos(prev => [newTodo, ...prev]);
         try {
             const properties = { [todoProps.title]: { title: [{ text: { content: title } }] }, [todoProps.date]: { date: { start: localISOTime } } };
@@ -1103,10 +1160,10 @@ const App = () => {
                                                 <select
                                                     value={newTodoSubjectId}
                                                     onChange={(e) => setNewTodoSubjectId(e.target.value)}
-                                                    className="w-fit bg-white border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 font-medium outline-none focus:border-latte-500 cursor-pointer shadow-sm"
+                                                    className="w-fit max-w-[90%] bg-white border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 font-medium outline-none focus:border-latte-500 cursor-pointer shadow-sm truncate"
                                                 >
                                                     <option value="">+ 과목 선택 (없음)</option>
-                                                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                    {subjects.map(s => <option key={s.id} value={s.id}>{s.parentName ? `${s.parentName} ▶ ${s.name}` : s.name}</option>)}
                                                 </select>
                                             )}
                                             
@@ -1145,14 +1202,16 @@ const App = () => {
                                                         <select
                                                             value={todo.subjectId || ''}
                                                             onChange={(e) => handleChangeTodoSubject(todo, e.target.value)}
-                                                            className={`appearance-none bg-transparent border-none text-[11px] font-bold p-0 mt-0.5 focus:outline-none cursor-pointer w-fit ${todo.done ? 'text-gray-300' : 'text-gray-400 hover:text-latte-500 transition-colors'}`}
+                                                            className={`appearance-none bg-transparent border-none text-[11px] font-bold p-0 mt-0.5 focus:outline-none cursor-pointer w-[95%] truncate ${todo.done ? 'text-gray-300' : 'text-gray-400 hover:text-latte-500 transition-colors'}`}
                                                             title="과목 변경"
                                                         >
                                                             <option value="">{todo.subjectId ? '선택 해제' : '+ 과목 지정'}</option>
                                                             {todo.subjectId && !subjects.find(s => s.id === todo.subjectId) && (
-                                                                <option value={todo.subjectId}>{todo.subjectName !== '과목 없음' ? todo.subjectName : '알 수 없는 과목'}</option>
+                                                                <option value={todo.subjectId}>
+                                                                    {todo.subjectName !== '과목 없음' ? (todo.subjectParent ? `${todo.subjectParent} ▶ ${todo.subjectName}` : todo.subjectName) : '알 수 없는 과목'}
+                                                                </option>
                                                             )}
-                                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.parentName ? `${s.parentName} ▶ ${s.name}` : s.name}</option>)}
                                                         </select>
                                                     )}
                                                 </div>
@@ -1328,8 +1387,9 @@ const App = () => {
                                                         <div className="min-w-0 mr-2 flex flex-col justify-center">
                                                             <div className={`text-[13px] font-bold truncate ${s.done ? 'text-gray-400 line-through' : isOverdue ? 'text-gray-400' : 'text-gray-800'}`}>{s.title}</div>
                                                             {s.subjectName && s.subjectName !== '과목 없음' && (
-                                                                <div className={`text-[11px] font-medium mt-0.5 ${s.done ? 'text-gray-300' : 'text-gray-400'}`}>
-                                                                    {s.subjectName}
+                                                                <div className={`text-[11px] font-medium mt-0.5 flex items-center gap-1 ${s.done ? 'text-gray-300' : 'text-gray-400'}`}>
+                                                                    {s.subjectParent && <span>{s.subjectParent} <span className="text-[8px] opacity-60">▶</span></span>}
+                                                                    <span>{s.subjectName}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1538,13 +1598,16 @@ const App = () => {
                                                                                         <button
                                                                                             key={i}
                                                                                             onClick={() => setSelectedRecord({ subject: r.subject, date: r.date })}
-                                                                                            className="flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors"
+                                                                                            className="flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors group"
                                                                                             style={{background:'#FDFBF7'}}
                                                                                             onMouseEnter={e => e.currentTarget.style.background='#F4EDE5'}
                                                                                             onMouseLeave={e => e.currentTarget.style.background='#FDFBF7'}
                                                                                         >
                                                                                             <SubjectIcon icon={subjects.find(s => s.name === r.subject)?.icon} size={18} />
-                                                                                            <span className="text-[13px] font-medium text-gray-700 flex-1 truncate">{r.subject}</span>
+                                                                                            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                                                                                                {r.subjectParent && <span className="text-[10px] font-bold text-gray-400 shrink-0 bg-gray-100 px-1.5 py-0.5 rounded group-hover:bg-white transition-colors">{r.subjectParent}</span>}
+                                                                                                <span className="text-[13px] font-medium text-gray-700 truncate">{r.subject}</span>
+                                                                                            </div>
                                                                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style={r.mode === 'pomodoro' ? {background:'#FEF2F2', color:'#C0614A'} : {background:'#F0F4FF', color:'#5B6FA6'}}>{r.mode === 'pomodoro' ? '뽀모도로' : '타이머'}</span>
                                                                                             <span className="text-[12px] font-bold text-gray-500 shrink-0">{fmtMinToHour(r.minutes)}</span>
                                                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4B5A5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1581,7 +1644,7 @@ const App = () => {
                                     const wrongSource = config.wrongDbId ? wrongs : null;
                                     
                                     const subjectNotes  = noteSource  ? noteSource.filter(n => {
-                                        if (n.subjectName !== selectedSubject) return false;
+                                        if (!n.subjects.some(s => s.name === selectedSubject)) return false;
                                         if (clickedDate) {
                                             const d = new Date(n.createdTime);
                                             return (d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()) ===
@@ -1591,7 +1654,7 @@ const App = () => {
                                     }) : null;
                                     
                                     const subjectWrongs = wrongSource ? wrongSource.filter(w => {
-                                        if (w.subjectName !== selectedSubject) return false;
+                                        if (!w.subjects.some(s => s.name === selectedSubject)) return false;
                                         if (clickedDate) {
                                             const d = new Date(w.createdTime);
                                             return (d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()) ===
@@ -1599,6 +1662,8 @@ const App = () => {
                                         }
                                         return true;
                                     }) : null;
+
+                                    const subjObj = subjects.find(s => s.name === selectedSubject);
 
                                     return (
                                         <>
@@ -1615,11 +1680,20 @@ const App = () => {
                                             </div>
 
                                             {/* 과목명 */}
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <SubjectIcon icon={subjects.find(s => s.name === selectedSubject)?.icon} size={22} />
-                                                <div className="flex flex-col">
-                                                    <span className="text-[16px] font-bold text-gray-800">{selectedSubject}</span>
-                                                    {clickedDate && <span className="text-[11px] text-gray-400">{formatKORDateShort(clickedDate)}</span>}
+                                            <div className="flex items-center gap-3 mb-5">
+                                                <div className="bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm">
+                                                    <SubjectIcon icon={subjObj?.icon} size={28} />
+                                                </div>
+                                                <div className="flex flex-col justify-center">
+                                                    {subjObj?.parentName && (
+                                                        <span className="text-[12px] font-bold text-gray-400 mb-0.5 flex items-center gap-1.5">
+                                                            {subjObj.parentName} <span className="text-[9px] text-gray-300">▶</span>
+                                                        </span>
+                                                    )}
+                                                    <div className="flex items-end gap-2">
+                                                        <span className="text-[20px] font-extrabold text-gray-800 leading-none">{selectedSubject}</span>
+                                                        {clickedDate && <span className="text-[12px] font-medium text-gray-400 mb-[2px]">{formatKORDateShort(clickedDate)}</span>}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1735,7 +1809,19 @@ const App = () => {
                                                 <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#F3F8F5] rounded-xl px-3 py-2.5 hover:bg-[#E8F2EC] transition-colors cursor-pointer no-underline group">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#4a7c5e] transition-colors">{n.title}</div>
-                                                        {n.subjectName !== '기타' && <div className="text-[10px] text-gray-400 mt-0.5">{n.subjectName}</div>}
+                                                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                            {n.subjects.map((subj, idx) => subj.name !== '기타' && (
+                                                                <div key={idx} className="flex items-center gap-1">
+                                                                    {subj.parentName && (
+                                                                        <>
+                                                                            <span className="text-[10px] font-bold text-[#4a7c5e] bg-[#4a7c5e]/10 px-1.5 py-0.5 rounded">{subj.parentName}</span>
+                                                                            <span className="text-[8px] text-gray-300 opacity-80">▶</span>
+                                                                        </>
+                                                                    )}
+                                                                    <span className="text-[10px] font-bold text-gray-500 bg-white/60 border border-gray-100/50 shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                     <span className="text-[10px] font-bold text-gray-400 shrink-0">{dateStr}</span>
                                                 </a>
@@ -1769,7 +1855,19 @@ const App = () => {
                                                 <a key={w.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#FFF5F2] rounded-xl px-3 py-2.5 hover:bg-[#FFE9E4] transition-colors cursor-pointer no-underline group">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#c0614a] transition-colors">{w.title}</div>
-                                                        {w.subjectName !== '기타' && <div className="text-[10px] text-gray-400 mt-0.5">{w.subjectName}</div>}
+                                                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                            {w.subjects.map((subj, idx) => subj.name !== '기타' && (
+                                                                <div key={idx} className="flex items-center gap-1">
+                                                                    {subj.parentName && (
+                                                                        <>
+                                                                            <span className="text-[10px] font-bold text-[#c0614a] bg-[#c0614a]/10 px-1.5 py-0.5 rounded">{subj.parentName}</span>
+                                                                            <span className="text-[8px] text-gray-300 opacity-80">▶</span>
+                                                                        </>
+                                                                    )}
+                                                                    <span className="text-[10px] font-bold text-gray-500 bg-white/60 border border-gray-100/50 shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                     <span className="text-[10px] font-bold text-gray-400 shrink-0">{dateStr}</span>
                                                 </a>
