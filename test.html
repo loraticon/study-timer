@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class', // 다크모드 지원 설정
             theme: {
                 extend: {
                     fontFamily: {
@@ -35,11 +36,16 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background-color: #EBE8DE; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background-color: #333333; }
         * { -ms-overflow-style: none; scrollbar-width: thin; }
         
         .soft-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+        .dark .soft-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.3); } /* 다크모드용 그림자 조정 */
+
         .input-underline { border-bottom: 2px solid #EBE8DE; transition: border-color 0.2s; }
         .input-underline:focus { border-bottom-color: #A67B5B; outline: none; }
+        .dark .input-underline { border-bottom-color: #333333; }
+        .dark .input-underline:focus { border-bottom-color: #A67B5B; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
@@ -78,6 +84,8 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const XIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const SunIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"/></svg>;
+const ThemeMoonIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
+const ThemeSunIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
 const ArchiveIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>;
 const ZapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
 const SmileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>;
@@ -160,15 +168,30 @@ const DynamicNoteLink = ({ pageId, proxyUrl, apiKey }) => {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-between gap-2 text-[13px] font-bold text-gray-700 hover:text-latte-500 transition-colors bg-white px-3 py-2.5 rounded-xl shadow-sm border border-[#EBE8DE] group w-full"
+            className="inline-flex items-center justify-between gap-2 text-[13px] font-bold text-gray-700 dark:text-gray-300 hover:text-latte-500 dark:hover:text-latte-400 transition-colors bg-white dark:bg-[#252525] px-3 py-2.5 rounded-xl shadow-sm border border-[#EBE8DE] dark:border-[#333] group w-full"
         >
-            <span className="truncate underline underline-offset-4 decoration-[#D1CBBF] group-hover:decoration-latte-500">{title}</span>
+            <span className="truncate underline underline-offset-4 decoration-[#D1CBBF] dark:decoration-gray-600 group-hover:decoration-latte-500 dark:group-hover:decoration-latte-400">{title}</span>
             <ExternalLinkIcon />
         </a>
     );
 };
 
 const App = () => {
+    /* ── 다크모드 상태 관리 ── */
+    const [isDark, setIsDark] = useState(() => {
+        const saved = localStorage.getItem('cozy_test_dark');
+        return saved === 'true';
+    });
+
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('cozy_test_dark', isDark);
+    }, [isDark]);
+
     /* ── 설정 및 데이터 상태 ── */
     const [config, setConfig] = useState(loadConfig());
     const [showSetup, setShowSetup] = useState(!config.saved);
@@ -228,7 +251,7 @@ const App = () => {
         if (!config.saved || !config.testDbId) return;
         setIsLoadingData(true);
         try {
-            // 과목 DB 매핑 (ID -> { name, parentId })
+            // 과목 DB 매핑
             const subjectData = {};
             if (config.subjectDbId) {
                 try {
@@ -237,7 +260,6 @@ const App = () => {
                         const nameProp = Object.values(page.properties).find(p => p.type === 'title');
                         const name = nameProp?.title?.[0]?.plain_text || '미선택';
                         
-                        // "상위 항목" relation 속성을 통해 부모 ID 찾기
                         let parentId = null;
                         const parentProp = page.properties['상위 항목'];
                         if (parentProp && parentProp.type === 'relation' && parentProp.relation.length > 0) {
@@ -308,7 +330,7 @@ const App = () => {
                 const nextDateProp = props['다음 복습일'];
                 const nextDateIso = nextDateProp?.date?.start || nextDateProp?.formula?.date?.start || nextDateProp?.rollup?.date?.start;
 
-                let category = 'none'; // 기본 범주 (랜덤 테스트용으로 모든 데이터 유지)
+                let category = 'none';
 
                 if (isNewQuestion) {
                     category = 'new';
@@ -328,7 +350,6 @@ const App = () => {
                 const summary = extractText(props['문제 요약']) || '요약 없음';
                 const content = extractText(props['문제 내용']) || '내용 없음';
                 
-                // 과목 계층 매핑 로직
                 let mainSubject = '미분류';
                 let subSubject = '';
                 let displaySubject = '미분류';
@@ -340,12 +361,10 @@ const App = () => {
                     
                     if (subj) {
                         if (subj.parentId && subjectData[subj.parentId]) {
-                            // 본인이 하위 과목인 경우
                             mainSubject = subjectData[subj.parentId].name;
                             subSubject = subj.name;
                             displaySubject = `${mainSubject} - ${subSubject}`;
                         } else {
-                            // 본인이 상위 과목이거나 독립된 과목인 경우
                             mainSubject = subj.name;
                             displaySubject = mainSubject;
                         }
@@ -355,7 +374,6 @@ const App = () => {
                     }
                 }
 
-                /* ── 관련 학습 노트 ID 추출 로직 ── */
                 let relatedNoteIds = [];
                 const exactRelationKey = Object.keys(props).find(k => {
                     const norm = k.replace(/\s+/g, '');
@@ -393,7 +411,7 @@ const App = () => {
 
                 parsedQuestions.push({ 
                     id: page.id, category, 
-                    mainSubject, subSubject, subject: displaySubject, // 계층화된 과목 데이터 저장
+                    mainSubject, subSubject, subject: displaySubject,
                     summary, content, answer, passCount, isRetry,
                     relatedNoteIds 
                 });
@@ -413,7 +431,7 @@ const App = () => {
         if (config.saved) fetchData();
     }, [config.saved, fetchData]);
 
-    /* ── 과목 트리 파싱 로직 (랜덤 모드 용) ── */
+    /* ── 과목 트리 파싱 ── */
     const subjectTree = useMemo(() => {
         const tree = { '전체': { total: allQuestions.length, subs: {} } };
         
@@ -523,9 +541,7 @@ const App = () => {
             }
         }
 
-        // 배열 무작위 셔플
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-        // 가능한 개수 내에서 잘라내기
         const actualCount = Math.min(randomCount, shuffled.length);
         const finalQueue = shuffled.slice(0, actualCount);
 
@@ -597,7 +613,6 @@ const App = () => {
             setIsNoteExpanded(false); 
             if (inputRef.current) setTimeout(() => inputRef.current.focus(), 50);
         } else {
-            // 복습 모드인 경우 로컬 데이터 상태 업데이트 (다시 안 뜨게)
             if (sessionType !== 'random') {
                 const completedIds = testQueue.map(q => q.id);
                 setAllQuestions(prev => prev.map(q => {
@@ -612,13 +627,13 @@ const App = () => {
 
     /* ══════ 화면 0: 설정 화면 ══════ */
     if (showSetup) return (
-        <div className="w-full max-w-[420px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] overflow-hidden soft-shadow">
+        <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] overflow-hidden soft-shadow transition-colors">
             <div className="p-10">
                 <div className="flex items-center gap-2 mb-1">
-                    <NotionIcon/>
-                    <span className="text-xs font-bold tracking-widest text-gray-400 uppercase">Notion 연결</span>
+                    <NotionIcon className="text-gray-800 dark:text-gray-200" />
+                    <span className="text-xs font-bold tracking-widest text-gray-400 dark:text-gray-500 uppercase">Notion 연결</span>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-6">테스트 DB 설정</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">테스트 DB 설정</h2>
 
                 <div className="space-y-5">
                     {[
@@ -628,13 +643,13 @@ const App = () => {
                         { key:'subjectDbId', label:'과목 DB ID (선택)',    placeholder:'32자리 ID',                       type:'text' },
                     ].map(({ key, label, placeholder, type }) => (
                         <div key={key}>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5">{label}</label>
+                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">{label}</label>
                             <input
                                 type={type}
                                 value={setupForm[key]}
                                 onChange={e => setSetupForm(f => ({ ...f, [key]: e.target.value.trim() }))}
                                 placeholder={placeholder}
-                                className="w-full text-sm border-b-2 border-gray-200 bg-transparent text-gray-800 py-2 focus:outline-none focus:border-[#A67B5B] placeholder-gray-300"
+                                className="w-full text-sm border-b-2 border-gray-200 dark:border-neutral-700 bg-transparent text-gray-800 dark:text-gray-100 py-2 focus:outline-none focus:border-[#A67B5B] placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
                             />
                         </div>
                     ))}
@@ -654,7 +669,7 @@ const App = () => {
                         )}
                     </button>
                     {config.saved && (
-                        <button onClick={() => setShowSetup(false)} className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                        <button onClick={() => setShowSetup(false)} className="w-full py-2 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                             취소
                         </button>
                     )}
@@ -678,8 +693,8 @@ const App = () => {
             <button 
                 onClick={onClick}
                 className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border 
-                    ${active ? 'bg-latte-500 text-white border-latte-500 shadow-sm' 
-                             : 'bg-white text-gray-600 border-[#EBE8DE] hover:border-latte-300 hover:bg-latte-50'}`}
+                    ${active ? 'bg-latte-500 text-white dark:bg-latte-600 border-latte-500 dark:border-latte-600 shadow-sm' 
+                             : 'bg-white dark:bg-[#2A2A2A] text-gray-600 dark:text-gray-300 border-[#EBE8DE] dark:border-[#333] hover:border-latte-300 dark:hover:border-latte-500 hover:bg-latte-50 dark:hover:bg-latte-900/30'}`}
             >
                 {children}
             </button>
@@ -690,40 +705,43 @@ const App = () => {
             <button 
                 onClick={onClick}
                 className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border 
-                    ${active ? 'bg-latte-100 text-latte-900 border-latte-300 shadow-sm' 
-                             : 'bg-white text-gray-500 border-[#EBE8DE] hover:border-latte-300 hover:bg-latte-50'}`}
+                    ${active ? 'bg-latte-100 dark:bg-latte-900/40 text-latte-900 dark:text-latte-300 border-latte-300 dark:border-latte-700 shadow-sm' 
+                             : 'bg-white dark:bg-[#2A2A2A] text-gray-500 dark:text-gray-400 border-[#EBE8DE] dark:border-[#333] hover:border-latte-300 dark:hover:border-latte-500 hover:bg-latte-50 dark:hover:bg-latte-900/30'}`}
             >
                 {children}
             </button>
         );
 
         return (
-            <div className="w-full max-w-[420px] max-h-[90vh] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-8 flex flex-col justify-start min-h-[580px] soft-shadow relative overflow-y-auto">
+            <div className="w-full max-w-[420px] max-h-[90vh] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] p-8 flex flex-col justify-start min-h-[580px] soft-shadow relative overflow-y-auto transition-colors">
                 <div className="absolute top-6 right-6 flex items-center gap-3">
-                    <button onClick={fetchData} className="text-gray-300 hover:text-latte-500 transition-colors" title="데이터 새로고침">
+                    <button onClick={() => setIsDark(!isDark)} className="text-gray-300 dark:text-gray-500 hover:text-latte-500 dark:hover:text-latte-400 transition-colors" title="다크모드">
+                        {isDark ? <ThemeSunIcon /> : <ThemeMoonIcon />}
+                    </button>
+                    <button onClick={fetchData} className="text-gray-300 dark:text-gray-500 hover:text-latte-500 dark:hover:text-latte-400 transition-colors" title="데이터 새로고침">
                         <RefreshIcon />
                     </button>
-                    <button onClick={() => setShowSetup(true)} className="text-gray-300 hover:text-latte-500 transition-colors" title="설정">
+                    <button onClick={() => setShowSetup(true)} className="text-gray-300 dark:text-gray-500 hover:text-latte-500 dark:hover:text-latte-400 transition-colors" title="설정">
                         <GearIcon />
                     </button>
                 </div>
 
                 <div className="mb-5 text-center mt-2">
-                    <h1 className="text-2xl font-bold text-gray-800">단어 테스트</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">단어 테스트</h1>
                 </div>
                 
                 {/* 탭 메뉴 */}
-                <div className="flex bg-[#EBE8DE]/40 p-1.5 rounded-2xl mb-6 relative">
+                <div className="flex bg-[#EBE8DE]/40 dark:bg-[#2F2F2F]/40 p-1.5 rounded-2xl mb-6 relative transition-colors">
                     <button 
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all z-10 
-                            ${activeTab === 'random' ? 'text-latte-700 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            ${activeTab === 'random' ? 'text-latte-700 dark:text-latte-400 bg-white dark:bg-[#3d3d3d] shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
                         onClick={() => setActiveTab('random')}
                     >
                         랜덤 모드
                     </button>
                     <button 
                         className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all z-10 
-                            ${activeTab === 'review' ? 'text-latte-700 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            ${activeTab === 'review' ? 'text-latte-700 dark:text-latte-400 bg-white dark:bg-[#3d3d3d] shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
                         onClick={() => setActiveTab('review')}
                     >
                         복습 모드
@@ -733,7 +751,7 @@ const App = () => {
                 {isLoadingData ? (
                     <div className="flex-1 flex flex-col items-center justify-center py-10">
                         <span className="spin w-8 h-8 border-[3px] border-latte-500 border-t-transparent rounded-full mb-3"></span>
-                        <span className="text-sm text-gray-400">데이터를 불러오는 중...</span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500">데이터를 불러오는 중...</span>
                     </div>
                 ) : (
                     <>
@@ -743,14 +761,12 @@ const App = () => {
 
                                 {/* ── Step 1: 과목 선택 ── */}
                                 <div className="flex gap-3">
-                                    {/* 스텝 점 + 연결선 */}
                                     <div className="flex flex-col items-center pt-0.5 shrink-0">
-                                        <div className="w-6 h-6 rounded-full bg-latte-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">1</div>
-                                        <div className="w-px flex-1 bg-[#EBE8DE] my-1.5"></div>
+                                        <div className="w-6 h-6 rounded-full bg-latte-500 dark:bg-latte-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">1</div>
+                                        <div className="w-px flex-1 bg-[#EBE8DE] dark:bg-[#333] my-1.5"></div>
                                     </div>
-                                    {/* 콘텐츠 */}
                                     <div className="flex-1 pb-4">
-                                        <h3 className="text-sm font-bold text-gray-700 mb-2.5 leading-none pt-0.5">과목 선택</h3>
+                                        <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5 leading-none pt-0.5">과목 선택</h3>
                                         <div className="flex flex-wrap gap-2">
                                             <SubjectButton 
                                                 active={randomMainSubj === '전체'} 
@@ -775,11 +791,11 @@ const App = () => {
                                 {randomMainSubj !== '전체' && Object.keys(subjectTree[randomMainSubj]?.subs || {}).length >= 1 && (
                                     <div className="flex gap-3 animate-fade-in">
                                         <div className="flex flex-col items-center pt-0.5 shrink-0">
-                                            <div className="w-6 h-6 rounded-full bg-latte-300 text-latte-900 text-[10px] font-black flex items-center justify-center shrink-0">2</div>
-                                            <div className="w-px flex-1 bg-[#EBE8DE] my-1.5"></div>
+                                            <div className="w-6 h-6 rounded-full bg-latte-300 dark:bg-latte-800 text-latte-900 dark:text-latte-200 text-[10px] font-black flex items-center justify-center shrink-0">2</div>
+                                            <div className="w-px flex-1 bg-[#EBE8DE] dark:bg-[#333] my-1.5"></div>
                                         </div>
                                         <div className="flex-1 pb-4">
-                                            <h3 className="text-sm font-bold text-gray-700 mb-2.5 leading-none pt-0.5">세부 과목</h3>
+                                            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2.5 leading-none pt-0.5">세부 과목</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 <SubSubjectButton 
                                                     active={randomSubSubj === '전체'} 
@@ -804,22 +820,20 @@ const App = () => {
                                 {/* ── Step 3: 문제 개수 ── */}
                                 <div className="flex gap-3">
                                     <div className="flex flex-col items-center pt-0.5 shrink-0">
-                                        <div className="w-6 h-6 rounded-full bg-gray-800 text-white text-[10px] font-black flex items-center justify-center shrink-0">3</div>
-                                        {/* 마지막 스텝: 연결선 없음 */}
+                                        <div className="w-6 h-6 rounded-full bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-[10px] font-black flex items-center justify-center shrink-0">3</div>
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-2.5">
-                                            <h3 className="text-sm font-bold text-gray-700 leading-none pt-0.5">문제 개수</h3>
-                                            <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-md">최대 {availableRandomCount}개</span>
+                                            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-none pt-0.5">문제 개수</h3>
+                                            <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-[#2A2A2A] px-2 py-1 rounded-md">최대 {availableRandomCount}개</span>
                                         </div>
-                                        {/* 프리셋 버튼: 3열 균등 그리드 */}
                                         <div className="grid grid-cols-3 gap-2 mb-2">
                                             {[10, 20, 30].map(n => (
                                                 <button 
                                                     key={n}
                                                     onClick={() => { setRandomCount(n); setCustomRandomCount(''); }}
                                                     className={`py-2.5 rounded-xl text-sm font-bold transition-all border 
-                                                        ${randomCount === n && customRandomCount === '' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-[#EBE8DE] hover:bg-gray-50'}
+                                                        ${randomCount === n && customRandomCount === '' ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-800 dark:border-gray-200' : 'bg-white dark:bg-[#2A2A2A] text-gray-600 dark:text-gray-400 border-[#EBE8DE] dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#333]'}
                                                         ${n > availableRandomCount ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                     disabled={n > availableRandomCount}
                                                 >
@@ -827,8 +841,7 @@ const App = () => {
                                                 </button>
                                             ))}
                                         </div>
-                                        {/* 직접 입력: 별도 한 줄 */}
-                                        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 border border-[#EBE8DE]">
+                                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#2A2A2A] rounded-xl px-3 py-2 border border-[#EBE8DE] dark:border-[#333] transition-colors">
                                             <span className="text-xs font-bold text-gray-400 shrink-0">직접 입력</span>
                                             <input 
                                                 type="number"
@@ -839,7 +852,7 @@ const App = () => {
                                                     if(val && !isNaN(val)) setRandomCount(Number(val));
                                                 }}
                                                 placeholder="N"
-                                                className="flex-1 min-w-0 text-sm font-bold text-center bg-transparent focus:outline-none placeholder:text-gray-300 placeholder:font-normal"
+                                                className="flex-1 min-w-0 text-sm font-bold text-center bg-transparent text-gray-800 dark:text-gray-100 focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 placeholder:font-normal"
                                                 min="1"
                                                 max={availableRandomCount}
                                             />
@@ -853,7 +866,7 @@ const App = () => {
                                     onClick={startRandomTest}
                                     disabled={availableRandomCount === 0 || randomCount <= 0 || isNaN(randomCount)}
                                     className={`w-full py-4 mt-5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 shadow-sm
-                                        ${availableRandomCount > 0 && randomCount > 0 ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                        ${availableRandomCount > 0 && randomCount > 0 ? 'bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-900' : 'bg-gray-200 dark:bg-[#333] text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
                                 >
                                     <DicesIcon />
                                     {availableRandomCount > 0 && randomCount > 0
@@ -866,18 +879,18 @@ const App = () => {
                         {/* ──────── 복습 모드 탭 ──────── */}
                         {activeTab === 'review' && (
                             <div className="flex flex-col gap-4 animate-fade-in pb-4">
-                                <div className="bg-white rounded-3xl p-5 border-2 border-latte-100 flex flex-col relative overflow-hidden soft-shadow">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-5 border-2 border-latte-100 dark:border-latte-900/30 flex flex-col relative overflow-hidden soft-shadow transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasNew ? 'bg-latte-50 text-latte-500' : 'bg-gray-50 text-gray-300'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasNew ? 'bg-latte-50 dark:bg-latte-900/50 text-latte-500 dark:text-latte-400' : 'bg-gray-50 dark:bg-[#333] text-gray-300 dark:text-gray-600'}`}>
                                                 <ZapIcon />
                                             </div>
                                             <div>
-                                                <h2 className={`font-bold ${hasNew ? 'text-gray-800' : 'text-gray-400'}`}>오늘의 테스트</h2>
-                                                <p className="text-[11px] text-gray-400 font-medium">{hasNew ? '새롭게 익혀야 할 단어들' : '새로운 문제가 없어요!'}</p>
+                                                <h2 className={`font-bold ${hasNew ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>오늘의 테스트</h2>
+                                                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasNew ? '새롭게 익혀야 할 단어들' : '새로운 문제가 없어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasNew ? 'text-latte-500' : 'text-gray-300'}`}>
+                                        <div className={`text-2xl font-black ${hasNew ? 'text-latte-500 dark:text-latte-400' : 'text-gray-300 dark:text-gray-600'}`}>
                                             {newQuestions.length}
                                         </div>
                                     </div>
@@ -885,24 +898,24 @@ const App = () => {
                                         onClick={() => startReviewTest('new')}
                                         disabled={!hasNew}
                                         className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
-                                            ${hasNew ? 'bg-latte-500 hover:bg-latte-700 text-white shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                                            ${hasNew ? 'bg-latte-500 dark:bg-latte-600 hover:bg-latte-700 dark:hover:bg-latte-500 text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
                                     >
                                         {hasNew ? '오늘의 테스트 시작' : '완료됨'}
                                     </button>
                                 </div>
 
-                                <div className="bg-white rounded-3xl p-5 border border-gray-200 flex flex-col relative overflow-hidden">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-5 border border-gray-200 dark:border-[#333] flex flex-col relative overflow-hidden transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasToday ? 'bg-[#F0F4ED] text-[#849F71]' : 'bg-gray-50 text-gray-300'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasToday ? 'bg-[#F0F4ED] dark:bg-[#849F71]/20 text-[#849F71]' : 'bg-gray-50 dark:bg-[#333] text-gray-300 dark:text-gray-600'}`}>
                                                 <SunIcon />
                                             </div>
                                             <div>
-                                                <h2 className={`font-bold ${hasToday ? 'text-gray-800' : 'text-gray-400'}`}>오늘의 복습</h2>
-                                                <p className="text-[11px] text-gray-400 font-medium">{hasToday ? '잊어버리기 전에 다시 한번!' : '오늘 복습은 끝났어요!'}</p>
+                                                <h2 className={`font-bold ${hasToday ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>오늘의 복습</h2>
+                                                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasToday ? '잊어버리기 전에 다시 한번!' : '오늘 복습은 끝났어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasToday ? 'text-[#849F71]' : 'text-gray-300'}`}>
+                                        <div className={`text-2xl font-black ${hasToday ? 'text-[#849F71]' : 'text-gray-300 dark:text-gray-600'}`}>
                                             {todayQuestions.length}
                                         </div>
                                     </div>
@@ -910,24 +923,24 @@ const App = () => {
                                         onClick={() => startReviewTest('today')}
                                         disabled={!hasToday}
                                         className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
-                                            ${hasToday ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                                            ${hasToday ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
                                     >
                                         {hasToday ? '오늘의 복습 시작' : '완료됨'}
                                     </button>
                                 </div>
 
-                                <div className="bg-[#F4F0EA] rounded-3xl p-5 border border-[#EBE8DE] flex flex-col">
+                                <div className="bg-[#F4F0EA] dark:bg-[#1E1E1E] rounded-3xl p-5 border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasPending ? 'bg-white text-latte-700 shadow-sm' : 'bg-[#EBE8DE] text-gray-400'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasPending ? 'bg-white dark:bg-[#2A2A2A] text-latte-700 dark:text-latte-400 shadow-sm' : 'bg-[#EBE8DE] dark:bg-[#333] text-gray-400 dark:text-gray-500'}`}>
                                                 <ArchiveIcon />
                                             </div>
                                             <div>
-                                                <h2 className={`font-bold ${hasPending ? 'text-gray-800' : 'text-gray-400'}`}>밀린 복습</h2>
-                                                <p className="text-[11px] text-gray-500 font-medium">{hasPending ? '여유가 될 때 조금씩 해결해요' : '밀린 문제가 없어요!'}</p>
+                                                <h2 className={`font-bold ${hasPending ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>밀린 복습</h2>
+                                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{hasPending ? '여유가 될 때 조금씩 해결해요' : '밀린 문제가 없어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasPending ? 'text-gray-800' : 'text-gray-300'}`}>
+                                        <div className={`text-2xl font-black ${hasPending ? 'text-gray-800 dark:text-gray-100' : 'text-gray-300 dark:text-gray-600'}`}>
                                             {pendingQuestions.length}
                                         </div>
                                     </div>
@@ -938,13 +951,13 @@ const App = () => {
                                                 <>
                                                     <button 
                                                         onClick={() => startReviewTest('pending', BATCH_SIZE)}
-                                                        className="flex-[2] py-3.5 rounded-2xl bg-white hover:bg-latte-50 text-latte-700 font-bold text-sm transition-colors shadow-sm flex justify-center items-center gap-1 border border-[#EBE8DE]"
+                                                        className="flex-[2] py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm flex justify-center items-center gap-1 border border-[#EBE8DE] dark:border-[#333]"
                                                     >
                                                         <ZapIcon /> {BATCH_SIZE}개만 풀기
                                                     </button>
                                                     <button 
                                                         onClick={() => startReviewTest('pending')}
-                                                        className="flex-1 py-3.5 rounded-2xl bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold text-sm transition-colors text-center"
+                                                        className="flex-1 py-3.5 rounded-2xl bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-600 dark:text-gray-300 font-bold text-sm transition-colors text-center"
                                                     >
                                                         전체
                                                     </button>
@@ -952,14 +965,14 @@ const App = () => {
                                             ) : (
                                                 <button 
                                                     onClick={() => startReviewTest('pending')}
-                                                    className="w-full py-3.5 rounded-2xl bg-white hover:bg-latte-50 text-latte-700 font-bold text-sm transition-colors shadow-sm border border-[#EBE8DE]"
+                                                    className="w-full py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm border border-[#EBE8DE] dark:border-[#333]"
                                                 >
                                                     밀린 복습 시작
                                                 </button>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="w-full py-3.5 rounded-2xl font-bold text-sm bg-[#EBE8DE]/50 text-gray-400 text-center cursor-not-allowed">
+                                        <div className="w-full py-3.5 rounded-2xl font-bold text-sm bg-[#EBE8DE]/50 dark:bg-[#333]/50 text-gray-400 dark:text-gray-600 text-center cursor-not-allowed">
                                             깔끔합니다 ✨
                                         </div>
                                     )}
@@ -987,57 +1000,57 @@ const App = () => {
         else if (sessionType === 'random') { sessionLabel = '랜덤 테스트'; sessionIcon = '🎲'; }
 
         return (
-            <div className="w-full max-w-[420px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] flex flex-col min-h-[580px] max-h-[90vh] soft-shadow overflow-y-auto relative">
+            <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col min-h-[580px] max-h-[90vh] soft-shadow overflow-y-auto relative transition-colors">
                 <div className="pt-8 px-8 pb-4 relative">
-                    <div className="absolute top-0 left-0 h-1.5 bg-latte-100 w-full">
+                    <div className="absolute top-0 left-0 h-1.5 bg-latte-100 dark:bg-[#333] w-full">
                         <div 
-                            className="h-full bg-latte-500 transition-all duration-300 ease-out" 
+                            className="h-full bg-latte-500 dark:bg-latte-600 transition-all duration-300 ease-out" 
                             style={{ width: `${((currentIndex) / testQueue.length) * 100}%` }}
                         ></div>
                     </div>
                     <div className="flex justify-between items-center mb-4">
-                        <span className="px-3 py-1 bg-white border border-[#EBE8DE] rounded-full text-[11px] font-bold text-latte-700 flex items-center gap-1">
+                        <span className="px-3 py-1 bg-white dark:bg-[#2A2A2A] border border-[#EBE8DE] dark:border-[#333] rounded-full text-[11px] font-bold text-latte-700 dark:text-latte-300 flex items-center gap-1 transition-colors">
                             <span>{sessionIcon}</span> {sessionLabel}
                             {syncingCount > 0 && (
                                 <span className="spin inline-block w-2.5 h-2.5 border-2 border-latte-300 border-t-transparent rounded-full ml-1" title="DB에 저장 중..." />
                             )}
                         </span>
                         <div className="flex items-center gap-3">
-                            <span className="text-sm font-bold text-latte-300">
+                            <span className="text-sm font-bold text-latte-300 dark:text-latte-500">
                                 {currentIndex + 1} / {testQueue.length}
                             </span>
                             <button 
                                 onClick={handleEarlyExit} 
-                                className="text-[10px] text-gray-400 border border-[#EBE8DE] bg-white px-2 py-1 rounded-md hover:bg-gray-50 transition-colors"
+                                className="text-[10px] text-gray-400 dark:text-gray-500 border border-[#EBE8DE] dark:border-[#333] bg-white dark:bg-[#2A2A2A] px-2 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-[#333] transition-colors"
                             >
                                 그만 풀기
                             </button>
                         </div>
                     </div>
-                    <div className="text-[11px] font-bold text-gray-400">과목: {currentQ.subject}</div>
+                    <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500">과목: {currentQ.subject}</div>
                 </div>
 
                 <div className="px-8 flex-1 flex flex-col">
-                    <h2 className="text-xl font-bold text-gray-800 leading-snug mb-3 mt-1">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 leading-snug mb-3 mt-1">
                         {currentQ.summary}
                     </h2>
                     
-                    <p className="text-sm text-gray-500 leading-relaxed bg-white p-4 rounded-2xl border border-[#EBE8DE]">
+                    <p className="text-sm text-gray-500 dark:text-gray-300 leading-relaxed bg-white dark:bg-[#252525] p-4 rounded-2xl border border-[#EBE8DE] dark:border-[#333] transition-colors">
                         {currentQ.content}
                     </p>
 
                     {currentQ.relatedNoteIds && currentQ.relatedNoteIds.length > 0 && (
-                        <div className="mt-3 bg-[#F4F0EA] border border-[#EBE8DE] rounded-2xl overflow-hidden">
+                        <div className="mt-3 bg-[#F4F0EA] dark:bg-[#2A2A2A] border border-[#EBE8DE] dark:border-[#333] rounded-2xl overflow-hidden transition-colors">
                             <button
                                 type="button"
                                 onClick={() => setIsNoteExpanded(!isNoteExpanded)}
-                                className="w-full px-4 py-3 flex items-center justify-between text-[12px] font-bold text-latte-700 hover:bg-[#EBE8DE]/50 transition-colors"
+                                className="w-full px-4 py-3 flex items-center justify-between text-[12px] font-bold text-latte-700 dark:text-latte-400 hover:bg-[#EBE8DE]/50 dark:hover:bg-[#333]/50 transition-colors"
                             >
                                 <div className="flex items-center gap-1.5">
                                     <BookIcon />
                                     <span>관련 학습 노트</span>
                                 </div>
-                                <svg className={`w-4 h-4 text-latte-500 transition-transform duration-300 ${isNoteExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg className={`w-4 h-4 text-latte-500 dark:text-latte-600 transition-transform duration-300 ${isNoteExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
                             <div className={`toggle-content ${isNoteExpanded ? 'open' : ''}`}>
                                 <div className="toggle-inner">
@@ -1059,7 +1072,7 @@ const App = () => {
                     <div className="mt-auto mb-8">
                         {!isRevealed ? (
                             <form onSubmit={handleCheckAnswer} className="relative mt-8">
-                                <label className="text-[11px] font-bold text-latte-300 uppercase tracking-widest block mb-2">정답을 입력하세요</label>
+                                <label className="text-[11px] font-bold text-latte-300 dark:text-latte-600 uppercase tracking-widest block mb-2">정답을 입력하세요</label>
                                 <div className={`relative ${isShaking ? 'animate-shake' : ''}`}>
                                     <input 
                                         ref={inputRef}
@@ -1067,30 +1080,30 @@ const App = () => {
                                         value={userInput}
                                         onChange={(e) => setUserInput(e.target.value)}
                                         placeholder="✏️ 여기에 정답 입력..."
-                                        className="w-full bg-transparent text-lg font-bold text-gray-800 pb-2 input-underline placeholder:text-gray-300 placeholder:font-normal"
+                                        className="w-full bg-transparent text-lg font-bold text-gray-800 dark:text-gray-100 pb-2 input-underline placeholder:text-gray-300 dark:placeholder:text-gray-600 placeholder:font-normal"
                                         autoFocus
                                         autoComplete="off"
                                     />
                                 </div>
-                                <button type="submit" className="w-full py-3.5 mt-6 rounded-2xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-sm transition-colors shadow-sm">
+                                <button type="submit" className="w-full py-3.5 mt-6 rounded-2xl bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-900 font-bold text-sm transition-colors shadow-sm">
                                     정답 확인
                                 </button>
                             </form>
                         ) : (
                             <div className="mt-6 animate-fade-in">
-                                <div className="p-5 rounded-2xl bg-white border-2 border-latte-100 flex flex-col gap-2 relative overflow-hidden">
-                                    <div className="text-[11px] font-bold text-latte-500 uppercase tracking-widest">실제 정답</div>
-                                    <div className="text-2xl font-black text-gray-800">{currentQ.answer}</div>
+                                <div className="p-5 rounded-2xl bg-white dark:bg-[#252525] border-2 border-latte-100 dark:border-[#333] flex flex-col gap-2 relative overflow-hidden transition-colors">
+                                    <div className="text-[11px] font-bold text-latte-500 dark:text-latte-600 uppercase tracking-widest">실제 정답</div>
+                                    <div className="text-2xl font-black text-gray-800 dark:text-gray-100">{currentQ.answer}</div>
                                     
-                                    <div className="mt-3 pt-3 border-t border-gray-100">
-                                        <div className="text-[11px] font-bold text-gray-400 mb-1">내가 적은 답</div>
+                                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#333]">
+                                        <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-1">내가 적은 답</div>
                                         <div className={`text-base font-bold ${isExactMatch ? 'text-green-500' : 'text-red-400'}`}>
                                             {userInput || '(미입력)'}
                                         </div>
                                     </div>
                                     
                                     {isExactMatch && (
-                                        <div className="absolute top-4 right-4 text-green-500 bg-green-50 p-2 rounded-full">
+                                        <div className="absolute top-4 right-4 text-green-500 bg-green-50 dark:bg-green-500/10 p-2 rounded-full">
                                             <CheckIcon />
                                         </div>
                                     )}
@@ -1099,7 +1112,7 @@ const App = () => {
                                 <div className="flex gap-3 mt-6">
                                     <button 
                                         onClick={() => handleResult(false)}
-                                        className="flex-1 py-3.5 rounded-2xl bg-white border border-red-200 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+                                        className="flex-1 py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] border border-red-200 dark:border-red-900/50 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-1.5"
                                     >
                                         <XIcon /> 다시 학습
                                     </button>
@@ -1126,45 +1139,45 @@ const App = () => {
         const remainingPending = allQuestions.filter(q => q.category === 'pending' && !testQueue.find(tq => tq.id === q.id));
 
         return (
-            <div className="w-full max-w-[420px] bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] flex flex-col max-h-[90vh] min-h-[580px] soft-shadow overflow-hidden">
+            <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col max-h-[90vh] min-h-[580px] soft-shadow overflow-hidden transition-colors">
                 <div className="p-8 pb-4 text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-latte-50 text-latte-500 mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-latte-50 dark:bg-latte-900/30 text-latte-500 dark:text-latte-400 mb-4">
                         {scorePct === 100 ? '🎉' : <SmileIcon />}
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-1">수고하셨습니다!</h2>
-                    <p className="text-sm text-gray-500">방금 진행한 결과를 요약해 드릴게요.</p>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">수고하셨습니다!</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">방금 진행한 결과를 요약해 드릴게요.</p>
                 </div>
 
-                <div className="px-8 pb-6 border-b border-[#EBE8DE]">
-                    <div className="flex bg-white rounded-2xl border border-[#EBE8DE] p-4 divide-x divide-[#EBE8DE]">
+                <div className="px-8 pb-6 border-b border-[#EBE8DE] dark:border-[#2F2F2F]">
+                    <div className="flex bg-white dark:bg-[#252525] rounded-2xl border border-[#EBE8DE] dark:border-[#333] p-4 divide-x divide-[#EBE8DE] dark:divide-[#333] transition-colors">
                         <div className="flex-1 flex flex-col items-center">
-                            <span className="text-[11px] font-bold text-gray-400 mb-1">진행한 문제</span>
-                            <span className="text-lg font-extrabold text-gray-800">{testQueue.length}</span>
+                            <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-1">진행한 문제</span>
+                            <span className="text-lg font-extrabold text-gray-800 dark:text-gray-100">{testQueue.length}</span>
                         </div>
                         <div className="flex-1 flex flex-col items-center">
-                            <span className="text-[11px] font-bold text-[#849F71] mb-1">통과</span>
-                            <span className="text-lg font-extrabold text-[#849F71]">{passCount}</span>
+                            <span className="text-[11px] font-bold text-[#849F71] dark:text-[#A3B895] mb-1">통과</span>
+                            <span className="text-lg font-extrabold text-[#849F71] dark:text-[#A3B895]">{passCount}</span>
                         </div>
                         <div className="flex-1 flex flex-col items-center">
-                            <span className="text-[11px] font-bold text-red-400 mb-1">다시 학습</span>
-                            <span className="text-lg font-extrabold text-red-400">{testQueue.length - passCount}</span>
+                            <span className="text-[11px] font-bold text-red-400 dark:text-red-300 mb-1">다시 학습</span>
+                            <span className="text-lg font-extrabold text-red-400 dark:text-red-300">{testQueue.length - passCount}</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 pt-6">
-                    <h3 className="text-[11px] font-bold text-gray-400 mb-3 tracking-wide">문항별 상세 결과</h3>
+                    <h3 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-3 tracking-wide">문항별 상세 결과</h3>
                     <div className="space-y-2.5">
                         {testQueue.map((q) => {
                             const isPass = results[q.id];
                             return (
-                                <div key={q.id} className="bg-white p-3.5 rounded-2xl border border-[#EBE8DE] flex items-center gap-3">
-                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isPass ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-400'}`}>
+                                <div key={q.id} className="bg-white dark:bg-[#252525] p-3.5 rounded-2xl border border-[#EBE8DE] dark:border-[#333] flex items-center gap-3 transition-colors">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isPass ? 'bg-green-50 dark:bg-green-900/30 text-green-500 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-400 dark:text-red-400'}`}>
                                         {isPass ? <CheckIcon/> : <XIcon/>}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[11px] text-latte-500 font-bold truncate">{q.answer}</div>
-                                        <div className="text-xs font-medium text-gray-800 truncate">{q.summary}</div>
+                                        <div className="text-[11px] text-latte-500 dark:text-latte-400 font-bold truncate">{q.answer}</div>
+                                        <div className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{q.summary}</div>
                                     </div>
                                 </div>
                             );
@@ -1176,7 +1189,7 @@ const App = () => {
                     {sessionType === 'random' && (
                         <button 
                             onClick={startRandomTest}
-                            className="w-full py-4 rounded-2xl bg-gray-800 text-white font-bold text-sm hover:bg-gray-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                            className="w-full py-4 rounded-2xl bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 font-bold text-sm hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors shadow-sm flex items-center justify-center gap-2"
                         >
                             <DicesIcon /> 같은 설정으로 한 번 더
                         </button>
@@ -1185,7 +1198,7 @@ const App = () => {
                     {sessionType === 'pending' && remainingPending.length > 0 && (
                         <button 
                             onClick={() => { setAppState('ready'); }}
-                            className="w-full py-4 rounded-2xl bg-latte-50 text-latte-700 font-bold text-sm transition-colors border border-latte-100 flex items-center justify-center gap-2"
+                            className="w-full py-4 rounded-2xl bg-latte-50 dark:bg-[#2A2A2A] text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors border border-latte-100 dark:border-[#333] flex items-center justify-center gap-2"
                         >
                             <ZapIcon /> 아직 남은 {remainingPending.length}개 이어서 하기
                         </button>
@@ -1194,7 +1207,7 @@ const App = () => {
                     <button 
                         onClick={() => { setAppState('ready'); }}
                         className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors shadow-sm text-center 
-                            ${sessionType === 'random' ? 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' : 'bg-latte-500 text-white hover:bg-latte-700'}`}
+                            ${sessionType === 'random' ? 'bg-white dark:bg-[#2A2A2A] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#333]' : 'bg-latte-500 dark:bg-latte-600 text-white hover:bg-latte-700 dark:hover:bg-latte-500'}`}
                     >
                         홈으로 돌아가기
                     </button>
