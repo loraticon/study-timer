@@ -1,511 +1,1236 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>노션 위젯 통합 설정 페이지 v1.6</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'] },
-                    colors: {
-                        latte: { 50: '#F4F0EA', 100: '#EBE8DE', 300: '#D1CBBF', 500: '#A67B5B', 700: '#8B664B', 900: '#5C3A21' },
-                        bgLight: '#FDFBF7'
-                    }
-                }
-            }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>냥이 카페 시계</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Pretendard', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            latte: { 50:'#F4F0EA', 100:'#EBE8DE', 200:'#DDD8CE', 300:'#D1CBBF', 500:'#A67B5B', 700:'#8B664B', 900:'#5C3A21' }
+          }
         }
-    </script>
-    <style>
-        body {
-            margin: 0; padding: 0;
-            background-color: #FDFBF7;
-            color: #333;
-        }
-        .soft-card {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .soft-card:hover {
-            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-        }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap');
+    html, body { margin:0; padding:0; background:transparent !important; }
+    #root { background:transparent !important; }
+
+    /* ── 드로어 ── */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:40; opacity:0; pointer-events:none; transition:opacity .28s ease; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:50; border-radius:1.5rem 1.5rem 0 0; background:#FDFBF7; box-shadow:none; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,1,.46,1), box-shadow .2s ease; max-height:70vh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); box-shadow:0 -6px 32px rgba(92,58,33,.13); }
+    .drawer-handle { width:2.5rem; height:.28rem; background:#D1CBBF; border-radius:9px; margin:.75rem auto .5rem; flex-shrink:0; }
+
+    /* ── 프리뷰 모드 ── */
+    .widget-content { transition:opacity .3s, filter .3s; }
+    .icon-btn { width:2rem; height:2rem; border-radius:50%; border:none; background:var(--icon-bg); color:var(--icon-color); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:background .2s, transform .2s, color .2s; }
+    .icon-btn:hover { transform:translateY(-1px); background:var(--icon-bg-hover); }
+    .icon-svg { width:1rem; height:1rem; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* ── 탭 ── */
+    .tab-btn { flex:1; padding:.45rem 0; font-size:.7rem; font-weight:700; border-radius:9999px; transition:all .18s; color:#B5A898; }
+    .tab-btn.active { background:#F4F0EA; color:#8B664B; }
+
+    /* ── 아이템 그리드 ── */
+    .item-btn { border-radius:1rem; border:2px solid transparent; transition:all .18s; background:#F8F5F0; aspect-ratio:1; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; }
+    .item-btn.selected { border-color:#A67B5B; background:#F4F0EA; }
+    .item-btn.locked { opacity:.45; cursor:not-allowed; }
+    .item-btn .lock-icon { position:absolute; bottom:3px; right:3px; font-size:.6rem; }
+
+    /* ── 퀘스트 ── */
+    .quest-row { display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem; border-radius:.75rem; background:#F8F5F0; margin-bottom:.35rem; }
+    .quest-check { width:1.1rem; height:1.1rem; border-radius:50%; border:2px solid #D1CBBF; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.55rem; }
+    .quest-check.done { background:#A67B5B; border-color:#A67B5B; color:white; }
+    .cat-badge { font-size:.55rem; font-weight:700; padding:.1rem .4rem; border-radius:9999px; }
+
+    /* ── 토스트 ── */
+    .toast { position:fixed; top:1.2rem; left:50%; transform:translateX(-50%) translateY(-2rem); background:#5C3A21; color:#FDF8F3; padding:.5rem 1.1rem; border-radius:9999px; font-size:.72rem; font-weight:700; z-index:200; opacity:0; pointer-events:none; transition:all .3s; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── 시계 ── */
+    .clock-digits { font-family:'Fredoka', Pretendard, ui-sans-serif, system-ui, sans-serif; font-size:2.15rem; font-weight:500; letter-spacing:.08em; color:#5C3A21; font-variant-numeric:tabular-nums; line-height:1; }
+
+    /* ── 설정 패널 ── */
+    .setup-overlay { position:fixed; inset:0; z-index:100; background:rgba(253,248,243,.97); display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+    .setup-box { width:100%; max-width:360px; background:#fff; border-radius:1.5rem; padding:1.5rem; box-shadow:0 4px 24px rgba(92,58,33,.1); }
+    .setup-input { width:100%; background:#F8F5F0; border:1.5px solid #EBE8DE; border-radius:.75rem; padding:.6rem .85rem; font-size:.78rem; font-family:inherit; color:#3d2b1a; outline:none; box-sizing:border-box; }
+    .setup-input:focus { border-color:#A67B5B; }
+    .setup-btn { width:100%; padding:.65rem; border-radius:.85rem; background:#A67B5B; color:#fff; font-weight:700; font-size:.82rem; font-family:inherit; border:none; cursor:pointer; margin-top:.5rem; }
+    .setup-btn:hover { background:#8B664B; }
+
+    @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+    .pop { animation:pop .35s ease; }
+    @keyframes sparkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+  </style>
 </head>
 <body>
-<div id="root" class="min-h-screen p-6 md:p-12 font-sans flex justify-center"></div>
-
+<div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-/* --- 아이콘 컴포넌트 --- */
-const LinkIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
-const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-const SettingsIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
-const DashboardIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>;
-const BookIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
-const TimerIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-const CatClockIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6 5.8 3.6 5 8"/><path d="M16 6l2.2-2.4L19 8"/><path d="M6 13a6 6 0 0 1 12 0c0 3-2.7 5-6 5s-6-2-6-5z"/><circle cx="9.5" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="14.5" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="M12 13.5v1"/><path d="M10.5 15.2c.6.5 2.4.5 3 0"/></svg>;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 퀘스트 정의 (93개)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const QUESTS = [
+  // 연속공부
+  ...Array.from({length:30},(_,i)=>({ id:`streak_${i+1}`, name:`${i+1}일 연속 공부`, cat:'연속공부', check:(d)=>d.streak>=(i+1) })),
+  // 집중시간 (단순)
+  ...[25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120].map(m=>({
+    id:`daily_${m}m`, name:`하루 ${m}분 이상 집중`, cat:'집중시간', check:(d)=>d.todayMinutes>=m
+  })),
+  // 집중시간 (2시간 누적)
+  ...[2,3,5,10,20,30].map((n,i)=>({
+    id:`daily_120m_${n}times`, name:`하루 2시간 이상 ${n}회 달성`, cat:'집중시간', check:(d)=>d.days120Count>=n
+  })),
+  // 누적시간
+  ...[1,5,10,20,30,50,75,100,150,200,300,500,750,1000].map(h=>({
+    id:`total_${h}h`, name:`누적 ${h}시간 달성`, cat:'누적시간', check:(d)=>d.totalMinutes>=(h*60)
+  })),
+  // 출석
+  { id:'weekday_full', name:'이번 주 개근 (월~금)', cat:'출석', check:(d)=>d.weekdayFull },
+  { id:'week_full',    name:'완벽한 한 주 (월~일)', cat:'출석', check:(d)=>d.weekFull },
+  { id:'month_full',   name:'한 달 개근',            cat:'출석', check:(d)=>d.monthFull },
+  ...[10,30,50,100,200,365].map(n=>({ id:`attend_${n}`, name:`누적 출석 ${n}일`, cat:'출석', check:(d)=>d.attendDays>=n })),
+  // 뽀모도로
+  ...[1,5,10,30,50,100].map(n=>({ id:`pomo_${n}`, name:`뽀모도로 ${n}회`, cat:'뽀모도로', check:(d)=>d.pomoCount>=n })),
+  { id:'pomo_200', name:'뽀모도로 마스터', cat:'뽀모도로', check:(d)=>d.pomoCount>=200 },
+  // 커피
+  { id:'coffee_first',   name:'첫 커피',         cat:'커피', check:(d)=>d.coffeeCount>=1 },
+  { id:'coffee_3types',  name:'커피 3종 탐험',   cat:'커피', check:(d)=>d.coffeeTypes>=3 },
+  { id:'coffee_5types',  name:'커피 5종 마스터', cat:'커피', check:(d)=>d.coffeeTypes>=5 },
+  { id:'coffee_10',      name:'커피 10잔',        cat:'커피', check:(d)=>d.coffeeCount>=10 },
+  { id:'coffee_50',      name:'커피 50잔',        cat:'커피', check:(d)=>d.coffeeCount>=50 },
+  { id:'coffee_100',     name:'커피 100잔',       cat:'커피', check:(d)=>d.coffeeCount>=100 },
+  { id:'coffee_addict',  name:'카페인 중독',      cat:'커피', check:(d)=>d.coffeeCount>=200 },
+];
 
-/* --- 저장소 유틸리티 --- */
-const LS_KEY = 'cozy_widgets_setup_config';
-const loadConfig = () => {
-    try {
-        const data = localStorage.getItem(LS_KEY);
-        if (data) return JSON.parse(data);
-    } catch (e) {
-        console.error("로컬 스토리지 로드 실패", e);
-    }
-    return {
-        proxyUrl: '',
-        apiKey: '',
-        recordDbId: '',
-        subjectDbId: '',
-        dashboardBaseUrl: '',
-        todoDbId: '',
-        statsDbId: '',
-        noteDbId: '',
-        wrongDbId: '',
-        vocabDbId: '',
-        testBaseUrl: '',
-        testDbId: '',
-        timerBaseUrl: '',
-        catClockBaseUrl: '',
-        questDbId: '',
-        dashboardPageId: '',
-        dashboardRelationProp: '대시보드 통계용',
-        statPageId: '' // 이전 버전 호환용
-    };
+const QUEST_CAT_COLOR = {
+  '연속공부':'#E8A87C', '집중시간':'#81B29A', '누적시간':'#7BA7C4',
+  '출석':'#C08CB8', '뽀모도로':'#E07A5F', '커피':'#A67B5B'
+};
+const QUEST_CAT_BG = {
+  '연속공부':'#FDF1E8', '집중시간':'#EBF4F0', '누적시간':'#EAF1F7',
+  '출석':'#F5ECF6', '뽀모도로':'#FDECEA', '커피':'#F4F0EA'
 };
 
-/* --- Notion 링크/ID 정리 유틸리티 --- */
-const extractNotionId = (value) => {
-    const raw = (value || '').trim();
-    if (!raw) return '';
-
-    // Notion URL에 포함된 32자리 ID 또는 하이픈 포함 UUID를 찾아 32자리 ID로 정리합니다.
-    const matches = raw.match(/[0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g);
-    if (matches && matches.length > 0) {
-        return matches[matches.length - 1].replace(/-/g, '');
-    }
-    return raw.replace(/-/g, '');
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 꾸미기 아이템 정의 (잠금 해제 조건 = 퀘스트 ID)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const DECO_ITEMS = {
+  cat: [
+    { id:'cat_white',   label:'흰 냥이',    emoji:'🐱', unlock:null },
+    { id:'cat_orange',  label:'치즈 냥이',  emoji:'🐈', unlock:'attend_10' },
+    { id:'cat_black',   label:'까만 냥이',  emoji:'🐈‍⬛', unlock:'streak_7' },
+    { id:'cat_calico',  label:'삼색 냥이',  emoji:'🐾', unlock:'streak_14' },
+    { id:'cat_gray',    label:'회색 냥이',  emoji:'😺', unlock:'attend_30' },
+  ],
+  drink: [
+    { id:'drink_lemon',  label:'레모네이드', emoji:'🍋', unlock:null },
+    { id:'drink_matcha', label:'말차 라떼',  emoji:'🍵', unlock:'coffee_first' },
+    { id:'drink_straw',  label:'딸기 라떼',  emoji:'🍓', unlock:'coffee_3types' },
+    { id:'drink_choco',  label:'초코 라떼',  emoji:'🍫', unlock:'coffee_10' },
+    { id:'drink_blue',   label:'블루 소다',  emoji:'💙', unlock:'daily_120m_3times' },
+    { id:'drink_peach',  label:'피치 에이드',emoji:'🍑', unlock:'coffee_50' },
+  ],
+  catAcc: [
+    { id:'acc_none',     label:'없음',       emoji:'✕',  unlock:null },
+    { id:'acc_ribbon',   label:'리본',       emoji:'🎀', unlock:'daily_60m' },
+    { id:'acc_hat',      label:'밀짚 모자',  emoji:'👒', unlock:'streak_3' },
+    { id:'acc_glasses',  label:'선글라스',   emoji:'🕶️', unlock:'streak_10' },
+    { id:'acc_crown',    label:'왕관',       emoji:'👑', unlock:'streak_30' },
+    { id:'acc_santa',    label:'산타 모자',  emoji:'🎅', unlock:'attend_100' },
+  ],
+  cupDeco: [
+    { id:'deco_none',    label:'없음',       emoji:'✕',  unlock:null },
+    { id:'deco_umbrella',label:'우산 픽',    emoji:'☂️', unlock:'daily_25m' },
+    { id:'deco_lemon',   label:'레몬 슬라이스', emoji:'🍋', unlock:'daily_30m' },
+    { id:'deco_mint',    label:'민트 잎',    emoji:'🌿', unlock:'pomo_1' },
+    { id:'deco_straw',   label:'빨대',       emoji:'🧋', unlock:'pomo_5' },
+    { id:'deco_cherry',  label:'체리',       emoji:'🍒', unlock:'coffee_5types' },
+    { id:'deco_flower',  label:'꽃 픽',      emoji:'🌸', unlock:'streak_21' },
+  ],
+  bg: [
+    { id:'bg_cream',   label:'크림',    color:'#FDFBF7', unlock:null },
+    { id:'bg_mint',    label:'민트',    color:'#EBF4F0', unlock:'daily_90m' },
+    { id:'bg_rose',    label:'로즈',    color:'#FDF0F2', unlock:'streak_7' },
+    { id:'bg_sky',     label:'스카이',  color:'#EAF1F7', unlock:'total_10h' },
+    { id:'bg_lavender',label:'라벤더',  color:'#F2EDF7', unlock:'total_30h' },
+    { id:'bg_peach',   label:'피치',    color:'#FEF3EC', unlock:'pomo_10' },
+    { id:'bg_dark',    label:'다크',    color:'#2D2420', unlock:'streak_30' },
+  ],
 };
 
-const normalizeBaseUrl = (url) => (url || '').trim().split('?')[0];
+const DECO_TAB_LABELS = { cat:'냥이', drink:'음료', catAcc:'냥 악세서리', cupDeco:'컵 데코', bg:'배경', preset:'프리셋' };
 
-/* --- 공통 입력 컴포넌트 --- */
-const InputField = ({ label, value, onChange, type = "text", description = "" }) => (
-    <div className="flex flex-col gap-1.5 mb-4">
-        <label className="text-[13px] font-bold text-gray-700 flex items-center gap-1">
-            {label}
-        </label>
-        {description && <p className="text-[11px] text-gray-500 mb-1">{description}</p>}
-        <input 
-            type={type} 
-            value={value} 
-            onChange={(e) => onChange(e.target.value)} 
-            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-800 focus:outline-none focus:border-latte-500 focus:ring-1 focus:ring-latte-500 transition-all shadow-sm"
-        />
-    </div>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// LocalStorage 키
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const LS = {
+  CONFIG:   'nyan_clock_config',
+  DECO:     'nyan_clock_deco',
+  CLOCK_ON: 'nyan_clock_show',
+  UI_ON:    'nyan_clock_ui',
+  DARK_MODE:'nyan_clock_dark_mode',
+  RECORD_MONTHS:'nyan_clock_record_months',
+  PRESETS:'nyan_clock_deco_presets',
+  WIDGET_BORDER:'nyan_clock_widget_border',
+};
+function loadLS(key, def) { try { const v=localStorage.getItem(key); return v!=null?JSON.parse(v):def; } catch{ return def; } }
+function saveLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch{} }
+
+const DEFAULT_DECO = {
+  cat:'cat_white', drink:'drink_lemon', catAcc:'acc_none', cupDeco:'deco_none', bg:'bg_cream'
+};
+const RECORD_MONTH_OPTIONS = [
+  { value:'3', label:'3개월' },
+  { value:'6', label:'6개월' },
+  { value:'12', label:'12개월' },
+  { value:'24', label:'24개월' },
+  { value:'all', label:'전체' },
+];
+const MAX_DECO_PRESETS = 12;
+const ymdLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
+const makeMonthlyRanges = (periodMonths) => {
+  if (periodMonths === 'all') return null;
+  const n = Math.max(1, parseInt(periodMonths, 10) || 12);
+  const tomorrow = new Date();
+  tomorrow.setHours(0,0,0,0);
+  tomorrow.setDate(tomorrow.getDate()+1);
+  const start = new Date(tomorrow.getFullYear(), tomorrow.getMonth() - (n - 1), 1);
+  const ranges = [];
+  let cursor = new Date(start);
+  while (cursor < tomorrow) {
+    const next = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+    const rangeEnd = next < tomorrow ? next : tomorrow;
+    ranges.push({ start: ymdLocal(cursor), end: ymdLocal(rangeEnd) });
+    cursor = next;
+  }
+  return ranges.reverse();
+};
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// URL 파라미터 설정 로드
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const cleanUrlValue = (value) => (value || '').trim();
+const loadUrlConfig = () => {
+  const params = new URLSearchParams(window.location.search);
+  const proxyUrl   = cleanUrlValue(params.get('proxyUrl'));
+  const apiKey     = cleanUrlValue(params.get('apiKey'));
+  const recordDbId = cleanUrlValue(params.get('recordDbId'));
+  const questDbId  = cleanUrlValue(params.get('questDbId'));
+
+  // 위젯통합설정 페이지에서 생성한 URL처럼 핵심 파라미터가 있으면 연결된 상태로 봅니다.
+  if (proxyUrl && apiKey && recordDbId) {
+    return { proxyUrl, apiKey, recordDbId, questDbId, saved:true, fromUrl:true };
+  }
+  return null;
+};
+const loadInitialConfig = () => loadUrlConfig() || loadLS(LS.CONFIG, null);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 일러스트 SVG (커피잔 + 고양이 레이어 합성)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const CupSVG = ({ catItem, drinkItem, catAccItem, cupDecoItem, bgColor }) => {
+  const dark = bgColor === '#2D2420';
+  // 음료 색상
+  const drinkColors = {
+    drink_lemon:  { top:'#B8E8D4', bot:'#7DD4B8', bubble:'rgba(255,255,255,.55)' },
+    drink_matcha: { top:'#A8C89A', bot:'#7AAB6C', bubble:'rgba(255,255,255,.45)' },
+    drink_straw:  { top:'#F4A8BB', bot:'#E87A9A', bubble:'rgba(255,255,255,.5)' },
+    drink_choco:  { top:'#A0725A', bot:'#7A5040', bubble:'rgba(255,255,255,.35)' },
+    drink_blue:   { top:'#78C8E8', bot:'#4AAED4', bubble:'rgba(255,255,255,.6)' },
+    drink_peach:  { top:'#F4C08A', bot:'#E8A06A', bubble:'rgba(255,255,255,.5)' },
+  };
+  const dc = drinkColors[drinkItem] || drinkColors.drink_lemon;
+
+  // 고양이 색상
+  const catColors = {
+    cat_white:  { body:'#FFFFFF', ear:'#FFD6D6', nose:'#FFB8C0', outline:'#E8E0D8' },
+    cat_orange: { body:'#F4A85C', ear:'#F48C3C', nose:'#FF8080', outline:'#D4842C' },
+    cat_black:  { body:'#3D3530', ear:'#2A2320', nose:'#FF9090', outline:'#1A1210' },
+    cat_calico: { body:'#F8EDD8', ear:'#F4C090', nose:'#FFB0B8', outline:'#D4B090' },
+    cat_gray:   { body:'#C0B8B4', ear:'#A89890', nose:'#FFB0B8', outline:'#908880' },
+  };
+  const cc = catColors[catItem] || catColors.cat_white;
+
+  return (
+    <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%',overflow:'visible'}}>
+      <defs>
+        <linearGradient id="drinkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={dc.top}/>
+          <stop offset="100%" stopColor={dc.bot}/>
+        </linearGradient>
+        <clipPath id="cupClip">
+          <path d="M38 90 Q36 195 42 200 Q100 210 158 200 Q164 195 162 90 Z"/>
+        </clipPath>
+      </defs>
+
+      {/* ── 컵 유리 바깥쪽 ── */}
+      <g>
+        {/* 손잡이 */}
+        <path d="M158 120 Q188 120 188 148 Q188 176 158 176" fill="none"
+          stroke={dark?'#6A5848':'#D8D0C4'} strokeWidth="12" strokeLinecap="round"/>
+        <path d="M158 120 Q180 120 180 148 Q180 176 158 176" fill="none"
+          stroke={dark?'#3A2E28':'#F0EBE4'} strokeWidth="6" strokeLinecap="round"/>
+
+        {/* 컵 외벽 */}
+        <path d="M38 90 Q36 195 42 200 Q100 210 158 200 Q164 195 162 90 Z"
+          fill={dark?'rgba(60,44,36,.5)':'rgba(255,255,255,.55)'}
+          stroke={dark?'#5A4438':'#C8C0B4'} strokeWidth="1.5"/>
+
+        {/* 음료 내부 */}
+        <g clipPath="url(#cupClip)">
+          <rect x="36" y="108" width="128" height="108" fill="url(#drinkGrad)"/>
+          {/* 기포들 */}
+          {[[60,160,4],[90,175,3],[120,158,5],[75,145,3],[140,170,4],[108,188,3],[55,185,3.5]].map(([x,y,r],i)=>(
+            <circle key={i} cx={x} cy={y} r={r} fill={dc.bubble} opacity={.8}/>
+          ))}
+          {/* 레몬 슬라이스 힌트 */}
+          <ellipse cx="70" cy="170" rx="18" ry="12" fill="rgba(255,235,130,.6)" transform="rotate(-30 70 170)"/>
+          <ellipse cx="70" cy="170" rx="11" ry="7" fill="rgba(255,245,160,.7)" transform="rotate(-30 70 170)"/>
+          <ellipse cx="138" cy="148" rx="20" ry="13" fill="rgba(190,230,100,.55)" transform="rotate(20 138 148)"/>
+          <ellipse cx="138" cy="148" rx="12" ry="8" fill="rgba(210,240,130,.6)" transform="rotate(20 138 148)"/>
+          {/* 민트 잎 */}
+          <ellipse cx="118" cy="122" rx="7" ry="4" fill="rgba(100,180,120,.7)" transform="rotate(-40 118 122)"/>
+          <ellipse cx="108" cy="118" rx="7" ry="4" fill="rgba(90,170,110,.65)" transform="rotate(-20 108 118)"/>
+        </g>
+
+        {/* 컵 내벽 하이라이트 */}
+        <path d="M42 90 Q40 195 46 200" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M44 90 Q42 195 48 200" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="2"/>
+
+        {/* 컵 상단 테두리 */}
+        <ellipse cx="100" cy="90" rx="63" ry="10"
+          fill={dark?'rgba(50,38,30,.6)':'rgba(255,255,255,.7)'}
+          stroke={dark?'#5A4438':'#C8C0B4'} strokeWidth="1.5"/>
+        {/* 상단 안쪽 반사 */}
+        <ellipse cx="100" cy="90" rx="54" ry="7" fill={dc.top} opacity=".6"/>
+      </g>
+
+      {/* ── 컵 데코 ── */}
+      {cupDecoItem === 'deco_umbrella' && (
+        <g transform="translate(52,52)">
+          <line x1="0" y1="0" x2="0" y2="42" stroke="#D4A070" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M-22,-2 Q0,-26 22,-2" fill="#F9E4A0" stroke="#E8C860" strokeWidth="1"/>
+          <path d="M-22,-2 Q-11,-26 0,-2" fill="#C8ECD4" stroke="#98D4A8" strokeWidth="1"/>
+          <path d="M0,-2 Q11,-26 22,-2" fill="#F4C0A8" stroke="#E4A080" strokeWidth="1"/>
+        </g>
+      )}
+      {cupDecoItem === 'deco_lemon' && (
+        <g transform="translate(148,78) rotate(25)">
+          <ellipse cx="0" cy="0" rx="14" ry="9" fill="#F9E44A" stroke="#E8CC30" strokeWidth="1"/>
+          <ellipse cx="0" cy="0" rx="8" ry="5" fill="#FFF590" opacity=".7"/>
+          {[0,45,90,135,180,225,270,315].map((a,i)=>(
+            <line key={i} x1="0" y1="0" x2={Math.cos(a*Math.PI/180)*7} y2={Math.sin(a*Math.PI/180)*4.5}
+              stroke="#E8CC30" strokeWidth=".5" opacity=".6"/>
+          ))}
+        </g>
+      )}
+      {cupDecoItem === 'deco_mint' && (
+        <g transform="translate(148,85)">
+          <ellipse cx="0" cy="-8" rx="8" ry="5" fill="#7BC88C" transform="rotate(-30)"/>
+          <ellipse cx="0" cy="-8" rx="8" ry="5" fill="#5AAC70" transform="rotate(20)"/>
+          <line x1="0" y1="0" x2="0" y2="10" stroke="#4A9060" strokeWidth="1.5" strokeLinecap="round"/>
+        </g>
+      )}
+      {cupDecoItem === 'deco_straw' && (
+        <g transform="translate(145,50)">
+          <rect x="-3" y="-2" width="6" height="50" rx="3" fill="#F08080" opacity=".85"/>
+          <rect x="-3" y="-2" width="6" height="50" rx="3" fill="none"
+            stroke="rgba(255,255,255,.4)" strokeWidth="1"/>
+        </g>
+      )}
+      {cupDecoItem === 'deco_cherry' && (
+        <g transform="translate(155,65)">
+          <path d="M0,0 Q-8,-18 -16,-12" fill="none" stroke="#6A9C5A" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="-16" cy="-12" r="6" fill="#D44040"/>
+          <circle cx="-16" cy="-12" r="3" fill="#E86060"/>
+          <circle cx="0" cy="0" r="6" fill="#C03030"/>
+          <circle cx="0" cy="0" r="3" fill="#E85050"/>
+        </g>
+      )}
+      {cupDecoItem === 'deco_flower' && (
+        <g transform="translate(50,60)">
+          {[0,60,120,180,240,300].map((a,i)=>(
+            <ellipse key={i} cx={Math.cos(a*Math.PI/180)*7} cy={Math.sin(a*Math.PI/180)*7}
+              rx="5" ry="3.5" fill={i%2===0?'#F9B8C8':'#F4D4DF'} transform={`rotate(${a} ${Math.cos(a*Math.PI/180)*7} ${Math.sin(a*Math.PI/180)*7})`}/>
+          ))}
+          <circle cx="0" cy="0" r="4.5" fill="#F9E44A"/>
+        </g>
+      )}
+
+      {/* ── 고양이 ── */}
+      <g transform="translate(100,78)">
+        {/* 귀 */}
+        <path d="M-24,-22 L-32,-46 L-10,-30 Z" fill={cc.body} stroke={cc.outline} strokeWidth="1.2" strokeLinejoin="round"/>
+        <path d="M-22,-24 L-28,-42 L-12,-30 Z" fill={cc.ear}/>
+        <path d="M24,-22 L32,-46 L10,-30 Z" fill={cc.body} stroke={cc.outline} strokeWidth="1.2" strokeLinejoin="round"/>
+        <path d="M22,-24 L28,-42 L12,-30 Z" fill={cc.ear}/>
+
+        {/* 머리 */}
+        <ellipse cx="0" cy="-4" rx="34" ry="30" fill={cc.body} stroke={cc.outline} strokeWidth="1.2"/>
+
+        {/* 털 결 */}
+        {catItem==='cat_calico' && <>
+          <ellipse cx="-10" cy="-8" rx="12" ry="9" fill="#F4A870" opacity=".6"/>
+          <ellipse cx="16" cy="4" rx="10" ry="7" fill="#D08840" opacity=".5"/>
+        </>}
+        {catItem==='cat_gray' && (
+          <path d="M-20,-10 Q0,-20 20,-10 Q10,10 -10,10 Z" fill="#A8A0A0" opacity=".3"/>
+        )}
+
+        {/* 눈 */}
+        <ellipse cx="-11" cy="-6" rx="7" ry="7.5" fill="white" stroke={cc.outline} strokeWidth=".8"/>
+        <ellipse cx="11" cy="-6" rx="7" ry="7.5" fill="white" stroke={cc.outline} strokeWidth=".8"/>
+        <ellipse cx="-11" cy="-6" rx="4.5" ry="5" fill={catItem==='cat_black'?'#4A3F80':'#2D2560'}/>
+        <ellipse cx="11" cy="-6" rx="4.5" ry="5" fill={catItem==='cat_black'?'#4A3F80':'#2D2560'}/>
+        <circle cx="-9.5" cy="-8" r="1.8" fill="white"/>
+        <circle cx="12.5" cy="-8" r="1.8" fill="white"/>
+
+        {/* 코 */}
+        <path d="M-2.5,4 L0,7 L2.5,4 Q0,2 -2.5,4Z" fill={cc.nose}/>
+        {/* 입 */}
+        <path d="M0,7 Q-5,12 -8,10" fill="none" stroke={cc.outline} strokeWidth="1.2" strokeLinecap="round"/>
+        <path d="M0,7 Q5,12 8,10" fill="none" stroke={cc.outline} strokeWidth="1.2" strokeLinecap="round"/>
+        {/* 수염 */}
+        <line x1="-34" y1="2" x2="-14" y2="4" stroke={cc.outline} strokeWidth=".9" opacity=".7"/>
+        <line x1="-34" y1="7" x2="-14" y2="7" stroke={cc.outline} strokeWidth=".9" opacity=".6"/>
+        <line x1="34" y1="2" x2="14" y2="4" stroke={cc.outline} strokeWidth=".9" opacity=".7"/>
+        <line x1="34" y1="7" x2="14" y2="7" stroke={cc.outline} strokeWidth=".9" opacity=".6"/>
+        {/* 볼 홍조 */}
+        <ellipse cx="-18" cy="6" rx="6" ry="4" fill="#FFB8C0" opacity=".45"/>
+        <ellipse cx="18" cy="6" rx="6" ry="4" fill="#FFB8C0" opacity=".45"/>
+
+        {/* 고양이 악세서리 */}
+        {catAccItem === 'acc_ribbon' && (
+          <g transform="translate(-14,-42)">
+            <path d="M0,0 L-12,-8 L-8,0 L-12,8 Z" fill="#F48CB0"/>
+            <path d="M0,0 L12,-8 L8,0 L12,8 Z" fill="#F48CB0"/>
+            <circle cx="0" cy="0" r="5" fill="#F8A8C4"/>
+          </g>
+        )}
+        {catAccItem === 'acc_hat' && (
+          <g transform="translate(0,-44)">
+            <ellipse cx="0" cy="0" rx="28" ry="7" fill="#E8C878" stroke="#C8A848" strokeWidth="1"/>
+            <rect x="-14" y="-28" width="28" height="28" rx="4" fill="#D4A840" stroke="#C8A848" strokeWidth="1"/>
+            <path d="M-6,-28 Q0,-35 6,-28" fill="none" stroke="#C8A848" strokeWidth="1" strokeLinecap="round"/>
+          </g>
+        )}
+        {catAccItem === 'acc_glasses' && (
+          <g transform="translate(0,-6)">
+            <circle cx="-11" cy="0" r="8" fill="rgba(50,80,120,.35)" stroke="#C8A060" strokeWidth="1.5"/>
+            <circle cx="11" cy="0" r="8" fill="rgba(50,80,120,.35)" stroke="#C8A060" strokeWidth="1.5"/>
+            <line x1="-3" y1="0" x2="3" y2="0" stroke="#C8A060" strokeWidth="1.5"/>
+            <line x1="-34" y1="0" x2="-19" y2="0" stroke="#C8A060" strokeWidth="1.2"/>
+            <line x1="34" y1="0" x2="19" y2="0" stroke="#C8A060" strokeWidth="1.2"/>
+          </g>
+        )}
+        {catAccItem === 'acc_crown' && (
+          <g transform="translate(0,-52)">
+            <path d="M-18,12 L-18,-2 L-8,8 L0,-10 L8,8 L18,-2 L18,12 Z" fill="#F4CC40" stroke="#C8A020" strokeWidth="1"/>
+            <circle cx="0" cy="-10" r="3.5" fill="#E87040"/>
+            <circle cx="-18" cy="-2" r="2.5" fill="#60B870"/>
+            <circle cx="18" cy="-2" r="2.5" fill="#60B870"/>
+          </g>
+        )}
+        {catAccItem === 'acc_santa' && (
+          <g transform="translate(8,-42)">
+            <ellipse cx="0" cy="0" rx="24" ry="7" fill="white"/>
+            <path d="M-18,-6 Q-10,-36 4,-34 Q14,-32 10,-6 Z" fill="#D03030"/>
+            <ellipse cx="10" cy="-34" rx="5" ry="5" fill="white"/>
+          </g>
+        )}
+      </g>
+
+      {/* 컵 앞 반사광 */}
+      <path d="M55 105 Q52 170 56 190" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  );
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 날짜 유틸
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const toDate = (iso) => iso ? iso.slice(0,10) : null;
+const today  = () => new Date().toISOString().slice(0,10);
+
+function computeStats(records) {
+  const todayStr = today();
+  // 날짜별 분 집계
+  const dayMap = {};
+  let totalMinutes = 0;
+  let pomoCount = 0;
+  let coffeeCount = 0;
+  const coffeeSet = new Set();
+
+  for (const r of records) {
+    const d = toDate(r.date);
+    if (!d) continue;
+    const m = r.minutes || 0;
+    dayMap[d] = (dayMap[d] || 0) + m;
+    totalMinutes += m;
+    if (r.mode === '뽀모도로') pomoCount++;
+    if (r.coffee) { coffeeCount++; coffeeSet.add(r.coffee); }
+  }
+
+  const todayMinutes = dayMap[todayStr] || 0;
+  const attendDays   = Object.keys(dayMap).length;
+
+  // 연속 공부
+  let streak = 0;
+  const d = new Date(todayStr);
+  while (true) {
+    const k = d.toISOString().slice(0,10);
+    if (!dayMap[k]) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+  }
+
+  // 2시간 이상인 날 카운트
+  const days120Count = Object.values(dayMap).filter(m=>m>=120).length;
+
+  // 출석 관련
+  const now = new Date(todayStr);
+  const dow = now.getDay(); // 0=일
+
+  // 이번 주 월~금
+  let weekdayFull = true;
+  for (let i=1;i<=5;i++) {
+    const dd = new Date(now); dd.setDate(now.getDate() - ((dow-i+7)%7));
+    if (dd > now) { weekdayFull=false; break; }
+    if (!dayMap[dd.toISOString().slice(0,10)]) { weekdayFull=false; break; }
+  }
+  // 이번 주 월~일
+  let weekFull = true;
+  const weekStart = new Date(now); weekStart.setDate(now.getDate()-((dow+6)%7));
+  for (let i=0;i<7;i++) {
+    const dd = new Date(weekStart); dd.setDate(weekStart.getDate()+i);
+    if (dd > now) break;
+    if (!dayMap[dd.toISOString().slice(0,10)]) { weekFull=false; break; }
+  }
+  // 이번 달 개근
+  let monthFull = true;
+  const y=now.getFullYear(), mo=now.getMonth();
+  for (let i=1;i<=now.getDate();i++) {
+    const dd = new Date(y,mo,i).toISOString().slice(0,10);
+    if (!dayMap[dd]) { monthFull=false; break; }
+  }
+
+  return { todayMinutes, totalMinutes, pomoCount, coffeeCount,
+    coffeeTypes: coffeeSet.size, streak, attendDays, days120Count,
+    weekdayFull, weekFull, monthFull };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 심플 아이콘
+// index.html과 같은 선 스타일 아이콘을 사용합니다.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const GearIcon = () => (
+  <svg className="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
 );
-
-const App = () => {
-    const [config, setConfig] = useState(loadConfig());
-    const [copyStatus, setCopyStatus] = useState({ dashboard: false, test: false, timer: false, catClock: false });
-
-    // 설정 변경 시 로컬 스토리지에 자동 저장
-    useEffect(() => {
-        localStorage.setItem(LS_KEY, JSON.stringify(config));
-    }, [config]);
-
-    const handleChange = (key, value) => {
-        setConfig(prev => ({ ...prev, [key]: value.trim() }));
-    };
-
-    const handleNotionIdChange = (key, value) => {
-        setConfig(prev => ({ ...prev, [key]: extractNotionId(value) }));
-    };
-
-    const copyToClipboard = (text, type) => {
-        try {
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            
-            setCopyStatus(prev => ({ ...prev, [type]: true }));
-            setTimeout(() => {
-                setCopyStatus(prev => ({ ...prev, [type]: false }));
-            }, 2000);
-        } catch (e) {
-            alert('복사에 실패했습니다.');
-        }
-    };
-
-    const generateDashboardLink = () => {
-        if (!config.dashboardBaseUrl) {
-            alert("대시보드 HTML 호스팅 주소를 입력해주세요.");
-            return;
-        }
-        
-        const params = new URLSearchParams();
-        params.set('proxyUrl', config.proxyUrl);
-        params.set('apiKey', config.apiKey);
-        params.set('recordDbId', config.recordDbId);
-        params.set('subjectDbId', config.subjectDbId);
-        params.set('todoDbId', config.todoDbId);
-        params.set('statsDbId', config.statsDbId);
-        params.set('noteDbId', config.noteDbId);
-        params.set('wrongDbId', config.wrongDbId);
-        
-        // 대시보드 단어장 섹션에서 사용하는 파라미터입니다.
-        // 단어장 DB와 테스트 DB가 모두 있어야 대시보드의 단어장 영역이 활성화됩니다.
-        if (config.vocabDbId) {
-            params.set('vocabDbId', extractNotionId(config.vocabDbId));
-        }
-        if (config.testDbId) {
-            params.set('testDbId', extractNotionId(config.testDbId));
-        }
-        
-        // 홈 탭에서 새 투두를 만들 때 대시보드 통계용 페이지와 자동 연결하기 위한 파라미터
-        const dashboardPageId = config.dashboardPageId || config.statPageId || '';
-        if (dashboardPageId) {
-            params.set('dashboardPageId', extractNotionId(dashboardPageId));
-        }
-        if (config.dashboardRelationProp) {
-            params.set('dashboardRelationProp', config.dashboardRelationProp);
-        }
-        
-        const baseUrl = normalizeBaseUrl(config.dashboardBaseUrl);
-        const finalUrl = `${baseUrl}?${params.toString()}`;
-        
-        copyToClipboard(finalUrl, 'dashboard');
-    };
-
-    const generateTestLink = () => {
-        if (!config.testBaseUrl) {
-            alert("단어 테스트 HTML 호스팅 주소를 입력해주세요.");
-            return;
-        }
-
-        const params = new URLSearchParams();
-        params.set('proxyUrl', config.proxyUrl);
-        params.set('apiKey', config.apiKey);
-        params.set('subjectDbId', config.subjectDbId);
-        params.set('testDbId', config.testDbId);
-        
-        const baseUrl = normalizeBaseUrl(config.testBaseUrl);
-        const finalUrl = `${baseUrl}?${params.toString()}`;
-        
-        copyToClipboard(finalUrl, 'test');
-    };
-
-    const generateTimerLink = () => {
-        if (!config.timerBaseUrl) {
-            alert("타이머 HTML 호스팅 주소를 입력해주세요.");
-            return;
-        }
-
-        const params = new URLSearchParams();
-        params.set('proxyUrl', config.proxyUrl);
-        params.set('apiKey', config.apiKey);
-        params.set('recordDbId', config.recordDbId);
-        params.set('subjectDbId', config.subjectDbId);
-        
-        // 대시보드 통계용 페이지와 자동 연결하기 위한 파라미터
-        // 이전 버전에서 저장된 statPageId가 있으면 dashboardPageId로 함께 사용합니다.
-        const dashboardPageId = config.dashboardPageId || config.statPageId || '';
-        if (dashboardPageId) {
-            params.set('dashboardPageId', extractNotionId(dashboardPageId));
-        }
-        if (config.dashboardRelationProp) {
-            params.set('dashboardRelationProp', config.dashboardRelationProp);
-        }
-        
-        const baseUrl = normalizeBaseUrl(config.timerBaseUrl);
-        const finalUrl = `${baseUrl}?${params.toString()}`;
-        
-        copyToClipboard(finalUrl, 'timer');
-    };
-
-    const generateCatClockLink = () => {
-        if (!config.catClockBaseUrl) {
-            alert("냥이카페시계 HTML 호스팅 주소를 입력해주세요.");
-            return;
-        }
-
-        const params = new URLSearchParams();
-        params.set('proxyUrl', config.proxyUrl);
-        params.set('apiKey', config.apiKey);
-        params.set('recordDbId', config.recordDbId);
-        if (config.questDbId) {
-            params.set('questDbId', extractNotionId(config.questDbId));
-        }
-        
-        const baseUrl = normalizeBaseUrl(config.catClockBaseUrl);
-        const finalUrl = `${baseUrl}?${params.toString()}`;
-        
-        copyToClipboard(finalUrl, 'catClock');
-    };
-
-    return (
-        <div className="w-full max-w-7xl flex flex-col gap-8">
-            <header className="flex items-center gap-3 border-b border-gray-200 pb-4 mb-2">
-                <div className="w-10 h-10 bg-latte-50 rounded-xl flex items-center justify-center text-latte-700">
-                    <SettingsIcon />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight">위젯 연결 스튜디오</h1>
-                    <p className="text-sm text-gray-500 font-medium">한 번 입력해두면 모든 위젯의 노션 임베드 링크를 원클릭으로 생성할 수 있습니다.</p>
-                </div>
-            </header>
-
-            {/* --- 공통 API 및 DB 설정 --- */}
-            <section className="bg-white rounded-3xl p-6 md:p-8 soft-card border border-[#EBE8DE]">
-                <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <span className="text-latte-500">⚙️</span> 공통 설정
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                    <InputField 
-                        label="Cloudflare Proxy URL" 
-                        value={config.proxyUrl} 
-                        onChange={(v) => handleChange('proxyUrl', v)} 
-                    />
-                    <InputField 
-                        label="Notion API Key" 
-                        type="password"
-                        value={config.apiKey} 
-                        onChange={(v) => handleChange('apiKey', v)} 
-                    />
-                    <InputField 
-                        label="공부 기록 DB ID" 
-                        description="대시보드와 타이머 위젯에서 공부 시간을 기록하고 불러올 때 공통으로 사용됩니다."
-                        value={config.recordDbId} 
-                        onChange={(v) => handleChange('recordDbId', v)} 
-                    />
-                    <InputField 
-                        label="공용 과목 DB ID" 
-                        description="대시보드, 단어 테스트, 타이머에서 공통으로 참조하는 과목 목록입니다."
-                        value={config.subjectDbId} 
-                        onChange={(v) => handleChange('subjectDbId', v)} 
-                    />
-                </div>
-            </section>
-
-            {/* --- 개별 위젯 설정 카드 (가로 정렬 유지) --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
-                
-                {/* 1. 대시보드 위젯 설정 */}
-                <section className="bg-white rounded-3xl p-6 md:p-8 soft-card border border-[#EBE8DE] flex flex-col">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                        <div className="text-latte-500"><DashboardIcon /></div>
-                        <h2 className="text-lg font-bold text-gray-800">대시보드</h2>
-                    </div>
-
-                    <div className="flex-1">
-                        <InputField 
-                            label="대시보드 HTML 호스팅 주소" 
-                            description="Github Pages 등 외부에서 접근 가능한 dashboard.html 주소를 입력하세요."
-                            value={config.dashboardBaseUrl} 
-                            onChange={(v) => handleChange('dashboardBaseUrl', v)} 
-                        />
-                        <InputField 
-                            label="투두리스트 DB ID" 
-                            value={config.todoDbId} 
-                            onChange={(v) => handleChange('todoDbId', v)} 
-                        />
-                        <InputField 
-                            label="누적 통계 DB ID" 
-                            value={config.statsDbId} 
-                            onChange={(v) => handleChange('statsDbId', v)} 
-                        />
-                        <InputField 
-                            label="학습 노트 DB ID" 
-                            value={config.noteDbId} 
-                            onChange={(v) => handleChange('noteDbId', v)} 
-                        />
-                        <InputField 
-                            label="오답 노트 DB ID" 
-                            value={config.wrongDbId} 
-                            onChange={(v) => handleChange('wrongDbId', v)} 
-                        />
-
-                        <div className="mt-6 mb-4 bg-[#F0EDF8] p-4 rounded-xl border border-[#D7D0EE]">
-                            <p className="text-[12px] font-bold text-[#6B5FA6] mb-1">📚 대시보드 단어장 섹션</p>
-                            <p className="text-[11px] text-[#7B6FB6] leading-relaxed font-medium">
-                                대시보드 홈에서 오늘 추가된 단어, 복습 단어, 마스터 단어를 보여줄 때 사용합니다. 단어장 DB ID와 테스트 DB ID를 모두 입력해야 활성화됩니다.
-                            </p>
-                        </div>
-                        <InputField 
-                            label="단어장 DB ID" 
-                            description="대시보드 단어장 섹션에서 단어 원본과 마스터 단어를 불러올 때 사용합니다."
-                            value={config.vocabDbId || ''} 
-                            onChange={(v) => handleChange('vocabDbId', v)} 
-                        />
-                        <InputField 
-                            label="테스트 DB ID" 
-                            description="단어 테스트 결과, 누적 통과 횟수, 다시 학습 상태를 불러올 때 사용합니다. 단어 테스트 위젯과 같은 DB ID입니다."
-                            value={config.testDbId || ''} 
-                            onChange={(v) => handleChange('testDbId', v)} 
-                        />
-                    </div>
-
-                    <button 
-                        onClick={generateDashboardLink}
-                        className={`w-full mt-6 py-4 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 shadow-sm
-                            ${copyStatus.dashboard ? 'bg-[#849F71] text-white' : 'bg-latte-500 hover:bg-latte-700 text-white'}`}
-                    >
-                        {copyStatus.dashboard ? (
-                            <><CheckIcon /> 대시보드 링크 복사 완료!</>
-                        ) : (
-                            <><LinkIcon /> 대시보드 링크 생성</>
-                        )}
-                    </button>
-                </section>
-
-                {/* 2. 단어 테스트 위젯 설정 */}
-                <section className="bg-white rounded-3xl p-6 md:p-8 soft-card border border-[#EBE8DE] flex flex-col">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                        <div className="text-latte-700"><BookIcon /></div>
-                        <h2 className="text-lg font-bold text-gray-800">단어 테스트</h2>
-                    </div>
-
-                    <div className="flex-1">
-                        <InputField 
-                            label="단어 테스트 HTML 호스팅 주소" 
-                            description="Github Pages 등 외부에서 접근 가능한 test.html 주소를 입력하세요."
-                            value={config.testBaseUrl} 
-                            onChange={(v) => handleChange('testBaseUrl', v)} 
-                        />
-                        <InputField 
-                            label="단어 테스트 DB ID" 
-                            description="대시보드 단어장 섹션과 공용으로 사용하는 테스트 DB입니다."
-                            value={config.testDbId} 
-                            onChange={(v) => handleChange('testDbId', v)} 
-                        />
-                        <div className="mt-4 bg-[#F4F0EA] p-4 rounded-xl border border-[#D1CBBF]">
-                            <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
-                                공통 설정에 입력된 <span className="font-bold text-gray-700">과목 DB ID</span>를 자동으로 가져와 함께 링크를 생성합니다.
-                            </p>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={generateTestLink}
-                        className={`w-full mt-6 py-4 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 shadow-sm
-                            ${copyStatus.test ? 'bg-[#849F71] text-white' : 'bg-gray-800 hover:bg-gray-700 text-white'}`}
-                    >
-                        {copyStatus.test ? (
-                            <><CheckIcon /> 단어 테스트 링크 복사 완료!</>
-                        ) : (
-                            <><LinkIcon /> 단어 테스트 링크 생성</>
-                        )}
-                    </button>
-                </section>
-
-                {/* 3. 타이머 위젯 설정 */}
-                <section className="bg-white rounded-3xl p-6 md:p-8 soft-card border border-[#EBE8DE] flex flex-col">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                        <div className="text-[#849F71]"><TimerIcon /></div>
-                        <h2 className="text-lg font-bold text-gray-800">타이머</h2>
-                    </div>
-
-                    <div className="flex-1">
-                        <InputField 
-                            label="타이머 HTML 호스팅 주소" 
-                            description="Github Pages 등 외부에서 접근 가능한 timer.html 주소를 입력하세요."
-                            value={config.timerBaseUrl} 
-                            onChange={(v) => handleChange('timerBaseUrl', v)} 
-                        />
-                        
-                        <InputField 
-                            label="대시보드 통계용 페이지 링크 또는 ID (선택)" 
-                            description="공부 기록 추가 시 자동 연결할 '대시보드 통계용' 페이지 링크를 붙여넣어도 됩니다. ID만 자동 추출됩니다."
-                            value={config.dashboardPageId || config.statPageId || ''} 
-                            onChange={(v) => handleNotionIdChange('dashboardPageId', v)} 
-                        />
-                        <InputField 
-                            label="대시보드 관계형 속성 이름" 
-                            description="공부 기록 DB에 있는 관계형 속성 이름입니다. 기본값은 '대시보드 통계용'입니다."
-                            value={config.dashboardRelationProp || '대시보드 통계용'} 
-                            onChange={(v) => handleChange('dashboardRelationProp', v || '대시보드 통계용')} 
-                        />
-
-                        <div className="mt-4 bg-[#F3F8F5] p-4 rounded-xl border border-[#D1E0C9]">
-                            <p className="text-[11px] text-[#5a8a6e] leading-relaxed font-medium">
-                                공통 설정의 <span className="font-bold text-[#355b44]">공부 기록 DB ID</span>, <span className="font-bold text-[#355b44]">과목 DB ID</span>와 함께 대시보드 통계용 페이지 연결값을 타이머 링크에 포함합니다.
-                            </p>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={generateTimerLink}
-                        className={`w-full mt-6 py-4 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 shadow-sm
-                            ${copyStatus.timer ? 'bg-[#8B664B] text-white' : 'bg-[#849F71] hover:bg-[#728d5f] text-white'}`}
-                    >
-                        {copyStatus.timer ? (
-                            <><CheckIcon /> 타이머 링크 복사 완료!</>
-                        ) : (
-                            <><LinkIcon /> 타이머 링크 생성</>
-                        )}
-                    </button>
-                </section>
-
-                {/* 4. 냥이카페시계 위젯 설정 */}
-                <section className="bg-white rounded-3xl p-6 md:p-8 soft-card border border-[#EBE8DE] flex flex-col">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                        <div className="text-[#A67B5B]"><CatClockIcon /></div>
-                        <h2 className="text-lg font-bold text-gray-800">냥이카페시계</h2>
-                    </div>
-
-                    <div className="flex-1">
-                        <InputField 
-                            label="냥이카페시계 HTML 호스팅 주소" 
-                            description="Github Pages 등 외부에서 접근 가능한 coffeecat.html 주소를 입력하세요."
-                            value={config.catClockBaseUrl || ''} 
-                            onChange={(v) => handleChange('catClockBaseUrl', v)} 
-                        />
-                        <InputField 
-                            label="퀘스트 DB ID" 
-                            description="냥이카페시계의 퀘스트 달성 기록과 꾸미기 해금 조건에 사용됩니다."
-                            value={config.questDbId || ''} 
-                            onChange={(v) => handleNotionIdChange('questDbId', v)} 
-                        />
-
-                        <div className="mt-4 bg-[#FDF8F3] p-4 rounded-xl border border-[#EADBCB]">
-                            <p className="text-[11px] text-[#8B664B] leading-relaxed font-medium">
-                                공통 설정의 <span className="font-bold text-[#5C3A21]">공부 기록 DB ID</span>를 함께 사용해 오늘의 공부 기록, 커피 기록, 퀘스트 진행도를 불러옵니다.
-                            </p>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={generateCatClockLink}
-                        className={`w-full mt-6 py-4 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 shadow-sm
-                            ${copyStatus.catClock ? 'bg-[#849F71] text-white' : 'bg-[#A67B5B] hover:bg-[#8B664B] text-white'}`}
-                    >
-                        {copyStatus.catClock ? (
-                            <><CheckIcon /> 냥이카페시계 링크 복사 완료!</>
-                        ) : (
-                            <><LinkIcon /> 냥이카페시계 링크 생성</>
-                        )}
-                    </button>
-                </section>
-
-            </div>
-            
-            <footer className="text-center text-[11px] text-gray-400 font-medium py-6">
-                이 페이지의 입력 데이터는 사용자 브라우저(로컬 스토리지)에만 안전하게 보관되며 외부로 전송되지 않습니다.
-            </footer>
-        </div>
-    );
+const MoonIcon = () => (
+  <svg className="icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+);
+const SunIcon = () => (
+  <svg className="icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+);
+const CameraIcon = () => (
+  <svg className="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+);
+const EyeIcon = () => (
+  <svg className="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+const EyeOffIcon = () => (
+  <svg className="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C5 20 1 12 1 12a20.3 20.3 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A10.7 10.7 0 0 1 12 4c7 0 11 8 11 8a20.6 20.6 0 0 1-3.22 4.31"/>
+    <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
+const Icon = ({ name }) => {
+  if (name === 'camera') return <CameraIcon/>;
+  if (name === 'eye') return <EyeIcon/>;
+  if (name === 'eyeOff') return <EyeOffIcon/>;
+  if (name === 'settings') return <GearIcon/>;
+  if (name === 'moon') return <MoonIcon/>;
+  return <SunIcon/>;
 };
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 메인 앱
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function App() {
+  const initialConfig = useMemo(() => loadInitialConfig(), []);
+  const [config, setConfig] = useState(initialConfig);
+  const [setupForm, setSetupForm] = useState(() => ({
+    proxyUrl: initialConfig?.proxyUrl || '',
+    apiKey: initialConfig?.apiKey || '',
+    recordDbId: initialConfig?.recordDbId || '',
+    questDbId: initialConfig?.questDbId || ''
+  }));
+  const [showSetup, setShowSetup] = useState(!initialConfig);
+
+  const [records,  setRecords]  = useState([]);
+  const [questDone, setQuestDone] = useState({}); // { questId: dateStr }
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+
+  const [clockOn, setClockOn] = useState(() => loadLS(LS.CLOCK_ON, true));
+  const [uiOn,    setUiOn]    = useState(() => loadLS(LS.UI_ON, true));
+  const [darkMode,setDarkMode]= useState(() => loadLS(LS.DARK_MODE, false));
+  const [widgetBorder, setWidgetBorder] = useState(() => loadLS(LS.WIDGET_BORDER, true));
+  const [time,    setTime]    = useState('');
+
+  const [drawer,    setDrawer]    = useState(null); // null | 'deco' | 'quest'
+  const [decoTab,   setDecoTab]   = useState('cat');
+  const [deco, setDeco] = useState(() => loadLS(LS.DECO, DEFAULT_DECO));
+  const [recordMonths, setRecordMonths] = useState(() => loadLS(LS.RECORD_MONTHS, '12'));
+  const [decoPresets, setDecoPresets] = useState(() => loadLS(LS.PRESETS, []));
+  const [presetName, setPresetName] = useState('');
+
+  const [toast,    setToast]    = useState('');
+  const [toastKey, setToastKey] = useState(0);
+  const [questCat, setQuestCat] = useState('전체');
+  const toastTimer = useRef(null);
+
+  // ── 시계 ──
+  useEffect(() => {
+    const tick = () => {
+      const n = new Date();
+      setTime(`${String(n.getHours()).padStart(2,'0')} : ${String(n.getMinutes()).padStart(2,'0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── 토스트 ──
+  const showToast = useCallback((msg) => {
+    setToast(msg); setToastKey(k=>k+1);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 2800);
+  }, []);
+
+  // ── 저장 ──
+  useEffect(() => { saveLS(LS.CLOCK_ON, clockOn); }, [clockOn]);
+  useEffect(() => { saveLS(LS.UI_ON, uiOn); }, [uiOn]);
+  useEffect(() => { saveLS(LS.DARK_MODE, darkMode); }, [darkMode]);
+  useEffect(() => { saveLS(LS.WIDGET_BORDER, widgetBorder); }, [widgetBorder]);
+  useEffect(() => { saveLS(LS.DECO, deco); }, [deco]);
+  useEffect(() => { saveLS(LS.RECORD_MONTHS, recordMonths); }, [recordMonths]);
+  useEffect(() => { saveLS(LS.PRESETS, decoPresets); }, [decoPresets]);
+
+  // ── 데이터 로드 ──
+  const fetchData = useCallback(async (cfg = config, period = recordMonths) => {
+    if (!cfg) return;
+    setLoading(true); setError('');
+    try {
+      // 공부기록
+      // 기록이 많아질 것을 대비해 기본값은 최근 12개월만 월별로 나누어 불러옵니다.
+      // 설정 화면에서 3/6/12/24개월 또는 전체로 변경할 수 있습니다.
+      let allRecs = [];
+      const readRecordPage = async (body) => {
+        let cursor = undefined;
+        do {
+          const pageBody = { ...body, page_size:100 };
+          if (cursor) pageBody.start_cursor = cursor;
+          const res = await fetch(`${cfg.proxyUrl}/v1/databases/${cfg.recordDbId}/query`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json','x-api-key':cfg.apiKey,'x-notion-version':'2022-06-28'},
+            body: JSON.stringify(pageBody)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || '공부기록 로드 실패');
+          for (const p of data.results) {
+            allRecs.push({
+              date:    p.properties['날짜']?.date?.start || p.created_time,
+              minutes: p.properties['순공시간']?.number || 0,
+              mode:    p.properties['모드']?.select?.name || '',
+              coffee:  p.properties['커피 종류']?.select?.name || '',
+            });
+          }
+          cursor = data.has_more ? data.next_cursor : null;
+        } while (cursor);
+      };
+
+      const ranges = makeMonthlyRanges(period);
+      if (ranges) {
+        for (const r of ranges) {
+          await readRecordPage({
+            sorts:[{property:'날짜',direction:'descending'}],
+            filter:{ property:'날짜', date:{ on_or_after:r.start, before:r.end } }
+          });
+        }
+      } else {
+        await readRecordPage({ sorts:[{property:'날짜',direction:'descending'}] });
+      }
+      setRecords(allRecs);
+
+      // 퀘스트 달성 날짜
+      if (cfg.questDbId) {
+        const qRes = await fetch(`${cfg.proxyUrl}/v1/databases/${cfg.questDbId}/query`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':cfg.apiKey,'x-notion-version':'2022-06-28'},
+          body: JSON.stringify({ page_size:100 })
+        });
+        const qData = await qRes.json();
+        if (qRes.ok) {
+          const done = {};
+          for (const p of qData.results) {
+            const qid  = p.properties['퀘스트ID']?.title?.[0]?.plain_text || '';
+            const date = p.properties['날짜']?.date?.start || '';
+            if (qid && date) done[qid] = date;
+          }
+          setQuestDone(done);
+        }
+      }
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [config, recordMonths]);
+
+  useEffect(() => { if (config && !showSetup) fetchData(); }, [config, showSetup]);
+
+  // ── 스탯 & 퀘스트 달성 판정 ──
+  const stats = useMemo(() => computeStats(records), [records]);
+
+  // 조건을 만족했지만 아직 사용자가 직접 완료하지 않은 퀘스트입니다.
+  // 자동 완료/자동 토스트는 하지 않고, 퀘스트 드로어에서 '완료' 버튼을 눌렀을 때만 기록합니다.
+  const claimableQuests = useMemo(() => {
+    if (!records.length) return [];
+    return QUESTS.filter(q => !questDone[q.id] && q.check(stats));
+  }, [stats, questDone]);
+
+  // ── 설정 저장 ──
+  const handleSaveSetup = async () => {
+    const { proxyUrl, apiKey, recordDbId, questDbId } = setupForm;
+    if (!proxyUrl || !apiKey || !recordDbId) { setError('Proxy URL, API Key, 공부기록 DB ID는 필수입니다.'); return; }
+    const cfg = { proxyUrl, apiKey, recordDbId, questDbId };
+    setConfig(cfg); saveLS(LS.CONFIG, cfg);
+    setShowSetup(false);
+    await fetchData(cfg);
+  };
+
+  // ── 꾸미기 선택 ──
+  const bgColor = DECO_ITEMS.bg.find(i=>i.id===deco.bg)?.color || '#FDFBF7';
+  const cardBg  = darkMode ? '#2D2420' : bgColor;
+  const dark    = darkMode || bgColor === '#2D2420';
+  const textCol = dark ? '#F4EDE0' : '#5C3A21';
+  const subCol  = dark ? '#C0A898' : '#A67B5B';
+  const iconBg  = dark ? 'rgba(255,255,255,.08)' : 'rgba(92,58,33,.07)';
+  const iconBgHover = dark ? 'rgba(255,255,255,.13)' : 'rgba(92,58,33,.11)';
+
+  // 잠금 해제 여부
+  const isUnlocked = (item) => !item.unlock || !!questDone[item.unlock];
+
+  const getDecoLabel = useCallback((key, value) => {
+    const item = DECO_ITEMS[key]?.find(i => i.id === value);
+    return item?.label || '기본';
+  }, []);
+
+  const saveDecoPreset = useCallback(() => {
+    const name = (presetName || '').trim() || `프리셋 ${decoPresets.length + 1}`;
+    const preset = { id:String(Date.now()), name, deco:{...deco}, createdAt:new Date().toISOString() };
+    setDecoPresets(prev => [preset, ...prev.filter(p => p.name !== name)].slice(0, MAX_DECO_PRESETS));
+    setPresetName('');
+    showToast(`프리셋 '${name}' 저장 완료`);
+  }, [presetName, deco, decoPresets.length, showToast]);
+
+  const applyDecoPreset = useCallback((preset) => {
+    const next = {...DEFAULT_DECO};
+    let skipped = 0;
+    Object.entries(preset.deco || {}).forEach(([key, value]) => {
+      const item = DECO_ITEMS[key]?.find(i => i.id === value);
+      if (!item) return;
+      if (isUnlocked(item)) next[key] = value;
+      else skipped += 1;
+    });
+    setDeco(next);
+    showToast(skipped ? `프리셋 적용 완료 · 잠긴 아이템 ${skipped}개 제외` : `프리셋 '${preset.name}' 적용 완료`);
+  }, [questDone, showToast]);
+
+  const deleteDecoPreset = useCallback((presetId) => {
+    setDecoPresets(prev => prev.filter(p => p.id !== presetId));
+    showToast('프리셋을 삭제했어요.');
+  }, [showToast]);
+
+  // ── 퀘스트 달성 기록 (Notion PATCH) ──
+  // page id 보관용 ref
+  const questPageIds = useRef({});
+  const fetchQuestPageIds = useCallback(async () => {
+    if (!config?.questDbId) return questPageIds.current;
+    try {
+      const res = await fetch(`${config.proxyUrl}/v1/databases/${config.questDbId}/query`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':config.apiKey,'x-notion-version':'2022-06-28'},
+        body: JSON.stringify({ page_size:100 })
+      });
+      const data = await res.json();
+      if (!res.ok) return questPageIds.current;
+      for (const p of data.results) {
+        const qid = p.properties['퀘스트ID']?.title?.[0]?.plain_text || '';
+        if (qid) questPageIds.current[qid] = p.id;
+      }
+      return questPageIds.current;
+    } catch{
+      return questPageIds.current;
+    }
+  }, [config]);
+
+  useEffect(() => { if (config && !showSetup) fetchQuestPageIds(); }, [config, showSetup]);
+
+  const markQuestDone = useCallback(async (questId, questName) => {
+    if (!config?.questDbId) {
+      showToast('퀘스트 DB가 연결되어 있지 않아요.');
+      return;
+    }
+    if (questDone[questId]) return;
+
+    let pageId = questPageIds.current[questId];
+    if (!pageId) {
+      await fetchQuestPageIds();
+      pageId = questPageIds.current[questId];
+    }
+    if (!pageId) {
+      showToast('퀘스트 DB에서 해당 퀘스트ID를 찾지 못했어요.');
+      return;
+    }
+
+    const todayStr = today();
+    try {
+      const res = await fetch(`${config.proxyUrl}/v1/pages/${pageId}`, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','x-api-key':config.apiKey,'x-notion-version':'2022-06-28'},
+        body: JSON.stringify({ properties:{ '날짜':{ date:{ start: todayStr } } } })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.message || '퀘스트 기록 실패');
+      }
+      setQuestDone(prev => ({ ...prev, [questId]: todayStr }));
+      showToast(`🎉 퀘스트 완료! ${questName || ''}`);
+    } catch(e) {
+      console.warn('퀘스트 기록 실패', e);
+      showToast('퀘스트 완료 기록에 실패했어요.');
+    }
+  }, [config, questDone, fetchQuestPageIds, showToast]);
+
+  // ── 스크린샷 ──
+  const handleScreenshot = () => showToast('💡 브라우저 스크린샷(Win+Shift+S / Cmd+Shift+4)을 이용해 주세요.');
+
+  // ── 퀘스트 필터 ──
+  const questCats = ['전체', ...Object.keys(QUEST_CAT_COLOR)];
+  const filteredQuests = questCat === '전체' ? QUESTS : QUESTS.filter(q=>q.cat===questCat);
+  const doneCount = QUESTS.filter(q=>questDone[q.id]).length;
+
+  const connectionRows = [
+    {
+      label:'공부기록 DB',
+      icon:'📘',
+      connected:!!config?.recordDbId,
+      desc:'날짜, 순공시간, 모드, 커피 종류를 불러옵니다.'
+    },
+    {
+      label:'퀘스트 DB',
+      icon:'🏆',
+      connected:!!config?.questDbId,
+      desc:'퀘스트 달성 날짜와 꾸미기 해금 상태를 관리합니다.'
+    }
+  ];
+  const urlConnected = !!config?.fromUrl;
+  const connected = !!config?.saved || !!config?.recordDbId;
+
+  if (showSetup) return (
+    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+      <div style={{width:'100%',maxWidth:'360px',background:'#fff',borderRadius:'2rem',padding:'1.65rem',border:'1px solid #EBE8DE',boxSizing:'border-box'}}>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',marginBottom:'1.1rem'}}>
+          <div>
+            <div style={{fontSize:'.62rem',fontWeight:800,letterSpacing:'.16em',color:'#A67B5B',textTransform:'uppercase',marginBottom:'.28rem'}}>Cat Cafe Clock Settings</div>
+            <div style={{fontWeight:800,fontSize:'1.25rem',color:'#5C3A21',display:'flex',alignItems:'center',gap:'.45rem'}}>
+              <Icon name="settings" /> 냥이 카페 시계 설정
+            </div>
+            <div style={{fontSize:'.72rem',color:'#B5A898',marginTop:'.3rem',lineHeight:1.5}}>
+              이 위젯은 URL 파라미터로 Notion DB 설정값을 불러옵니다.
+            </div>
+          </div>
+          <button onClick={()=>setShowSetup(false)} title="닫기" aria-label="닫기" style={{width:'2rem',height:'2rem',borderRadius:'9999px',border:'none',background:'#F4F0EA',color:'#A67B5B',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontWeight:800,flexShrink:0}}>×</button>
+        </div>
+
+        <div style={{border:`1px solid ${connected ? '#D7EAD8' : '#F5D4CE'}`,background:connected ? '#F3FAF3' : '#FEF0ED',borderRadius:'1.1rem',padding:'.9rem',marginBottom:'.85rem'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'.7rem'}}>
+            <div style={{width:'2.2rem',height:'2.2rem',borderRadius:'9999px',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',color:connected ? '#4F9B63' : '#E07A5F',fontWeight:900,boxShadow:'0 1px 4px rgba(0,0,0,.03)'}}>
+              {connected ? '✓' : '!'}
+            </div>
+            <div>
+              <div style={{fontSize:'.82rem',fontWeight:800,color:connected ? '#3E8A53' : '#C45F50'}}>
+                {urlConnected ? 'URL로 연결됨' : connected ? '저장된 설정으로 연결됨' : 'URL 파라미터가 필요합니다'}
+              </div>
+              <div style={{fontSize:'.68rem',color:connected ? '#5E9E6E' : '#D27A6E',lineHeight:1.45,marginTop:'.1rem'}}>
+                {connected ? '설정값은 이 화면에서 다시 입력하지 않고, 임베드 URL에서 자동으로 읽어옵니다.' : '위젯통합설정 페이지에서 생성한 냥이카페시계 링크를 노션 임베드에 붙여넣어 주세요.'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{marginBottom:'.95rem'}}>
+          <div style={{fontSize:'.78rem',fontWeight:800,color:'#5C3A21',marginBottom:'.55rem',display:'flex',alignItems:'center',gap:'.35rem'}}>연결된 DB 목록</div>
+          <div style={{display:'grid',gap:'.5rem'}}>
+            {connectionRows.map(row => (
+              <div key={row.label} style={{display:'flex',alignItems:'center',gap:'.7rem',border:'1px solid #F0ECE5',background:'#FDFBF7',borderRadius:'1rem',padding:'.72rem'}}>
+                <div style={{width:'2rem',height:'2rem',borderRadius:'.75rem',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0}}>{row.icon}</div>
+                <div style={{minWidth:0,flex:1}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.4rem'}}>
+                    <div style={{fontSize:'.75rem',fontWeight:800,color:'#5C3A21',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.label}</div>
+                    <span style={{fontSize:'.58rem',fontWeight:800,borderRadius:'9999px',padding:'.14rem .45rem',border:`1px solid ${row.connected ? '#D7EAD8' : '#E7E0D8'}`,color:row.connected ? '#4F9B63' : '#B5A898',background:'#fff',whiteSpace:'nowrap'}}>
+                      {row.connected ? '연결됨' : '대기'}
+                    </span>
+                  </div>
+                  <div style={{fontSize:'.64rem',color:'#B5A898',marginTop:'.12rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{border:'1px solid #F0ECE5',background:'#fff',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{fontSize:'.76rem',fontWeight:800,color:'#5C3A21',marginBottom:'.25rem'}}>공부 기록 불러오기 기간</div>
+          <div style={{fontSize:'.64rem',color:'#B5A898',lineHeight:1.45,marginBottom:'.55rem'}}>
+            기록이 많아질 때를 대비해 월별로 나누어 불러옵니다. 기간이 짧을수록 로딩이 빨라집니다.
+          </div>
+          <div style={{display:'flex',gap:'.32rem',flexWrap:'wrap'}}>
+            {RECORD_MONTH_OPTIONS.map(opt => (
+              <button key={opt.value} onClick={()=>setRecordMonths(opt.value)} style={{border:'none',borderRadius:'9999px',padding:'.32rem .62rem',fontSize:'.62rem',fontWeight:800,fontFamily:'inherit',cursor:'pointer',background:recordMonths===opt.value ? '#A67B5B' : '#F4F0EA',color:recordMonths===opt.value ? '#fff' : '#8B664B'}}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{border:'1px solid #F0ECE5',background:'#fff',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.8rem'}}>
+            <div>
+              <div style={{fontSize:'.76rem',fontWeight:800,color:'#5C3A21',marginBottom:'.18rem'}}>위젯 테두리</div>
+              <div style={{fontSize:'.62rem',color:'#B5A898',lineHeight:1.45}}>노션 페이지 배경과 자연스럽게 섞고 싶을 때 끌 수 있습니다.</div>
+            </div>
+            <button onClick={()=>setWidgetBorder(v=>!v)} aria-label="위젯 테두리 켜기/끄기" style={{width:'3.05rem',height:'1.55rem',border:'none',borderRadius:'9999px',background:widgetBorder ? '#A67B5B' : '#E7E0D8',padding:'.18rem',cursor:'pointer',transition:'background .2s',flexShrink:0}}>
+              <span style={{display:'block',width:'1.18rem',height:'1.18rem',borderRadius:'9999px',background:'#fff',transform:widgetBorder ? 'translateX(1.45rem)' : 'translateX(0)',transition:'transform .2s'}} />
+            </button>
+          </div>
+        </div>
+
+        <div style={{border:'1px solid #F0ECE5',background:'#FDF8F1',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{fontSize:'.76rem',fontWeight:800,color:'#8B664B',marginBottom:'.22rem'}}>화면 표시 안내</div>
+          <div style={{fontSize:'.66rem',color:'#A67B5B',lineHeight:1.55}}>
+            데이터가 바로 보이지 않으면 아래 새로고침 버튼으로 Notion 데이터를 다시 불러오세요. 꾸미기, 프리셋, 테두리 표시, 다크모드 상태는 브라우저에 저장됩니다.
+          </div>
+        </div>
+
+        {error && <div style={{fontSize:'.68rem',color:'#E07A5F',marginBottom:'.75rem',padding:'.55rem .7rem',background:'#FEF0ED',borderRadius:'.75rem',lineHeight:1.45}}>{error}</div>}
+
+        <div style={{display:'flex',gap:'.5rem'}}>
+          <button onClick={()=>fetchData(config, recordMonths)} disabled={loading || !connected} style={{flex:1,border:'none',borderRadius:'.9rem',background:loading || !connected ? '#D1CBBF' : '#A67B5B',color:'#fff',fontWeight:800,fontSize:'.78rem',padding:'.78rem .9rem',fontFamily:'inherit',cursor:loading || !connected ? 'not-allowed' : 'pointer'}}>
+            {loading ? '불러오는 중...' : '데이터 새로고침'}
+          </button>
+          <button onClick={()=>setShowSetup(false)} style={{border:'none',borderRadius:'.9rem',background:'#F4F0EA',color:'#8B664B',fontWeight:800,fontSize:'.78rem',padding:'.78rem .95rem',fontFamily:'inherit',cursor:'pointer'}}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+      {/* 토스트 */}
+      <div className={`toast${toast ? ' show' : ''}`} key={toastKey}>{toast}</div>
+
+      {/* 드로어 백드롭 */}
+      <div className={`drawer-backdrop${drawer ? ' open' : ''}`} onClick={()=>setDrawer(null)}/>
+
+      {/* 메인 카드 */}
+      <div style={{
+        width:'300px', borderRadius:'2rem', overflow:'hidden', position:'relative',
+        background: cardBg,
+        boxShadow:'none',
+        border: widgetBorder ? `1.5px solid ${dark?'rgba(255,255,255,.08)':'#EBE8DE'}` : '1.5px solid transparent',
+        transition:'background .4s, border .2s',
+        '--icon-bg': iconBg,
+        '--icon-bg-hover': iconBgHover,
+        '--icon-color': subCol,
+      }}>
+        {/* 상단 툴바 */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.85rem 1rem .25rem',position:'relative',zIndex:2}}>
+          <button className="icon-btn" onClick={handleScreenshot} title="스크린샷" aria-label="스크린샷 안내"><Icon name="camera" /></button>
+          <div style={{display:'flex',gap:'.4rem'}}>
+            <button className="icon-btn" onClick={()=>setDarkMode(v=>!v)} title={darkMode?'라이트 모드':'다크 모드'} aria-label={darkMode?'라이트 모드':'다크 모드'}><Icon name={darkMode?'sun':'moon'} /></button>
+            <button className="icon-btn" onClick={()=>setUiOn(v=>!v)} title={uiOn?'고양이와 컵만 보기':'전체 UI 보기'} aria-label={uiOn?'고양이와 컵만 보기':'전체 UI 보기'}><Icon name={uiOn?'eye':'eyeOff'} /></button>
+            <button className="icon-btn" onClick={()=>setShowSetup(true)} title="설정" aria-label="설정"><Icon name="settings" /></button>
+          </div>
+        </div>
+
+        {/* 일러스트 영역 */}
+        <div className="widget-content" style={{padding: uiOn ? '0 .85rem' : '.55rem .85rem 1.35rem', marginTop: uiOn ? '-.25rem' : '.25rem'}}>
+          <div style={{width:'100%',aspectRatio:'1',maxWidth: uiOn ? '248px' : '260px',margin:'0 auto'}}>
+            <CupSVG catItem={deco.cat} drinkItem={deco.drink} catAccItem={deco.catAcc} cupDecoItem={deco.cupDeco} bgColor={cardBg}/>
+          </div>
+        </div>
+
+        {/* 시계 */}
+        {uiOn && (
+        <div style={{textAlign:'center',padding:'.15rem 0 .55rem',position:'relative',zIndex:2}}>
+          {clockOn ? (
+            <button onClick={()=>setClockOn(false)} className="clock-digits" title="시계 끄기"
+              style={{background:'none',border:'none',cursor:'pointer',color:textCol}}>
+              {time}
+            </button>
+          ) : (
+            <button onClick={()=>setClockOn(true)} title="시계 켜기"
+              style={{fontSize:'.7rem',color:subCol,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:600,opacity:.6}}>
+              시계 표시
+            </button>
+          )}
+        </div>
+        )}
+
+        {/* 하단 탭 */}
+        {uiOn && (
+        <div className="widget-content" style={{padding:'.3rem .75rem .9rem'}}>
+          {/* 로딩 인디케이터 */}
+          {loading && <div style={{textAlign:'center',fontSize:'.62rem',color:subCol,marginBottom:'.3rem',opacity:.7}}>⏳ 데이터 불러오는 중…</div>}
+          {error   && <div style={{textAlign:'center',fontSize:'.62rem',color:'#E07A5F',marginBottom:'.3rem'}}>{error}</div>}
+
+
+          <div style={{display:'flex',gap:'.4rem'}}>
+            <button className={`tab-btn${drawer==='deco'?' active':''}`}
+              onClick={()=>setDrawer(d=>d==='deco'?null:'deco')}
+              style={{color: drawer==='deco' ? '#8B664B' : (dark?'#C0A898':'#B5A898')}}>
+              꾸미기
+            </button>
+            <button className={`tab-btn${drawer==='quest'?' active':''}`}
+              onClick={()=>setDrawer(d=>d==='quest'?null:'quest')}
+              style={{color: drawer==='quest' ? '#8B664B' : (dark?'#C0A898':'#B5A898')}}>
+              퀘스트 {claimableQuests.length > 0 && <span style={{background:'#E07A5F',color:'#fff',borderRadius:'9999px',padding:'0 .3rem',fontSize:'.6rem',marginLeft:'.2rem'}}>{claimableQuests.length}</span>}
+            </button>
+          </div>
+        </div>
+        )}
+      </div>
+
+      {/* ━━━ 드로어: 꾸미기 ━━━ */}
+      <div className={`drawer${drawer==='deco'?' open':''}`}>
+        <div className="drawer-handle"/>
+        <div style={{padding:'0 1rem .5rem',flexShrink:0}}>
+          <div style={{fontWeight:800,fontSize:'.82rem',color:'#5C3A21',marginBottom:'.6rem'}}>꾸미기</div>
+          {/* 꾸미기 서브탭 */}
+          <div style={{display:'flex',gap:'.3rem',overflowX:'auto',paddingBottom:'.3rem'}}>
+            {Object.entries(DECO_TAB_LABELS).map(([key,label])=>(
+              <button key={key} onClick={()=>setDecoTab(key)}
+                style={{
+                  flexShrink:0, padding:'.28rem .7rem', borderRadius:'9999px', border:'none', cursor:'pointer',
+                  fontSize:'.68rem', fontWeight:700, fontFamily:'inherit',
+                  background: decoTab===key ? '#A67B5B' : '#F4F0EA',
+                  color:       decoTab===key ? '#fff'    : '#8B664B',
+                  transition:'all .15s',
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{overflowY:'auto',flex:1,padding:'0 1rem 1.5rem'}}>
+          {decoTab === 'preset' ? (
+            <div>
+              <div style={{border:'1px solid #F0ECE5',background:'#FDFBF7',borderRadius:'1rem',padding:'.75rem',marginBottom:'.75rem'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem',marginBottom:'.5rem'}}>
+                  <div>
+                    <div style={{fontSize:'.74rem',fontWeight:800,color:'#5C3A21'}}>현재 꾸미기 저장</div>
+                    <div style={{fontSize:'.6rem',color:'#B5A898',marginTop:'.08rem'}}>카드 미리보기로 저장됩니다.</div>
+                  </div>
+                  <button onClick={saveDecoPreset} style={{border:'none',borderRadius:'9999px',background:'#A67B5B',color:'#fff',fontSize:'.62rem',fontWeight:800,padding:'.38rem .65rem',fontFamily:'inherit',cursor:'pointer',flexShrink:0}}>저장</button>
+                </div>
+                <input value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="프리셋 이름 (예: 민트 냥이)" style={{width:'100%',boxSizing:'border-box',border:'1px solid #EBE8DE',background:'#fff',borderRadius:'.75rem',padding:'.52rem .65rem',fontSize:'.66rem',fontFamily:'inherit',outline:'none',color:'#5C3A21'}} />
+              </div>
+
+              {decoPresets.length > 0 ? (
+                <div style={{display:'grid',gridTemplateColumns:'repeat(2, minmax(0,1fr))',gap:'.65rem'}}>
+                  {decoPresets.map(p => {
+                    const pBg = DECO_ITEMS.bg.find(i=>i.id===p.deco?.bg)?.color || '#FDFBF7';
+                    const lockedCount = Object.entries(p.deco || {}).filter(([key,value]) => {
+                      const item = DECO_ITEMS[key]?.find(i=>i.id===value);
+                      return item && !isUnlocked(item);
+                    }).length;
+                    return (
+                      <div key={p.id} style={{border:'1px solid #EBE8DE',background:'#fff',borderRadius:'1rem',padding:'.55rem',position:'relative',overflow:'hidden'}}>
+                        <button onClick={()=>deleteDecoPreset(p.id)} title="프리셋 삭제" style={{position:'absolute',top:'.45rem',right:'.45rem',zIndex:2,border:'none',background:'rgba(92,58,33,.08)',color:'#A67B5B',borderRadius:'9999px',width:'1.2rem',height:'1.2rem',fontSize:'.7rem',lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                        <button onClick={()=>applyDecoPreset(p)} title="프리셋 적용" style={{width:'100%',border:'none',background:'transparent',padding:0,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                          <div style={{height:'6.7rem',borderRadius:'.8rem',background:pBg,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',border:'1px solid rgba(92,58,33,.06)'}}>
+                            <div style={{width:'5.9rem',height:'7.1rem',transform:'translateY(.12rem)'}}>
+                              <CupSVG catItem={p.deco?.cat || DEFAULT_DECO.cat} drinkItem={p.deco?.drink || DEFAULT_DECO.drink} catAccItem={p.deco?.catAcc || DEFAULT_DECO.catAcc} cupDecoItem={p.deco?.cupDeco || DEFAULT_DECO.cupDeco} bgColor={pBg}/>
+                            </div>
+                          </div>
+                          <div style={{fontSize:'.68rem',fontWeight:900,color:'#5C3A21',marginTop:'.45rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</div>
+                          <div style={{fontSize:'.55rem',color:'#B5A898',lineHeight:1.45,marginTop:'.15rem'}}>
+                            {getDecoLabel('cat', p.deco?.cat)} · {getDecoLabel('drink', p.deco?.drink)}<br/>
+                            {getDecoLabel('catAcc', p.deco?.catAcc)} · {getDecoLabel('cupDeco', p.deco?.cupDeco)}
+                          </div>
+                          {lockedCount > 0 && <div style={{display:'inline-flex',marginTop:'.35rem',fontSize:'.52rem',fontWeight:800,color:'#E07A5F',background:'#FEF0ED',borderRadius:'9999px',padding:'.14rem .38rem'}}>잠김 {lockedCount}개 제외</div>}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{border:'1px dashed #D1CBBF',borderRadius:'1rem',padding:'1rem',textAlign:'center',background:'#FDFBF7'}}>
+                  <div style={{fontSize:'.78rem',fontWeight:800,color:'#8B664B',marginBottom:'.25rem'}}>저장된 프리셋이 없어요</div>
+                  <div style={{fontSize:'.62rem',color:'#B5A898',lineHeight:1.5}}>자주 쓰는 꾸미기 조합을 저장해두면 초기화 후에도 빠르게 다시 적용할 수 있어요.</div>
+                </div>
+              )}
+            </div>
+          ) : (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'.55rem'}}>
+            {DECO_ITEMS[decoTab]?.map(item => {
+              const unlocked = isUnlocked(item);
+              const selected = deco[decoTab] === item.id;
+              return (
+                <button key={item.id}
+                  className={`item-btn${selected?' selected':''}${!unlocked?' locked':''}`}
+                  onClick={()=>{ if(!unlocked){showToast(`🔒 퀘스트 달성 후 해금됩니다`);return;} setDeco(d=>({...d,[decoTab]:item.id})); }}
+                >
+                  {decoTab === 'bg'
+                    ? <div style={{width:'2.2rem',height:'2.2rem',borderRadius:'.6rem',background:item.color,border:'2px solid rgba(0,0,0,.08)'}}/>
+                    : <span style={{fontSize:'1.6rem',lineHeight:1}}>{item.emoji}</span>
+                  }
+                  <div style={{fontSize:'.58rem',fontWeight:700,color:'#8B664B',marginTop:'.2rem',lineHeight:1.2}}>{item.label}</div>
+                  {!unlocked && (
+                    <div className="lock-icon">🔒</div>
+                  )}
+                  {!unlocked && item.unlock && (
+                    <div style={{position:'absolute',bottom:'-1.4rem',left:'50%',transform:'translateX(-50%)',fontSize:'.52rem',color:'#B5A898',whiteSpace:'nowrap',pointerEvents:'none'}}>
+                      {QUESTS.find(q=>q.id===item.unlock)?.name}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          )}
+        </div>
+      </div>
+
+      {/* ━━━ 드로어: 퀘스트 ━━━ */}
+      <div className={`drawer${drawer==='quest'?' open':''}`}>
+        <div className="drawer-handle"/>
+        <div style={{padding:'0 1rem .5rem',flexShrink:0}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.5rem'}}>
+            <div style={{fontWeight:800,fontSize:'.82rem',color:'#5C3A21'}}>퀘스트</div>
+            <div style={{fontSize:'.68rem',color:'#A67B5B',fontWeight:700}}>{doneCount} / {QUESTS.length} 달성</div>
+          </div>
+          {/* 진행도 바 */}
+          <div style={{height:'.35rem',background:'#EBE8DE',borderRadius:'9999px',marginBottom:'.6rem',overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${(doneCount/QUESTS.length)*100}%`,background:'linear-gradient(90deg,#E8A87C,#A67B5B)',borderRadius:'9999px',transition:'width .5s ease'}}/>
+          </div>
+          {/* 카테고리 필터 */}
+          <div style={{display:'flex',gap:'.3rem',overflowX:'auto',paddingBottom:'.3rem'}}>
+            {questCats.map(cat=>(
+              <button key={cat} onClick={()=>setQuestCat(cat)}
+                style={{
+                  flexShrink:0, padding:'.25rem .65rem', borderRadius:'9999px', border:'none', cursor:'pointer',
+                  fontSize:'.65rem', fontWeight:700, fontFamily:'inherit',
+                  background: questCat===cat ? (QUEST_CAT_COLOR[cat]||'#A67B5B') : '#F4F0EA',
+                  color:       questCat===cat ? '#fff' : '#8B664B',
+                  transition:'all .15s',
+                }}>
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{overflowY:'auto',flex:1,padding:'0 1rem 1.5rem'}}>
+          {filteredQuests.map(q => {
+            const done = !!questDone[q.id];
+            const claimable = !done && q.check(stats);
+            return (
+              <div key={q.id} className="quest-row" style={{opacity: done ? 1 : .85}}>
+                <div className={`quest-check${done?' done':''}`} style={claimable ? {borderColor:'#A67B5B', color:'#A67B5B'} : {}}>
+                  {done ? '✓' : (claimable ? '!' : '')}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'.72rem',fontWeight:700,color: done?'#A67B5B':'#5C3A21',textDecoration: done?'line-through':'none',lineHeight:1.3}}>
+                    {q.name}
+                  </div>
+                  {done && questDone[q.id] && (
+                    <div style={{fontSize:'.6rem',color:'#B5A898',marginTop:'.1rem'}}>{questDone[q.id]} 완료 🎉</div>
+                  )}
+                  {claimable && (
+                    <div style={{fontSize:'.6rem',color:'#A67B5B',marginTop:'.1rem',fontWeight:700}}>조건 달성 — 완료 버튼을 눌러 기록하세요</div>
+                  )}
+                </div>
+                {claimable ? (
+                  <button
+                    onClick={() => markQuestDone(q.id, q.name)}
+                    style={{
+                      flexShrink:0, border:'none', borderRadius:'9999px', padding:'.25rem .55rem',
+                      background:'#A67B5B', color:'#fff', fontSize:'.6rem', fontWeight:800,
+                      fontFamily:'inherit', cursor:'pointer'
+                    }}
+                  >
+                    완료
+                  </button>
+                ) : (
+                  <span className="cat-badge" style={{background: QUEST_CAT_BG[q.cat], color: QUEST_CAT_COLOR[q.cat]}}>
+                    {q.cat}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+    </div>
+  );
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App/>);
