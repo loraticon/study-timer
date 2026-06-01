@@ -1414,66 +1414,128 @@ const App = () => {
         );
     };
 
+    const isUrlConnected = useMemo(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return Boolean((params.get('proxy') || params.get('proxyUrl')) && (params.get('key') || params.get('apiKey')) && (params.get('record') || params.get('recordDbId')));
+        } catch { return false; }
+    }, []);
+
+    const maskValue = (value) => {
+        if (!value) return '';
+        const str = String(value);
+        if (str.length <= 10) return '••••••';
+        return `${str.slice(0, 6)}••••${str.slice(-4)}`;
+    };
+
+    const getConnectionStatus = (kind, connected, partial = false) => {
+        if (partial) return { label: '일부 연결', className: 'text-amber-600 bg-amber-50 border-amber-100', dot: 'bg-amber-400' };
+        if (connected) return { label: '연결됨', className: 'text-emerald-600 bg-emerald-50 border-emerald-100', dot: 'bg-emerald-400' };
+        return { label: kind === 'required' ? '필수 누락' : '미연결', className: kind === 'required' ? 'text-red-500 bg-red-50 border-red-100' : 'text-gray-400 bg-gray-50 border-gray-100', dot: kind === 'required' ? 'bg-red-400' : 'bg-gray-300' };
+    };
+
+    const connectionRows = [
+        { icon: '🧭', label: 'URL 파라미터', desc: isUrlConnected ? '임베드 URL로 설정값을 불러오고 있습니다.' : 'proxy / key / record 값이 URL에 필요합니다.', status: getConnectionStatus('required', isUrlConnected) },
+        { icon: '⏱️', label: '공부 기록 DB', desc: config.recordDbId ? maskValue(config.recordDbId) : '대시보드의 핵심 기록 DB입니다.', status: getConnectionStatus('required', Boolean(config.recordDbId)) },
+        { icon: '📚', label: '과목 DB', desc: config.subjectDbId ? maskValue(config.subjectDbId) : '과목별 통계와 투두 과목 선택에 사용됩니다.', status: getConnectionStatus('optional', Boolean(config.subjectDbId)) },
+        { icon: '✅', label: '투두리스트 DB', desc: config.todoDbId ? maskValue(config.todoDbId) : '홈과 캘린더의 투두 목록에 사용됩니다.', status: getConnectionStatus('optional', Boolean(config.todoDbId)) },
+        { icon: '📊', label: '누적 통계 DB', desc: config.statsDbId ? maskValue(config.statsDbId) : '집계 결과만 빠르게 불러오는 선택 DB입니다.', status: getConnectionStatus('optional', Boolean(config.statsDbId)) },
+        { icon: '📝', label: '학습 노트 DB', desc: config.noteDbId ? maskValue(config.noteDbId) : '공부 기록 탭의 학습 노트 연결에 사용됩니다.', status: getConnectionStatus('optional', Boolean(config.noteDbId)) },
+        { icon: '✍️', label: '오답 노트 DB', desc: config.wrongDbId ? maskValue(config.wrongDbId) : '공부 기록 탭의 오답 노트 연결에 사용됩니다.', status: getConnectionStatus('optional', Boolean(config.wrongDbId)) },
+        { icon: '🔤', label: '단어장 DB', desc: config.vocabDbId && config.testDbId ? '단어장과 테스트 DB가 모두 연결되었습니다.' : (config.vocabDbId || config.testDbId ? '두 DB가 모두 있어야 단어장 탭이 활성화됩니다.' : '홈/단어장 탭의 단어 복습 현황에 사용됩니다.'), status: getConnectionStatus('optional', Boolean(config.vocabDbId && config.testDbId), Boolean((config.vocabDbId || config.testDbId) && !(config.vocabDbId && config.testDbId))) },
+    ];
+
+    const autoRelationConnected = Boolean(config.todoDbId && (config.dashboardPageId || config.statsDbId) && (config.dashboardRelationProp || '대시보드 통계용'));
+
     /* ── 렌더링 ── */
     
-    // 1. 초기 셋업 모달
+    // 1. 설정 패널
     if (showSetup) return (
-        <div className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-xl mx-auto my-10 border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><NotionIcon/> Notion DB 연결</h2>
-                {config.saved && (
-                    <button onClick={() => setShowSetup(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
-                        <XIcon/>
-                    </button>
-                )}
-            </div>
-            <div className="space-y-4">
-                <input type="text" placeholder="Cloudflare Proxy URL" value={setupForm.proxyUrl} onChange={e=>setSetupForm(f=>({...f, proxyUrl:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
-                <input type="password" placeholder="Notion API Key" value={setupForm.apiKey} onChange={e=>setSetupForm(f=>({...f, apiKey:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
-                <input type="text" placeholder="공부기록 DB ID (필수)" value={setupForm.recordDbId} onChange={e=>setSetupForm(f=>({...f, recordDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
-                <input type="text" placeholder="투두리스트 DB ID (선택)" value={setupForm.todoDbId} onChange={e=>setSetupForm(f=>({...f, todoDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
-                <input type="text" placeholder="과목 DB ID (선택)" value={setupForm.subjectDbId} onChange={e=>setSetupForm(f=>({...f, subjectDbId:e.target.value}))} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-latte-500" />
-                <div className="bg-[#F4F0EA] rounded-xl p-3 flex gap-2 items-start">
-                    <span className="text-latte-700 text-lg mt-0.5">📊</span>
-                    <div className="flex-1">
-                        <p className="text-[12px] font-bold text-latte-700 mb-0.5">누적 통계 DB <span className="font-medium text-latte-500">(선택)</span></p>
-                        <p className="text-[11px] text-latte-600 mb-2">수백~수천 개의 페이지를 전부 불러오는 대신, 집계 결과만 담은 별도 DB를 연결하세요.</p>
-                        <input type="text" placeholder="누적 통계 DB ID (선택)" value={setupForm.statsDbId} onChange={e=>setSetupForm(f=>({...f, statsDbId:e.target.value}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
-                        <input type="text" placeholder="대시보드 통계용 페이지 링크 또는 ID (선택)" value={setupForm.dashboardPageId} onChange={e=>setSetupForm(f=>({...f, dashboardPageId:extractNotionId(e.target.value)}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
-                        <input type="text" placeholder="관계형 속성 이름: 대시보드 통계용" value={setupForm.dashboardRelationProp} onChange={e=>setSetupForm(f=>({...f, dashboardRelationProp:e.target.value || '대시보드 통계용'}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
-                    </div>
+        <div className="w-full max-w-xl bg-white rounded-[2rem] p-7 shadow-xl mx-auto my-10 border border-gray-100">
+            <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                    <div className="text-[11px] font-extrabold tracking-[0.18em] text-latte-500 uppercase mb-1">Dashboard Settings</div>
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><SettingsIcon/> 대시보드 설정</h2>
+                    <p className="text-[12px] text-gray-400 mt-1">이 대시보드는 URL 파라미터로 Notion DB 설정값을 불러옵니다.</p>
                 </div>
-
-                <div className="bg-[#F3F8F5] rounded-xl p-3 flex gap-2 items-start">
-                    <span className="text-[#81B29A] text-lg mt-0.5">📝</span>
-                    <div className="flex-1">
-                        <p className="text-[12px] font-bold text-[#4a7c5e] mb-0.5">공부 기록 연결 <span className="font-medium text-[#81B29A]">(선택)</span></p>
-                        <p className="text-[11px] text-[#5a8a6e] mb-2">공부 기록 탭에서 학습 노트와 오답 노트 추가 현황을 확인할 수 있습니다.</p>
-                        <div className="flex flex-col gap-2">
-                            <input type="text" placeholder="학습 노트 DB ID (선택)" value={setupForm.noteDbId} onChange={e=>setSetupForm(f=>({...f, noteDbId:e.target.value}))} className="w-full bg-white border border-[#81B29A]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#81B29A]" />
-                            <input type="text" placeholder="오답 노트 DB ID (선택)" value={setupForm.wrongDbId} onChange={e=>setSetupForm(f=>({...f, wrongDbId:e.target.value}))} className="w-full bg-white border border-[#81B29A]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#81B29A]" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-[#F0EDF8] rounded-xl p-3 flex gap-2 items-start">
-                    <span className="text-[#9B8EC4] text-lg mt-0.5">📚</span>
-                    <div className="flex-1">
-                        <p className="text-[12px] font-bold text-[#6B5FA6] mb-0.5">단어장 연결 <span className="font-medium text-[#9B8EC4]">(선택)</span></p>
-                        <p className="text-[11px] text-[#7B6FB6] mb-2">홈 탭에서 오늘 추가된 단어, 복습 현황, 마스터 목록을 확인할 수 있습니다. 두 DB 모두 입력해야 활성화됩니다.</p>
-                        <div className="flex flex-col gap-2">
-                            <input type="text" placeholder="단어장 DB ID (선택)" value={setupForm.vocabDbId} onChange={e=>setSetupForm(f=>({...f, vocabDbId:e.target.value}))} className="w-full bg-white border border-[#9B8EC4]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#9B8EC4]" />
-                            <input type="text" placeholder="테스트 DB ID (선택)" value={setupForm.testDbId} onChange={e=>setSetupForm(f=>({...f, testDbId:e.target.value}))} className="w-full bg-white border border-[#9B8EC4]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#9B8EC4]" />
-                        </div>
-                    </div>
-                </div>
-                
-                {setupError && <p className="text-sm text-red-500">{setupError}</p>}
-                
-                <button onClick={handleSetupSave} disabled={setupLoading} className="w-full bg-latte-500 text-white font-bold py-3.5 rounded-xl hover:bg-latte-700 transition mt-2">
-                    {setupLoading ? '확인 중...' : '시작하기'}
+                <button onClick={() => setShowSetup(false)} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors shrink-0">
+                    <XIcon/>
                 </button>
             </div>
+
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-emerald-500 shadow-sm"><CheckIcon/></div>
+                    <div>
+                        <p className="text-sm font-extrabold text-emerald-700">URL로 연결됨</p>
+                        <p className="text-[12px] text-emerald-600">설정값은 페이지 안에 다시 입력하지 않고, 임베드 URL에서 자동으로 읽어옵니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-3 mb-5">
+                <h3 className="text-sm font-extrabold text-gray-700 flex items-center gap-2"><NotionIcon/> 연결된 DB 목록</h3>
+                <div className="grid gap-2">
+                    {connectionRows.map((row) => (
+                        <div key={row.label} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-lg shadow-sm shrink-0">{row.icon}</div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[13px] font-extrabold text-gray-700 truncate">{row.label}</p>
+                                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap ${row.status.className}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${row.status.dot}`}></span>{row.status.label}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-gray-400 truncate mt-0.5">{row.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-latte-100 bg-[#FDF8F1] p-4 mb-4">
+                <div className="flex items-start gap-3">
+                    <span className="text-xl mt-0.5">🔗</span>
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="text-sm font-extrabold text-latte-700">대시보드 통계용 자동 연결</p>
+                            <span className={`text-[10px] font-extrabold rounded-full px-2 py-0.5 border ${autoRelationConnected ? 'text-emerald-600 bg-white border-emerald-100' : 'text-gray-400 bg-white border-gray-100'}`}>
+                                {autoRelationConnected ? '활성화' : '대기'}
+                            </span>
+                        </div>
+                        <p className="text-[12px] text-latte-600 leading-relaxed">새 투두를 만들 때 관계형 속성 <b>{config.dashboardRelationProp || '대시보드 통계용'}</b>에 자동으로 연결합니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 mb-5">
+                <p className="text-sm font-extrabold text-gray-700 mb-3">화면 표시 안내</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-gray-50 p-3">
+                        <p className="text-[12px] font-bold text-gray-700">데이터가 안 보일 때</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">새로고침 버튼으로 Notion 데이터를 다시 불러오세요.</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 p-3">
+                        <p className="text-[12px] font-bold text-gray-700">단어장 표시</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">단어장 DB와 테스트 DB가 모두 있을 때 활성화됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex gap-2">
+                <button
+                    onClick={() => fetchData(config)}
+                    disabled={loading || !config.saved}
+                    className="flex-1 bg-latte-500 text-white font-bold py-3.5 rounded-xl hover:bg-latte-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    <RefreshIcon/>{loading ? '불러오는 중...' : '데이터 새로고침'}
+                </button>
+                <button onClick={() => setShowSetup(false)} className="px-5 bg-gray-100 text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition">닫기</button>
+            </div>
+
+            {!config.saved && (
+                <p className="text-[12px] text-red-500 mt-3 leading-relaxed">필수 URL 파라미터가 누락되어 데이터 연결이 비활성화되어 있습니다. 임베드 URL에 proxy, key, record 값을 포함해주세요.</p>
+            )}
         </div>
     );
 
