@@ -118,12 +118,20 @@ const toNotionMinutes = (sec) => Math.floor(sec / 60);
 const fmtHHMM = (iso) => new Date(iso).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:false });
 const todayStr = () => new Date().toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
 
-/* ── 로컬스토리지 ── */
-const LS_CONFIG = 'cozy_timer_config';
+/* ── 설정 파싱 (URL 파라미터) ── */
 const loadConfig = () => {
-    try { return JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; } catch { return {}; }
+    const params = new URLSearchParams(window.location.search);
+    const proxyUrl = params.get('proxyUrl') || '';
+    const apiKey = params.get('apiKey') || '';
+    const recordDbId = params.get('recordDbId') || '';
+    const subjectDbId = params.get('subjectDbId') || '';
+    const subjectNameProp = params.get('subjectNameProp') || '이름';
+
+    // proxyUrl, apiKey, recordDbId가 있으면 연결된 것으로 간주
+    const saved = Boolean(proxyUrl && apiKey && recordDbId);
+
+    return { proxyUrl, apiKey, recordDbId, subjectDbId, subjectNameProp, saved };
 };
-const saveConfig = (cfg) => localStorage.setItem(LS_CONFIG, JSON.stringify(cfg));
 
 /* ══════════════════════════════════════════════════════════ */
 const App = () => {
@@ -142,13 +150,8 @@ const App = () => {
         localStorage.setItem('cozy_timer_dark', isDark);
     }, [isDark]);
 
-    /* ── Notion 설정 ── */
-    const [config, setConfig]         = useState(loadConfig);
-    const [showSetup, setShowSetup]   = useState(!loadConfig().saved);
-    const [setupForm, setSetupForm]   = useState({ proxyUrl:'', apiKey:'', recordDbId:'', subjectDbId:'', subjectNameProp:'이름' });
-    const [setupError, setSetupError] = useState('');
-    const [setupLoading, setSetupLoading] = useState(false);
-    const [setupDone, setSetupDone]   = useState(false);
+    /* ── Notion 설정 (URL에서만 로드) ── */
+    const [config] = useState(loadConfig);
 
     /* ── 화면 ── */
     const [screen, setScreen]         = useState('timer'); // 'timer' | 'records'
@@ -193,7 +196,7 @@ const App = () => {
 
     const notionFetch = useCallback(async (path, options = {}) => {
         const { proxyUrl, apiKey } = config;
-        if (!proxyUrl || !apiKey) throw new Error('설정이 필요해요');
+        if (!proxyUrl || !apiKey) throw new Error('URL 파라미터 설정이 누락되었습니다');
         const res = await fetch(`${proxyUrl}${path}`, {
             ...options,
             headers: {
@@ -270,23 +273,6 @@ const App = () => {
     }, [config, notionFetch]);
 
     useEffect(() => { loadSubjects(); loadTodayRecords(); }, [loadSubjects, loadTodayRecords]);
-
-    const handleSetupSave = async () => {
-        const { proxyUrl, apiKey, recordDbId, subjectDbId, subjectNameProp } = setupForm;
-        if (!proxyUrl || !apiKey || !recordDbId || !subjectDbId) { setSetupError('모든 항목을 입력해주세요'); return; }
-        setSetupLoading(true); setSetupError('');
-        try {
-            const testRes = await fetch(`${proxyUrl}/v1/databases/${subjectDbId}/query`, {
-                method: 'POST',
-                headers: { 'Content-Type':'application/json', 'x-api-key':apiKey, 'x-notion-version':'2022-06-28' },
-                body: JSON.stringify({ page_size: 1 }),
-            });
-            if (!testRes.ok) throw new Error('연결 실패 — API 키 또는 DB ID를 확인해주세요');
-            const newConfig = { proxyUrl, apiKey, recordDbId, subjectDbId, subjectNameProp: subjectNameProp || '이름', saved: true };
-            setConfig(newConfig); saveConfig(newConfig);
-            setSetupDone(true); setTimeout(() => setShowSetup(false), 1500);
-        } catch (e) { setSetupError(e.message); } finally { setSetupLoading(false); }
-    };
 
     useEffect(() => {
         if (timerMode !== 'pomodoro' || !isActive) return;
@@ -427,61 +413,6 @@ const App = () => {
         return `M100,100 L100,0 A100,100 0 ${angle > 180 ? 1 : 0},1 ${x},${y} Z`;
     };
 
-    if (showSetup) return (
-        <div className="w-full max-w-[340px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2f2f2f] overflow-hidden transition-colors">
-            <div className="p-8">
-                <div className="flex items-center gap-2 mb-1">
-                    <NotionIcon/>
-                    <span className="text-xs font-bold tracking-widest text-gray-400 uppercase">Notion 연결</span>
-                </div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">코지 카페 설정</h2>
-
-                {!setupDone ? (
-                    <div className="space-y-5">
-                        {[
-                            { key:'proxyUrl', label:'Cloudflare Workers URL', placeholder:'https://your-worker.workers.dev', type:'text' },
-                            { key:'apiKey',   label:'Notion API 키',          placeholder:'secret_xxxxxxxxxxxxxx',           type:'password' },
-                            { key:'recordDbId', label:'공부기록 DB ID',        placeholder:'32자리 ID',                       type:'text' },
-                            { key:'subjectDbId', label:'과목 DB ID',           placeholder:'32자리 ID',                       type:'text' },
-                            { key:'subjectNameProp', label:'과목 이름 속성명', placeholder:'이름 (기본값)',                    type:'text' },
-                        ].map(({ key, label, placeholder, type }) => (
-                            <div key={key}>
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-1.5">{label}</label>
-                                <input
-                                    type={type}
-                                    value={setupForm[key]}
-                                    onChange={e => setSetupForm(f => ({ ...f, [key]: e.target.value.trim() }))}
-                                    placeholder={placeholder}
-                                    className="w-full text-sm border-b-2 border-gray-200 dark:border-neutral-700 bg-transparent text-gray-800 dark:text-gray-100 py-2 focus:outline-none focus:border-[#A67B5B] placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
-                                />
-                            </div>
-                        ))}
-
-                        {setupError && <p className="text-xs text-red-400 font-medium">{setupError}</p>}
-
-                        <button onClick={handleSetupSave} disabled={setupLoading}
-                            className="w-full py-3.5 rounded-2xl bg-[#A67B5B] hover:bg-[#8B664B] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2">
-                            {setupLoading
-                                ? <><span className="spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"/><span>연결 확인 중...</span></>
-                                : '연결 확인 및 저장'}
-                        </button>
-
-                        <button onClick={() => setShowSetup(false)}
-                            className="w-full text-xs text-gray-300 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300 transition-colors text-center py-1">
-                            나중에 설정할게요 (로컬만 기록)
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center py-8 gap-3">
-                        <div className="w-14 h-14 rounded-full bg-[#A67B5B]/10 flex items-center justify-center text-2xl">☕</div>
-                        <p className="text-base font-bold text-gray-800 dark:text-gray-100">연결됐어요!</p>
-                        <p className="text-sm text-gray-400">과목 목록을 불러오는 중...</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-
     const subjectBtnBg = selectedSubject ? `${theme.hex}15` : (isDark ? '#252525' : 'white');
     const subjectBtnBorder = selectedSubject ? `${theme.hex}40` : (isDark ? '#2F2F2F' : '#EBE8DE');
 
@@ -552,7 +483,7 @@ const App = () => {
                                             <label className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-3">테마 색상</label>
                                             <div className="flex justify-between">
                                                 {Object.values(THEMES).map(t => (
-                                    <button key={t.id} onClick={() => { setThemeId(t.id); try { localStorage.setItem('cozy_timer_theme', t.id); } catch {} }}
+                                                    <button key={t.id} onClick={() => { setThemeId(t.id); try { localStorage.setItem('cozy_timer_theme', t.id); } catch {} }}
                                                         className={`w-9 h-9 rounded-full ${t.bg} shadow-sm transition-all focus:outline-none ${themeId===t.id ? `ring-2 ring-offset-2 ring-offset-[#FDFBF7] dark:ring-offset-[#191919] ${t.ring} scale-110` : 'hover:scale-110'}`}
                                                         title={t.name}/>
                                                 ))}
@@ -561,14 +492,10 @@ const App = () => {
                                         <div className="pt-4 border-t border-[#EBE8DE] dark:border-[#2F2F2F]">
                                             <div className="flex items-center justify-between mb-2">
                                                 <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Notion 연결</label>
-                                                <button onClick={() => { setShowSettings(false); setSetupDone(false); setSetupError(''); setShowSetup(true); }}
-                                                    className="text-xs text-gray-400 hover:text-[#A67B5B] transition-colors flex items-center gap-1">
-                                                    <RefreshIcon/> 재설정
-                                                </button>
                                             </div>
                                             {config.saved
-                                                ? <p className="text-xs text-green-500 font-medium flex items-center gap-1"><CheckIcon/> 연결됨</p>
-                                                : <p className="text-xs text-gray-400">연결되지 않음 — 로컬만 기록</p>}
+                                                ? <p className="text-xs text-green-500 font-medium flex items-center gap-1"><CheckIcon/> URL로 연결됨</p>
+                                                : <p className="text-xs text-gray-400">파라미터 없음 — 로컬만 기록</p>}
                                         </div>
                                     </div>
                                 </div>
@@ -617,7 +544,7 @@ const App = () => {
                                             onClick={() => { setSelectedSubject(null); setShowSubjectDrop(false); }}>선택 안 함</div>
                                         {subjects.length === 0 && !subjectsLoading && (
                                             <div className="subject-option text-xs text-gray-400">
-                                                {config.saved ? '과목 DB에 항목이 없어요' : 'Notion 연결 후 사용 가능해요'}
+                                                {config.saved ? '과목 DB에 항목이 없어요' : 'URL 설정 후 사용 가능해요'}
                                             </div>
                                         )}
                                         {subjects.map(s => (
@@ -692,7 +619,7 @@ const App = () => {
                         </div>
                     </div>
 
-                    {}
+                    {/* ══ 기록 화면 ══ */}
                     <div className="screen">
                         <div className="p-7 pt-5 flex flex-col" style={{ minHeight:'520px' }}>
                             <div className="flex items-center justify-between mb-4">
