@@ -126,11 +126,16 @@ const loadConfig = () => {
     const recordDbId = params.get('recordDbId') || '';
     const subjectDbId = params.get('subjectDbId') || '';
     const subjectNameProp = params.get('subjectNameProp') || '이름';
+    // 대시보드 통계용 페이지와 자동 연결하기 위한 설정
+    // dashboardPageId: 대시보드 통계 DB 안에 있는 '대시보드 통계용' 페이지 ID
+    // dashboardRelationProp: 공부 기록 DB에 있는 대시보드 관계형 속성 이름
+    const dashboardPageId = params.get('dashboardPageId') || '';
+    const dashboardRelationProp = params.get('dashboardRelationProp') || '대시보드 통계용';
 
     // proxyUrl, apiKey, recordDbId가 있으면 연결된 것으로 간주
     const saved = Boolean(proxyUrl && apiKey && recordDbId);
 
-    return { proxyUrl, apiKey, recordDbId, subjectDbId, subjectNameProp, saved };
+    return { proxyUrl, apiKey, recordDbId, subjectDbId, subjectNameProp, dashboardPageId, dashboardRelationProp, saved };
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -347,6 +352,11 @@ const App = () => {
                 '커피 종류': { select: { name: THEMES[themeId].name } }
             };
             if (rec.subjectId) properties['과목'] = { relation: [{ id: rec.subjectId }] };
+            // 대시보드 통계용 페이지와 자동 연결
+            // 이 관계가 연결되면 대시보드 통계용 페이지의 Rollup 값이 자동 집계됩니다.
+            if (config.dashboardPageId) {
+                properties[config.dashboardRelationProp] = { relation: [{ id: config.dashboardPageId }] };
+            }
             
             const resData = await notionFetch('/v1/pages', {
                 method: 'POST', body: JSON.stringify({ parent: { database_id: config.recordDbId }, properties }),
@@ -494,7 +504,12 @@ const App = () => {
                                                 <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Notion 연결</label>
                                             </div>
                                             {config.saved
-                                                ? <p className="text-xs text-green-500 font-medium flex items-center gap-1"><CheckIcon/> URL로 연결됨</p>
+                                                ? <div className="space-y-1">
+                                                    <p className="text-xs text-green-500 font-medium flex items-center gap-1"><CheckIcon/> URL로 연결됨</p>
+                                                    {config.dashboardPageId && (
+                                                        <p className="text-xs text-green-500 font-medium flex items-center gap-1"><CheckIcon/> 대시보드 자동 연결됨</p>
+                                                    )}
+                                                </div>
                                                 : <p className="text-xs text-gray-400">파라미터 없음 — 로컬만 기록</p>}
                                         </div>
                                     </div>
