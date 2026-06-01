@@ -841,6 +841,7 @@ const App = () => {
                     testItemMap[answer] = page.id;
 
                     const passCount = props['누적 통과 횟수']?.number || 0;
+                    const wrongCount = props['누적 오답 횟수']?.number || 0;
                     const isRetry   = props['다시 학습']?.checkbox === true;
                     const createdTime = page.created_time;
                     const createdYMD = getLocalYMD(new Date(createdTime));
@@ -863,7 +864,7 @@ const App = () => {
                         }
                     });
 
-                    const item = { id: page.id, title: answer, passCount, subjects: subjNames, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
+                    const item = { id: page.id, title: answer, passCount, wrongCount, subjects: subjNames, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
 
                     if (isAddedToday) {
                         todayAdded.push(item);
@@ -1865,6 +1866,16 @@ const App = () => {
                             <DocumentIcon/> 리포트 저장
                         </button>
                     )}
+                    {activeTab === 'vocab' && config.vocabDbId && (
+                        <a
+                            href={`https://www.notion.so/${config.vocabDbId.replace(/-/g,'')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-gray-50 transition shadow-sm no-underline"
+                        >
+                            <NotionIcon/> 노션 단어장 열기
+                        </a>
+                    )}
                 </div>
 
                 {/* ── HOME VIEW ── */}
@@ -2150,21 +2161,14 @@ const App = () => {
                     (() => {
                         const allSubjects = ['전체', ...Object.keys(vocabData.subjectCounts)];
                         const filterV = (list) => vocabSubjectFilter === '전체' ? list : list.filter(v => v.subjects.includes(vocabSubjectFilter));
-                        const notionVocabUrl = `https://www.notion.so/${config.vocabDbId.replace(/-/g,'')}`;
-
                         let sortedReviewList = [...filterV(vocabData.reviewList)];
                         if (vocabSort === 'created_desc') sortedReviewList.sort((a,b) => new Date(b.createdTime) - new Date(a.createdTime));
                         else if (vocabSort === 'created_asc') sortedReviewList.sort((a,b) => new Date(a.createdTime) - new Date(b.createdTime));
                         else if (vocabSort === 'name_asc') sortedReviewList.sort((a,b) => a.title.localeCompare(b.title, 'ko'));
+                        else if (vocabSort === 'wrong_desc') sortedReviewList.sort((a,b) => (b.wrongCount || 0) - (a.wrongCount || 0) || new Date(b.createdTime) - new Date(a.createdTime));
 
                         return (
                             <div className="mt-2 h-full flex flex-col">
-                                <div className="flex items-center gap-3 mb-5 flex-wrap">
-                                    <a href={notionVocabUrl} target="_blank" rel="noopener noreferrer" className="text-[12px] font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-gray-600 hover:border-[#8B664B] hover:text-[#8B664B] transition-colors flex items-center gap-1.5 shadow-sm no-underline">
-                                        <NotionIcon/> 노션 단어장 열기
-                                    </a>
-                                </div>
-
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
                                     {/* ── 1. 왼쪽: 오늘/최근 추가된 단어 ── */}
@@ -2222,6 +2226,7 @@ const App = () => {
                                             <select value={vocabSort} onChange={e=>setVocabSort(e.target.value)} className="bg-transparent border border-gray-200 dark:border-[#2F2F2F] text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2 py-1 rounded-md outline-none cursor-pointer focus:border-[#8B664B]">
                                                 <option value="created_desc">최근 생성순</option>
                                                 <option value="created_asc">과거 생성순</option>
+                                                <option value="wrong_desc">오답 많은 순</option>
                                                 <option value="name_asc">가나다순</option>
                                             </select>
                                         </div>
