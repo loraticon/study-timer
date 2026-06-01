@@ -152,6 +152,18 @@
         .dark .bg-latte-500 { background-color: #A67B5B !important; }
         .dark ::-webkit-scrollbar-thumb { background: #3D3D3D; }
 
+
+        /* ── 다크모드 추가 보정: 통계 카드/그래프 대비 ── */
+        .dark [style*="color: rgb(31, 41, 55)"],
+        .dark [style*="color: #1a1a1a"],
+        .dark [style*="color:#1a1a1a"] {
+            color: #F3F4F6 !important;
+        }
+        .dark .chart-bar,
+        .dark .donut-segment {
+            filter: brightness(1.15) saturate(1.08);
+        }
+
         /* ── 인쇄(PDF) 전용 스타일 ── */
         @media print {
             body { 
@@ -1690,11 +1702,11 @@ const App = () => {
                         {statsData && (
                             <div className="grid grid-cols-5 gap-3 mb-6">
                                 {[
-                                    { label: '학습 노트', value: statsData.notes, unit: '개', icon: '📝', bg: 'bg-white', accent: '#1a1a1a' },
-                                    { label: '자료실', value: statsData.resources, unit: '개', icon: '🗂️', bg: 'bg-white', accent: '#1a1a1a' },
-                                    { label: '완료한 투두', value: statsData.doneTodos, unit: '개', icon: '✅', bg: 'bg-white', accent: '#1a1a1a' },
-                                    { label: '총 공부 시간', value: statsData.studyHours !== null ? (statsData.studyHours >= 60 ? `${Math.floor(statsData.studyHours/60)}h ${statsData.studyHours%60 > 0 ? statsData.studyHours%60+'m' : ''}`.trim() : `${statsData.studyHours}m`) : null, unit: '', icon: '⏱️', bg: 'bg-white', accent: '#1a1a1a' },
-                                    { label: '과목', value: statsData.subjects, unit: '개', icon: '📚', bg: 'bg-white', accent: '#1a1a1a' },
+                                    { label: '학습 노트', value: statsData.notes, unit: '개', icon: '📝', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                    { label: '자료실', value: statsData.resources, unit: '개', icon: '🗂️', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                    { label: '완료한 투두', value: statsData.doneTodos, unit: '개', icon: '✅', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                    { label: '총 공부 시간', value: statsData.studyHours !== null ? (statsData.studyHours >= 60 ? `${Math.floor(statsData.studyHours/60)}h ${statsData.studyHours%60 > 0 ? statsData.studyHours%60+'m' : ''}`.trim() : `${statsData.studyHours}m`) : null, unit: '', icon: '⏱️', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                    { label: '과목', value: statsData.subjects, unit: '개', icon: '📚', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
                                 ].map(({ label, value, unit, icon, bg, accent }) => (
                                     <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-2 border border-gray-100`}>
                                         <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-gray-500 dark:text-gray-300">{label}</span><span className="text-base">{icon}</span></div>
@@ -2816,13 +2828,13 @@ const App = () => {
                                 <p className="text-[11px] font-extrabold tracking-[0.12em] text-latte-500 uppercase mb-3">누적 현황</p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                     {[
-                                        { label: '학습 노트', value: statsData.notes, unit: '개', icon: '📝', bg: 'bg-white', accent: '#1a1a1a' },
-                                        { label: '자료실', value: statsData.resources, unit: '개', icon: '🗂️', bg: 'bg-white', accent: '#1a1a1a' },
-                                        { label: '완료한 투두', value: statsData.doneTodos, unit: '개', icon: '✅', bg: 'bg-white', accent: '#1a1a1a' },
-                                        { label: '총 공부 시간', value: statsData.studyHours !== null ? (statsData.studyHours >= 60 ? `${Math.floor(statsData.studyHours/60)}h ${statsData.studyHours%60 > 0 ? statsData.studyHours%60+'m' : ''}`.trim() : `${statsData.studyHours}m`) : null, unit: '', icon: '⏱️', bg: 'bg-white', accent: '#1a1a1a' },
-                                        { label: '과목', value: statsData.subjects, unit: '개', icon: '📚', bg: 'bg-white', accent: '#1a1a1a' },
+                                        { label: '학습 노트', value: statsData.notes, unit: '개', icon: '📝', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                        { label: '자료실', value: statsData.resources, unit: '개', icon: '🗂️', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                        { label: '완료한 투두', value: statsData.doneTodos, unit: '개', icon: '✅', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                        { label: '총 공부 시간', value: statsData.studyHours !== null ? (statsData.studyHours >= 60 ? `${Math.floor(statsData.studyHours/60)}h ${statsData.studyHours%60 > 0 ? statsData.studyHours%60+'m' : ''}`.trim() : `${statsData.studyHours}m`) : null, unit: '', icon: '⏱️', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
+                                        { label: '과목', value: statsData.subjects, unit: '개', icon: '📚', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F]', accent: isDark ? '#F3F4F6' : '#1a1a1a' },
                                     ].map(({ label, value, unit, icon, bg, accent }) => (
-                                        <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-2 soft-card border border-gray-100`}>
+                                        <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-2 soft-card`}>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300">{label}</span>
                                                 <span className="text-base">{icon}</span>
@@ -2842,25 +2854,25 @@ const App = () => {
                         <div>
                             {statsData && <p className="text-[11px] font-extrabold tracking-[0.12em] text-gray-400 uppercase mb-3">이번 주 인사이트</p>}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card border border-gray-100 dark:border-[#2F2F2F]">
                                     <div className="w-12 h-12 rounded-full bg-[#FEF8ED] flex items-center justify-center"><CrownIcon/></div>
                                     <div>
                                         <div className="text-[11px] font-bold text-gray-400 mb-0.5">이번 주 Top 과목</div>
-                                        <div className="text-xl font-bold text-gray-800">{recordStats.topSubj}</div>
+                                        <div className="text-xl font-bold text-gray-800 dark:text-gray-100">{recordStats.topSubj}</div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card border border-gray-100 dark:border-[#2F2F2F]">
                                     <div className="w-12 h-12 rounded-full bg-[#F3F8F5] flex items-center justify-center"><OwlIcon/></div>
                                     <div>
                                         <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중이 잘 되는 시간</div>
-                                        <div className="text-xl font-bold text-gray-800">{recordStats.topTime}</div>
+                                        <div className="text-xl font-bold text-gray-800 dark:text-gray-100">{recordStats.topTime}</div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center gap-4 soft-card border border-gray-100 dark:border-[#2F2F2F]">
                                     <div className="w-12 h-12 rounded-full bg-[#FDF2F2] flex items-center justify-center"><TomatoIcon/></div>
                                     <div>
                                         <div className="text-[11px] font-bold text-gray-400 mb-0.5">집중 모드 선호도</div>
-                                        <div className="text-xl font-bold text-gray-800">
+                                        <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
                                             {recordStats.preferredMode} <span className="text-[#E56B6F]">{recordStats.preferredPct}%</span>
                                         </div>
                                     </div>
@@ -2870,14 +2882,14 @@ const App = () => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* 최근 7일 순공시간 */}
-                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[320px]">
+                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[320px] border border-gray-100 dark:border-[#2F2F2F]">
                                 <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-[13px] font-bold text-gray-800">최근 7일 순공시간</h3>
-                                    <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                                        <button onClick={() => setBarChartMode('total')} className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all ${barChartMode === 'total' ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    <h3 className="text-[13px] font-bold text-gray-800 dark:text-gray-100">최근 7일 순공시간</h3>
+                                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#1E1E1E] rounded-xl p-1">
+                                        <button onClick={() => setBarChartMode('total')} className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all ${barChartMode === 'total' ? 'bg-white dark:bg-[#252525] text-gray-700 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}>
                                             전체
                                         </button>
-                                        <button onClick={() => setBarChartMode('subject')} className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all ${barChartMode === 'subject' ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                                        <button onClick={() => setBarChartMode('subject')} className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all ${barChartMode === 'subject' ? 'bg-white dark:bg-[#252525] text-gray-700 dark:text-gray-100 shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}>
                                             과목별
                                         </button>
                                     </div>
@@ -2887,7 +2899,7 @@ const App = () => {
                                 <div className="flex-1 flex items-end justify-between gap-4 h-[200px] mt-4 shrink-0">
                                     {barChartData.days.map((day, idx) => (
                                         <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold text-gray-700 whitespace-nowrap z-10 flex flex-col items-center bg-white/95 px-2 py-1.5 rounded-xl shadow-md border border-gray-100 pointer-events-none">
+                                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold text-gray-700 dark:text-gray-100 whitespace-nowrap z-10 flex flex-col items-center bg-white/95 dark:bg-[#1E1E1E]/95 px-2 py-1.5 rounded-xl shadow-md border border-gray-100 dark:border-[#2F2F2F] pointer-events-none">
                                                 <span className="text-[#A67B5B]">{day.total > 0 ? fmtMinToHour(day.total) : '0분'}</span>
                                                 {barChartMode === 'subject' && day.subjects.length > 0 && (
                                                     <div className="mt-1.5 pt-1.5 border-t border-gray-100 flex flex-col gap-1 w-full min-w-[80px]">
@@ -2905,8 +2917,11 @@ const App = () => {
                                             </div>
                                             
                                             <div 
-                                                className={`w-full flex flex-col-reverse justify-start overflow-hidden rounded-t-xl transition-all duration-500 ${barChartMode === 'total' && day.total > 0 ? (day.isToday ? 'bg-[#A67B5B]' : 'bg-[#F4F0EA]') : 'bg-transparent'}`}
-                                                style={{ height: `${day.total > 0 ? Math.max((day.total / barChartData.max) * 100, 5) : 0}%` }}
+                                                className="w-full flex flex-col-reverse justify-start overflow-hidden rounded-t-xl transition-all duration-500"
+                                                style={{ 
+                                                    height: `${day.total > 0 ? Math.max((day.total / barChartData.max) * 100, 5) : 0}%`,
+                                                    backgroundColor: barChartMode === 'total' && day.total > 0 ? (day.isToday ? '#A67B5B' : (isDark ? '#6F5948' : '#F4F0EA')) : 'transparent'
+                                                }}
                                             >
                                                 {barChartMode === 'subject' && day.total > 0 && day.subjects.map((subj, sIdx) => (
                                                     <div 
@@ -2919,17 +2934,17 @@ const App = () => {
                                                     ></div>
                                                 ))}
                                             </div>
-                                            <div className="mt-3 text-xs font-bold text-gray-400">{day.label}</div>
+                                            <div className="mt-3 text-xs font-bold text-gray-400 dark:text-gray-300">{day.label}</div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             {/* 누적 과목 밸런스 */}
-                            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[320px]">
+                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col soft-card min-h-[320px] border border-gray-100 dark:border-[#2F2F2F]">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-[13px] font-bold text-gray-800">누적 과목 밸런스</h3>
-                                    <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                                    <h3 className="text-[13px] font-bold text-gray-800 dark:text-gray-100">누적 과목 밸런스</h3>
+                                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#1E1E1E] rounded-xl p-1">
                                         {[['donut','🍩'],['hbar','▬'],['vbar','📊']].map(([type, icon]) => (
                                             <button key={type} onClick={() => setDonutChartType(type)}
                                                 className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all ${donutChartType === type ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -2956,7 +2971,7 @@ const App = () => {
                                             </svg>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                                 <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-1">Total</span>
-                                                <span className="text-xl font-bold text-gray-800">{fmtMinToHour(donutChartData.total)}</span>
+                                                <span className="text-xl font-bold text-gray-800 dark:text-gray-100">{fmtMinToHour(donutChartData.total)}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
