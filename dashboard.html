@@ -195,6 +195,7 @@
         .dark .bg-\[\#F4F0EA\] { background-color: #252525 !important; }
         .dark .bg-\[\#F3F8F5\] { background-color: #1F2A24 !important; }
         .dark .hover\:bg-\[\#E8F2EC\]:hover { background-color: #24352B !important; }
+        .dark .hover\:bg-\[\#FDFBF7\]:hover { background-color: #2A2A2A !important; }
         .dark .bg-\[\#FFF5F2\] { background-color: #2A211F !important; }
         .dark .hover\:bg-\[\#FFE9E4\]:hover { background-color: #35231F !important; }
         .dark .bg-\[\#FEF2F2\] { background-color: rgba(224, 122, 95, 0.14) !important; }
@@ -2181,8 +2182,8 @@ const App = () => {
                                             ) : (
                                                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[240px] pr-1">
                                                     {vocabData.todayAdded.map(v => (
-                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center justify-between p-3 rounded-xl bg-[#FDFBF7] border border-[#F4F0EA] cursor-pointer hover:bg-[#F4F0EA] hover:shadow-sm transition-all group" title="뜻/설명 보기">
-                                                            <span className={`text-[14px] font-bold truncate pr-3 group-hover:text-[#A67B5B] transition-colors ${v.status === 'passed' ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{v.title}</span>
+                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center justify-between p-3 rounded-xl bg-[#FDFBF7] dark:bg-[#1E1E1E] border border-[#F4F0EA] dark:border-[#2F2F2F] cursor-pointer hover:bg-[#F4F0EA] dark:hover:bg-[#2A2A2A] hover:shadow-sm transition-all group" title="뜻/설명 보기">
+                                                            <span className={`text-[14px] font-bold truncate pr-3 group-hover:text-[#A67B5B] dark:group-hover:text-[#D4A373] transition-colors ${v.status === 'passed' ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-100'}`}>{v.title}</span>
                                                             <div className="shrink-0 flex items-center">
                                                                 {v.status === 'passed' && <span className="text-[#849F71] text-lg leading-none" title="통과">✅</span>}
                                                                 {v.status === 'failed' && <span className="text-[#E56B6F]" title="다시 학습 필요"><RetryIcon size={18}/></span>}
@@ -2204,9 +2205,9 @@ const App = () => {
                                             ) : (
                                                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1">
                                                     {vocabData.recentWords.map(v => (
-                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-[#FDFBF7] cursor-pointer group transition-all" title="뜻/설명 보기">
-                                                            {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded whitespace-nowrap group-hover:border-[#D1CBBF] group-hover:text-gray-500 transition-colors">{v.subjects[0]}</span>}
-                                                            <span className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#A67B5B] transition-colors">{v.title}</span>
+                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-[#FDFBF7] dark:hover:bg-[#2A2A2A] cursor-pointer group transition-all" title="뜻/설명 보기">
+                                                            {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 border border-gray-200 dark:border-[#2F2F2F] px-1.5 py-0.5 rounded whitespace-nowrap group-hover:border-[#D1CBBF] dark:group-hover:border-[#3D3D3D] group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors">{v.subjects[0]}</span>}
+                                                            <span className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate group-hover:text-[#A67B5B] dark:group-hover:text-[#D4A373] transition-colors">{v.title}</span>
                                                         </div>
                                                     ))}
                                                 </div>
