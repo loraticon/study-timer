@@ -23,15 +23,23 @@
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap');
-    html, body { margin:0; padding:0; background:transparent !important; min-height:0 !important; overflow:hidden; }
-    #root { background:transparent !important; min-height:0 !important; }
+    html, body { margin:0; padding:0; background:transparent !important; }
+    #root { background:transparent !important; }
+    html.dark, html.dark body, html.dark #root {
+      background:#191919 !important;
+      background-color:#191919 !important;
+    }
 
     /* ── 드로어 ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:40; opacity:0; pointer-events:none; transition:opacity .28s ease; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
-    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:50; border-radius:1.5rem 1.5rem 0 0; background:#FDFBF7; box-shadow:none; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,1,.46,1), box-shadow .2s ease, opacity .2s ease; max-height:70vh; display:flex; flex-direction:column; opacity:0; visibility:hidden; pointer-events:none; }
-    .drawer.open { transform:translateY(0); box-shadow:0 -6px 32px rgba(92,58,33,.13); opacity:1; visibility:visible; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:50; border-radius:1.5rem 1.5rem 0 0; background:#FDFBF7; box-shadow:none; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,1,.46,1), box-shadow .2s ease; max-height:70vh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); box-shadow:0 -6px 32px rgba(92,58,33,.13); }
     .drawer-handle { width:2.5rem; height:.28rem; background:#D1CBBF; border-radius:9px; margin:.75rem auto .5rem; flex-shrink:0; }
+    .dark .drawer-backdrop { background:rgba(0,0,0,.35); }
+    .dark .drawer { background:#191919; border-top:1px solid #2F2F2F; }
+    .dark .drawer.open { box-shadow:0 -8px 32px rgba(0,0,0,.35); }
+    .dark .drawer-handle { background:#3D3D3D; }
 
     /* ── 프리뷰 모드 ── */
     .widget-content { transition:opacity .3s, filter .3s; }
@@ -42,18 +50,24 @@
     /* ── 탭 ── */
     .tab-btn { flex:1; padding:.45rem 0; font-size:.7rem; font-weight:700; border-radius:9999px; transition:all .18s; color:#B5A898; }
     .tab-btn.active { background:#F4F0EA; color:#8B664B; }
+    .dark .tab-btn { color:#8B949E; }
+    .dark .tab-btn.active { background:#252525; color:#D4A373; }
 
     /* ── 아이템 그리드 ── */
     .item-btn { border-radius:1rem; border:2px solid transparent; transition:all .18s; background:#F8F5F0; aspect-ratio:1; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; }
     .item-btn.selected { border-color:#A67B5B; background:#F4F0EA; }
     .item-btn.locked { opacity:.45; cursor:not-allowed; }
     .item-btn .lock-icon { position:absolute; bottom:3px; right:3px; font-size:.6rem; }
+    .dark .item-btn { background:#252525; }
+    .dark .item-btn.selected { border-color:#A67B5B; background:#2F2F2F; }
 
     /* ── 퀘스트 ── */
     .quest-row { display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem; border-radius:.75rem; background:#F8F5F0; margin-bottom:.35rem; }
     .quest-check { width:1.1rem; height:1.1rem; border-radius:50%; border:2px solid #D1CBBF; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.55rem; }
     .quest-check.done { background:#A67B5B; border-color:#A67B5B; color:white; }
     .cat-badge { font-size:.55rem; font-weight:700; padding:.1rem .4rem; border-radius:9999px; }
+    .dark .quest-row { background:#252525; }
+    .dark .quest-check { border-color:#3D3D3D; }
 
     /* ── 토스트 ── */
     .toast { position:fixed; top:1.2rem; left:50%; transform:translateX(-50%) translateY(-2rem); background:#5C3A21; color:#FDF8F3; padding:.5rem 1.1rem; border-radius:9999px; font-size:.72rem; font-weight:700; z-index:200; opacity:0; pointer-events:none; transition:all .3s; white-space:nowrap; }
@@ -249,7 +263,7 @@ const loadInitialConfig = () => loadUrlConfig() || loadLS(LS.CONFIG, null);
 // 일러스트 SVG (커피잔 + 고양이 레이어 합성)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const CupSVG = ({ catItem, drinkItem, catAccItem, cupDecoItem, bgColor }) => {
-  const dark = bgColor === '#2D2420';
+  const dark = ['#2D2420', '#252525', '#191919'].includes(bgColor);
   // 음료 색상
   const drinkColors = {
     drink_lemon:  { top:'#B8E8D4', bot:'#7DD4B8', bubble:'rgba(255,255,255,.55)' },
@@ -755,10 +769,10 @@ function App() {
 
   // ── 꾸미기 선택 ──
   const bgColor = DECO_ITEMS.bg.find(i=>i.id===deco.bg)?.color || '#FDFBF7';
-  const cardBg  = darkMode ? '#2D2420' : bgColor;
+  const cardBg  = darkMode ? '#252525' : bgColor;
   const dark    = darkMode || bgColor === '#2D2420';
-  const textCol = dark ? '#F4EDE0' : '#5C3A21';
-  const subCol  = dark ? '#C0A898' : '#A67B5B';
+  const textCol = dark ? '#F3F4F6' : '#5C3A21';
+  const subCol  = dark ? '#A3A3A3' : '#A67B5B';
   const iconBg  = dark ? 'rgba(255,255,255,.08)' : 'rgba(92,58,33,.07)';
   const iconBgHover = dark ? 'rgba(255,255,255,.13)' : 'rgba(92,58,33,.11)';
 
@@ -883,7 +897,7 @@ function App() {
   const connected = !!config?.saved || !!config?.recordDbId;
 
   if (showSetup) return (
-    <div style={{width:'100%',minHeight:'0',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
       <div style={{width:'100%',maxWidth:'360px',background:'#fff',borderRadius:'2rem',padding:'1.65rem',border:'1px solid #EBE8DE',boxSizing:'border-box'}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',marginBottom:'1.1rem'}}>
           <div>
@@ -980,7 +994,7 @@ function App() {
   );
 
   return (
-    <div style={{width:'100%',minHeight:'0',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
       {/* 토스트 */}
       <div className={`toast${toast ? ' show' : ''}`} key={toastKey}>{toast}</div>
 
