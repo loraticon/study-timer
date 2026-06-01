@@ -23,14 +23,14 @@
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap');
-    html, body { margin:0; padding:0; background:transparent !important; }
-    #root { background:transparent !important; }
+    html, body { margin:0; padding:0; background:transparent !important; min-height:0 !important; overflow:hidden; }
+    #root { background:transparent !important; min-height:0 !important; }
 
     /* ── 드로어 ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:40; opacity:0; pointer-events:none; transition:opacity .28s ease; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
-    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:50; border-radius:1.5rem 1.5rem 0 0; background:#FDFBF7; box-shadow:none; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,1,.46,1), box-shadow .2s ease; max-height:70vh; display:flex; flex-direction:column; }
-    .drawer.open { transform:translateY(0); box-shadow:0 -6px 32px rgba(92,58,33,.13); }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:50; border-radius:1.5rem 1.5rem 0 0; background:#FDFBF7; box-shadow:none; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,1,.46,1), box-shadow .2s ease, opacity .2s ease; max-height:70vh; display:flex; flex-direction:column; opacity:0; visibility:hidden; pointer-events:none; }
+    .drawer.open { transform:translateY(0); box-shadow:0 -6px 32px rgba(92,58,33,.13); opacity:1; visibility:visible; pointer-events:auto; }
     .drawer-handle { width:2.5rem; height:.28rem; background:#D1CBBF; border-radius:9px; margin:.75rem auto .5rem; flex-shrink:0; }
 
     /* ── 프리뷰 모드 ── */
@@ -883,7 +883,7 @@ function App() {
   const connected = !!config?.saved || !!config?.recordDbId;
 
   if (showSetup) return (
-    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+    <div style={{width:'100%',minHeight:'0',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
       <div style={{width:'100%',maxWidth:'360px',background:'#fff',borderRadius:'2rem',padding:'1.65rem',border:'1px solid #EBE8DE',boxSizing:'border-box'}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',marginBottom:'1.1rem'}}>
           <div>
@@ -980,7 +980,7 @@ function App() {
   );
 
   return (
-    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
+    <div style={{width:'100%',minHeight:'0',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
       {/* 토스트 */}
       <div className={`toast${toast ? ' show' : ''}`} key={toastKey}>{toast}</div>
 
