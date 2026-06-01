@@ -182,9 +182,46 @@ const LS = {
   CLOCK_ON: 'nyan_clock_show',
   UI_ON:    'nyan_clock_ui',
   DARK_MODE:'nyan_clock_dark_mode',
+  RECORD_MONTHS:'nyan_clock_record_months',
+  PRESETS:'nyan_clock_deco_presets',
 };
 function loadLS(key, def) { try { const v=localStorage.getItem(key); return v!=null?JSON.parse(v):def; } catch{ return def; } }
 function saveLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch{} }
+
+const DEFAULT_DECO = {
+  cat:'cat_white', drink:'drink_lemon', catAcc:'acc_none', cupDeco:'deco_none', bg:'bg_cream'
+};
+const RECORD_MONTH_OPTIONS = [
+  { value:'3', label:'3개월' },
+  { value:'6', label:'6개월' },
+  { value:'12', label:'12개월' },
+  { value:'24', label:'24개월' },
+  { value:'all', label:'전체' },
+];
+const MAX_DECO_PRESETS = 12;
+const ymdLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+};
+const makeMonthlyRanges = (periodMonths) => {
+  if (periodMonths === 'all') return null;
+  const n = Math.max(1, parseInt(periodMonths, 10) || 12);
+  const tomorrow = new Date();
+  tomorrow.setHours(0,0,0,0);
+  tomorrow.setDate(tomorrow.getDate()+1);
+  const start = new Date(tomorrow.getFullYear(), tomorrow.getMonth() - (n - 1), 1);
+  const ranges = [];
+  let cursor = new Date(start);
+  while (cursor < tomorrow) {
+    const next = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+    const rangeEnd = next < tomorrow ? next : tomorrow;
+    ranges.push({ start: ymdLocal(cursor), end: ymdLocal(rangeEnd) });
+    cursor = next;
+  }
+  return ranges.reverse();
+};
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -583,9 +620,10 @@ function App() {
 
   const [drawer,    setDrawer]    = useState(null); // null | 'deco' | 'quest'
   const [decoTab,   setDecoTab]   = useState('cat');
-  const [deco, setDeco] = useState(() => loadLS(LS.DECO, {
-    cat:'cat_white', drink:'drink_lemon', catAcc:'acc_none', cupDeco:'deco_none', bg:'bg_cream'
-  }));
+  const [deco, setDeco] = useState(() => loadLS(LS.DECO, DEFAULT_DECO));
+  const [recordMonths, setRecordMonths] = useState(() => loadLS(LS.RECORD_MONTHS, '12'));
+  const [decoPresets, setDecoPresets] = useState(() => loadLS(LS.PRESETS, []));
+  const [presetName, setPresetName] = useState('');
 
   const [toast,    setToast]    = useState('');
   const [toastKey, setToastKey] = useState(0);
@@ -615,34 +653,53 @@ function App() {
   useEffect(() => { saveLS(LS.UI_ON, uiOn); }, [uiOn]);
   useEffect(() => { saveLS(LS.DARK_MODE, darkMode); }, [darkMode]);
   useEffect(() => { saveLS(LS.DECO, deco); }, [deco]);
+  useEffect(() => { saveLS(LS.RECORD_MONTHS, recordMonths); }, [recordMonths]);
+  useEffect(() => { saveLS(LS.PRESETS, decoPresets); }, [decoPresets]);
 
   // ── 데이터 로드 ──
-  const fetchData = useCallback(async (cfg = config) => {
+  const fetchData = useCallback(async (cfg = config, period = recordMonths) => {
     if (!cfg) return;
     setLoading(true); setError('');
     try {
       // 공부기록
-      let allRecs = [], cursor = undefined;
-      do {
-        const body = { sorts:[{property:'날짜',direction:'descending'}], page_size:100 };
-        if (cursor) body.start_cursor = cursor;
-        const res = await fetch(`${cfg.proxyUrl}/v1/databases/${cfg.recordDbId}/query`, {
-          method:'POST',
-          headers:{'Content-Type':'application/json','x-api-key':cfg.apiKey,'x-notion-version':'2022-06-28'},
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || '공부기록 로드 실패');
-        for (const p of data.results) {
-          allRecs.push({
-            date:    p.properties['날짜']?.date?.start || p.created_time,
-            minutes: p.properties['순공시간']?.number || 0,
-            mode:    p.properties['모드']?.select?.name || '',
-            coffee:  p.properties['커피 종류']?.select?.name || '',
+      // 기록이 많아질 것을 대비해 기본값은 최근 12개월만 월별로 나누어 불러옵니다.
+      // 설정 화면에서 3/6/12/24개월 또는 전체로 변경할 수 있습니다.
+      let allRecs = [];
+      const readRecordPage = async (body) => {
+        let cursor = undefined;
+        do {
+          const pageBody = { ...body, page_size:100 };
+          if (cursor) pageBody.start_cursor = cursor;
+          const res = await fetch(`${cfg.proxyUrl}/v1/databases/${cfg.recordDbId}/query`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json','x-api-key':cfg.apiKey,'x-notion-version':'2022-06-28'},
+            body: JSON.stringify(pageBody)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || '공부기록 로드 실패');
+          for (const p of data.results) {
+            allRecs.push({
+              date:    p.properties['날짜']?.date?.start || p.created_time,
+              minutes: p.properties['순공시간']?.number || 0,
+              mode:    p.properties['모드']?.select?.name || '',
+              coffee:  p.properties['커피 종류']?.select?.name || '',
+            });
+          }
+          cursor = data.has_more ? data.next_cursor : null;
+        } while (cursor);
+      };
+
+      const ranges = makeMonthlyRanges(period);
+      if (ranges) {
+        for (const r of ranges) {
+          await readRecordPage({
+            sorts:[{property:'날짜',direction:'descending'}],
+            filter:{ property:'날짜', date:{ on_or_after:r.start, before:r.end } }
           });
         }
-        cursor = data.has_more ? data.next_cursor : null;
-      } while (cursor);
+      } else {
+        await readRecordPage({ sorts:[{property:'날짜',direction:'descending'}] });
+      }
       setRecords(allRecs);
 
       // 퀘스트 달성 날짜
@@ -668,26 +725,19 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [config]);
+  }, [config, recordMonths]);
 
   useEffect(() => { if (config && !showSetup) fetchData(); }, [config, showSetup]);
 
   // ── 스탯 & 퀘스트 달성 판정 ──
   const stats = useMemo(() => computeStats(records), [records]);
-  const newlyAchieved = useMemo(() => {
+
+  // 조건을 만족했지만 아직 사용자가 직접 완료하지 않은 퀘스트입니다.
+  // 자동 완료/자동 토스트는 하지 않고, 퀘스트 드로어에서 '완료' 버튼을 눌렀을 때만 기록합니다.
+  const claimableQuests = useMemo(() => {
     if (!records.length) return [];
     return QUESTS.filter(q => !questDone[q.id] && q.check(stats));
   }, [stats, questDone]);
-
-  // ── 새 달성 퀘스트 → Notion PATCH + 토스트 ──
-  useEffect(() => {
-    if (!config?.questDbId || !newlyAchieved.length) return;
-    // 퀘스트 페이지 ID 찾아서 날짜 기록
-    // (fetchData에서 page.id도 저장해야 하므로 별도 처리)
-    newlyAchieved.forEach(q => {
-      showToast(`🎉 퀘스트 달성! ${q.name}`);
-    });
-  }, [newlyAchieved]);
 
   // ── 설정 저장 ──
   const handleSaveSetup = async () => {
@@ -711,11 +761,37 @@ function App() {
   // 잠금 해제 여부
   const isUnlocked = (item) => !item.unlock || !!questDone[item.unlock];
 
+  const saveDecoPreset = useCallback(() => {
+    const name = (presetName || '').trim() || `프리셋 ${decoPresets.length + 1}`;
+    const preset = { id:String(Date.now()), name, deco:{...deco}, createdAt:new Date().toISOString() };
+    setDecoPresets(prev => [preset, ...prev.filter(p => p.name !== name)].slice(0, MAX_DECO_PRESETS));
+    setPresetName('');
+    showToast(`프리셋 '${name}' 저장 완료`);
+  }, [presetName, deco, decoPresets.length, showToast]);
+
+  const applyDecoPreset = useCallback((preset) => {
+    const next = {...DEFAULT_DECO};
+    let skipped = 0;
+    Object.entries(preset.deco || {}).forEach(([key, value]) => {
+      const item = DECO_ITEMS[key]?.find(i => i.id === value);
+      if (!item) return;
+      if (isUnlocked(item)) next[key] = value;
+      else skipped += 1;
+    });
+    setDeco(next);
+    showToast(skipped ? `프리셋 적용 완료 · 잠긴 아이템 ${skipped}개 제외` : `프리셋 '${preset.name}' 적용 완료`);
+  }, [questDone, showToast]);
+
+  const deleteDecoPreset = useCallback((presetId) => {
+    setDecoPresets(prev => prev.filter(p => p.id !== presetId));
+    showToast('프리셋을 삭제했어요.');
+  }, [showToast]);
+
   // ── 퀘스트 달성 기록 (Notion PATCH) ──
   // page id 보관용 ref
   const questPageIds = useRef({});
   const fetchQuestPageIds = useCallback(async () => {
-    if (!config?.questDbId) return;
+    if (!config?.questDbId) return questPageIds.current;
     try {
       const res = await fetch(`${config.proxyUrl}/v1/databases/${config.questDbId}/query`, {
         method:'POST',
@@ -723,34 +799,54 @@ function App() {
         body: JSON.stringify({ page_size:100 })
       });
       const data = await res.json();
-      if (!res.ok) return;
+      if (!res.ok) return questPageIds.current;
       for (const p of data.results) {
         const qid = p.properties['퀘스트ID']?.title?.[0]?.plain_text || '';
         if (qid) questPageIds.current[qid] = p.id;
       }
-    } catch{}
+      return questPageIds.current;
+    } catch{
+      return questPageIds.current;
+    }
   }, [config]);
 
   useEffect(() => { if (config && !showSetup) fetchQuestPageIds(); }, [config, showSetup]);
 
-  const markQuestDone = useCallback(async (questId) => {
-    const pageId = questPageIds.current[questId];
-    if (!pageId || !config) return;
+  const markQuestDone = useCallback(async (questId, questName) => {
+    if (!config?.questDbId) {
+      showToast('퀘스트 DB가 연결되어 있지 않아요.');
+      return;
+    }
+    if (questDone[questId]) return;
+
+    let pageId = questPageIds.current[questId];
+    if (!pageId) {
+      await fetchQuestPageIds();
+      pageId = questPageIds.current[questId];
+    }
+    if (!pageId) {
+      showToast('퀘스트 DB에서 해당 퀘스트ID를 찾지 못했어요.');
+      return;
+    }
+
     const todayStr = today();
     try {
-      await fetch(`${config.proxyUrl}/v1/pages/${pageId}`, {
+      const res = await fetch(`${config.proxyUrl}/v1/pages/${pageId}`, {
         method:'PATCH',
         headers:{'Content-Type':'application/json','x-api-key':config.apiKey,'x-notion-version':'2022-06-28'},
         body: JSON.stringify({ properties:{ '날짜':{ date:{ start: todayStr } } } })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        throw new Error(data.message || '퀘스트 기록 실패');
+      }
       setQuestDone(prev => ({ ...prev, [questId]: todayStr }));
-    } catch(e) { console.warn('퀘스트 기록 실패', e); }
-  }, [config]);
-
-  // 새 달성 자동 기록
-  useEffect(() => {
-    for (const q of newlyAchieved) markQuestDone(q.id);
-  }, [newlyAchieved]);
+      showToast(`🎉 퀘스트 완료! ${questName || ''}`);
+    } catch(e) {
+      console.warn('퀘스트 기록 실패', e);
+      showToast('퀘스트 완료 기록에 실패했어요.');
+    }
+  }, [config, questDone, fetchQuestPageIds, showToast]);
 
   // ── 스크린샷 ──
   const handleScreenshot = () => showToast('💡 브라우저 스크린샷(Win+Shift+S / Cmd+Shift+4)을 이용해 주세요.');
@@ -829,17 +925,31 @@ function App() {
           </div>
         </div>
 
+        <div style={{border:'1px solid #F0ECE5',background:'#fff',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{fontSize:'.76rem',fontWeight:800,color:'#5C3A21',marginBottom:'.25rem'}}>공부 기록 불러오기 기간</div>
+          <div style={{fontSize:'.64rem',color:'#B5A898',lineHeight:1.45,marginBottom:'.55rem'}}>
+            기록이 많아질 때를 대비해 월별로 나누어 불러옵니다. 기간이 짧을수록 로딩이 빨라집니다.
+          </div>
+          <div style={{display:'flex',gap:'.32rem',flexWrap:'wrap'}}>
+            {RECORD_MONTH_OPTIONS.map(opt => (
+              <button key={opt.value} onClick={()=>setRecordMonths(opt.value)} style={{border:'none',borderRadius:'9999px',padding:'.32rem .62rem',fontSize:'.62rem',fontWeight:800,fontFamily:'inherit',cursor:'pointer',background:recordMonths===opt.value ? '#A67B5B' : '#F4F0EA',color:recordMonths===opt.value ? '#fff' : '#8B664B'}}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={{border:'1px solid #F0ECE5',background:'#FDF8F1',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
           <div style={{fontSize:'.76rem',fontWeight:800,color:'#8B664B',marginBottom:'.22rem'}}>화면 표시 안내</div>
           <div style={{fontSize:'.66rem',color:'#A67B5B',lineHeight:1.55}}>
-            데이터가 바로 보이지 않으면 아래 새로고침 버튼으로 Notion 데이터를 다시 불러오세요. 꾸미기와 다크모드 상태는 브라우저에 저장됩니다.
+            데이터가 바로 보이지 않으면 아래 새로고침 버튼으로 Notion 데이터를 다시 불러오세요. 꾸미기와 다크모드 상태는 브라우저에 저장됩니다. 초기화에 대비해 꾸미기 프리셋을 저장해두는 것을 권장합니다.
           </div>
         </div>
 
         {error && <div style={{fontSize:'.68rem',color:'#E07A5F',marginBottom:'.75rem',padding:'.55rem .7rem',background:'#FEF0ED',borderRadius:'.75rem',lineHeight:1.45}}>{error}</div>}
 
         <div style={{display:'flex',gap:'.5rem'}}>
-          <button onClick={()=>fetchData(config)} disabled={loading || !connected} style={{flex:1,border:'none',borderRadius:'.9rem',background:loading || !connected ? '#D1CBBF' : '#A67B5B',color:'#fff',fontWeight:800,fontSize:'.78rem',padding:'.78rem .9rem',fontFamily:'inherit',cursor:loading || !connected ? 'not-allowed' : 'pointer'}}>
+          <button onClick={()=>fetchData(config, recordMonths)} disabled={loading || !connected} style={{flex:1,border:'none',borderRadius:'.9rem',background:loading || !connected ? '#D1CBBF' : '#A67B5B',color:'#fff',fontWeight:800,fontSize:'.78rem',padding:'.78rem .9rem',fontFamily:'inherit',cursor:loading || !connected ? 'not-allowed' : 'pointer'}}>
             {loading ? '불러오는 중...' : '데이터 새로고침'}
           </button>
           <button onClick={()=>setShowSetup(false)} style={{border:'none',borderRadius:'.9rem',background:'#F4F0EA',color:'#8B664B',fontWeight:800,fontSize:'.78rem',padding:'.78rem .95rem',fontFamily:'inherit',cursor:'pointer'}}>닫기</button>
@@ -918,7 +1028,7 @@ function App() {
             <button className={`tab-btn${drawer==='quest'?' active':''}`}
               onClick={()=>setDrawer(d=>d==='quest'?null:'quest')}
               style={{color: drawer==='quest' ? '#8B664B' : (dark?'#C0A898':'#B5A898')}}>
-              퀘스트 {newlyAchieved.length > 0 && <span style={{background:'#E07A5F',color:'#fff',borderRadius:'9999px',padding:'0 .3rem',fontSize:'.6rem',marginLeft:'.2rem'}}>{newlyAchieved.length}</span>}
+              퀘스트 {claimableQuests.length > 0 && <span style={{background:'#E07A5F',color:'#fff',borderRadius:'9999px',padding:'0 .3rem',fontSize:'.6rem',marginLeft:'.2rem'}}>{claimableQuests.length}</span>}
             </button>
           </div>
         </div>
@@ -944,6 +1054,25 @@ function App() {
                 {label}
               </button>
             ))}
+          </div>
+          <div style={{marginTop:'.65rem',border:'1px solid #F0ECE5',background:'#FDFBF7',borderRadius:'1rem',padding:'.7rem'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem',marginBottom:'.45rem'}}>
+              <div style={{fontSize:'.72rem',fontWeight:800,color:'#5C3A21'}}>꾸미기 프리셋</div>
+              <button onClick={saveDecoPreset} style={{border:'none',borderRadius:'9999px',background:'#A67B5B',color:'#fff',fontSize:'.62rem',fontWeight:800,padding:'.32rem .6rem',fontFamily:'inherit',cursor:'pointer'}}>현재 세트 저장</button>
+            </div>
+            <input value={presetName} onChange={e=>setPresetName(e.target.value)} placeholder="프리셋 이름 (예: 민트 냥이)" style={{width:'100%',boxSizing:'border-box',border:'1px solid #EBE8DE',background:'#fff',borderRadius:'.75rem',padding:'.48rem .65rem',fontSize:'.66rem',fontFamily:'inherit',outline:'none',color:'#5C3A21',marginBottom:'.5rem'}} />
+            {decoPresets.length > 0 ? (
+              <div style={{display:'flex',gap:'.35rem',overflowX:'auto',paddingBottom:'.1rem'}}>
+                {decoPresets.map(p => (
+                  <div key={p.id} style={{flexShrink:0,display:'flex',alignItems:'center',gap:'.25rem',background:'#F4F0EA',borderRadius:'9999px',padding:'.25rem .32rem .25rem .55rem'}}>
+                    <button onClick={()=>applyDecoPreset(p)} title="프리셋 적용" style={{border:'none',background:'transparent',color:'#8B664B',fontSize:'.62rem',fontWeight:800,fontFamily:'inherit',cursor:'pointer',padding:0,maxWidth:'7rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</button>
+                    <button onClick={()=>deleteDecoPreset(p.id)} title="프리셋 삭제" style={{border:'none',background:'rgba(92,58,33,.08)',color:'#A67B5B',borderRadius:'9999px',width:'1.05rem',height:'1.05rem',fontSize:'.62rem',lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{fontSize:'.62rem',color:'#B5A898',lineHeight:1.45}}>자주 쓰는 꾸미기 조합을 저장해두면 초기화 후에도 빠르게 다시 적용할 수 있어요.</div>
+            )}
           </div>
         </div>
 
@@ -1009,22 +1138,39 @@ function App() {
         <div style={{overflowY:'auto',flex:1,padding:'0 1rem 1.5rem'}}>
           {filteredQuests.map(q => {
             const done = !!questDone[q.id];
+            const claimable = !done && q.check(stats);
             return (
               <div key={q.id} className="quest-row" style={{opacity: done ? 1 : .85}}>
-                <div className={`quest-check${done?' done':''}`}>
-                  {done && '✓'}
+                <div className={`quest-check${done?' done':''}`} style={claimable ? {borderColor:'#A67B5B', color:'#A67B5B'} : {}}>
+                  {done ? '✓' : (claimable ? '!' : '')}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:'.72rem',fontWeight:700,color: done?'#A67B5B':'#5C3A21',textDecoration: done?'line-through':'none',lineHeight:1.3}}>
                     {q.name}
                   </div>
                   {done && questDone[q.id] && (
-                    <div style={{fontSize:'.6rem',color:'#B5A898',marginTop:'.1rem'}}>{questDone[q.id]} 달성 🎉</div>
+                    <div style={{fontSize:'.6rem',color:'#B5A898',marginTop:'.1rem'}}>{questDone[q.id]} 완료 🎉</div>
+                  )}
+                  {claimable && (
+                    <div style={{fontSize:'.6rem',color:'#A67B5B',marginTop:'.1rem',fontWeight:700}}>조건 달성 — 완료 버튼을 눌러 기록하세요</div>
                   )}
                 </div>
-                <span className="cat-badge" style={{background: QUEST_CAT_BG[q.cat], color: QUEST_CAT_COLOR[q.cat]}}>
-                  {q.cat}
-                </span>
+                {claimable ? (
+                  <button
+                    onClick={() => markQuestDone(q.id, q.name)}
+                    style={{
+                      flexShrink:0, border:'none', borderRadius:'9999px', padding:'.25rem .55rem',
+                      background:'#A67B5B', color:'#fff', fontSize:'.6rem', fontWeight:800,
+                      fontFamily:'inherit', cursor:'pointer'
+                    }}
+                  >
+                    완료
+                  </button>
+                ) : (
+                  <span className="cat-badge" style={{background: QUEST_CAT_BG[q.cat], color: QUEST_CAT_COLOR[q.cat]}}>
+                    {q.cat}
+                  </span>
+                )}
               </div>
             );
           })}
