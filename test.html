@@ -33,6 +33,10 @@
     </script>
     <style>
         body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: transparent; }
+        html.dark, html.dark body, html.dark #root {
+            background: #191919 !important;
+            background-color: #191919 !important;
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background-color: #EBE8DE; border-radius: 10px; }
@@ -580,31 +584,34 @@ const App = () => {
         
         setResults(prev => ({ ...prev, [currentQ.id]: isPass }));
 
-        const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
-        const propertiesToUpdate = {
-            '누적 통과 횟수': { number: newPassCount }
-        };
-        
-        if (isPass) {
-            propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(new Date()) } };
-            propertiesToUpdate['다시 학습'] = { checkbox: false }; 
-        } else {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(tomorrow) } };
-            propertiesToUpdate['다시 학습'] = { checkbox: true };
+        // 랜덤 테스트 모드에서는 Notion DB 업데이트 생략
+        if (sessionType !== 'random') {
+            const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
+            const propertiesToUpdate = {
+                '누적 통과 횟수': { number: newPassCount }
+            };
+            
+            if (isPass) {
+                propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(new Date()) } };
+                propertiesToUpdate['다시 학습'] = { checkbox: false }; 
+            } else {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(tomorrow) } };
+                propertiesToUpdate['다시 학습'] = { checkbox: true };
+            }
+            
+            setSyncingCount(c => c + 1); 
+            
+            notionFetch(`/v1/pages/${currentQ.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ properties: propertiesToUpdate })
+            }).catch(err => {
+                console.error("DB 업데이트 오류:", err);
+            }).finally(() => {
+                setSyncingCount(c => Math.max(0, c - 1)); 
+            });
         }
-        
-        setSyncingCount(c => c + 1); 
-        
-        notionFetch(`/v1/pages/${currentQ.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ properties: propertiesToUpdate })
-        }).catch(err => {
-            console.error("DB 업데이트 오류:", err);
-        }).finally(() => {
-            setSyncingCount(c => Math.max(0, c - 1)); 
-        });
 
         if (currentIndex + 1 < testQueue.length) {
             setCurrentIndex(prev => prev + 1);
