@@ -186,6 +186,26 @@ const LS = {
 function loadLS(key, def) { try { const v=localStorage.getItem(key); return v!=null?JSON.parse(v):def; } catch{ return def; } }
 function saveLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch{} }
 
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// URL 파라미터 설정 로드
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const cleanUrlValue = (value) => (value || '').trim();
+const loadUrlConfig = () => {
+  const params = new URLSearchParams(window.location.search);
+  const proxyUrl   = cleanUrlValue(params.get('proxyUrl'));
+  const apiKey     = cleanUrlValue(params.get('apiKey'));
+  const recordDbId = cleanUrlValue(params.get('recordDbId'));
+  const questDbId  = cleanUrlValue(params.get('questDbId'));
+
+  // 위젯통합설정 페이지에서 생성한 URL처럼 핵심 파라미터가 있으면 연결된 상태로 봅니다.
+  if (proxyUrl && apiKey && recordDbId) {
+    return { proxyUrl, apiKey, recordDbId, questDbId, saved:true, fromUrl:true };
+  }
+  return null;
+};
+const loadInitialConfig = () => loadUrlConfig() || loadLS(LS.CONFIG, null);
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 일러스트 SVG (커피잔 + 고양이 레이어 합성)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -544,9 +564,15 @@ const Icon = ({ name }) => {
 // 메인 앱
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function App() {
-  const [config, setConfig] = useState(() => loadLS(LS.CONFIG, null));
-  const [setupForm, setSetupForm] = useState({ proxyUrl:'', apiKey:'', recordDbId:'', questDbId:'' });
-  const [showSetup, setShowSetup] = useState(!loadLS(LS.CONFIG, null));
+  const initialConfig = useMemo(() => loadInitialConfig(), []);
+  const [config, setConfig] = useState(initialConfig);
+  const [setupForm, setSetupForm] = useState(() => ({
+    proxyUrl: initialConfig?.proxyUrl || '',
+    apiKey: initialConfig?.apiKey || '',
+    recordDbId: initialConfig?.recordDbId || '',
+    questDbId: initialConfig?.questDbId || ''
+  }));
+  const [showSetup, setShowSetup] = useState(!initialConfig);
 
   const [records,  setRecords]  = useState([]);
   const [questDone, setQuestDone] = useState({}); // { questId: dateStr }
