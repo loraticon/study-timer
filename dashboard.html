@@ -2162,6 +2162,7 @@ const App = () => {
                         const allSubjects = ['전체', ...Object.keys(vocabData.subjectCounts)];
                         const filterV = (list) => vocabSubjectFilter === '전체' ? list : list.filter(v => v.subjects.includes(vocabSubjectFilter));
                         let sortedReviewList = [...filterV(vocabData.reviewList)];
+                        if (vocabSort === 'wrong_desc') sortedReviewList = sortedReviewList.filter(v => (v.wrongCount || 0) > 0);
                         if (vocabSort === 'created_desc') sortedReviewList.sort((a,b) => new Date(b.createdTime) - new Date(a.createdTime));
                         else if (vocabSort === 'created_asc') sortedReviewList.sort((a,b) => new Date(a.createdTime) - new Date(b.createdTime));
                         else if (vocabSort === 'name_asc') sortedReviewList.sort((a,b) => a.title.localeCompare(b.title, 'ko'));
