@@ -172,6 +172,38 @@
             .soft-card { box-shadow: none !important; border: 1px solid #f3f4f6 !important; transform: none !important; }
             .print-grass-container { min-width: 0 !important; max-width: 100% !important; flex-wrap: wrap; }
         }
+
+
+        /* ── 추가 다크모드 보정 ── */
+        .dark body { color: #F3F4F6; }
+        .dark .bg-white { background-color: #252525 !important; }
+        .dark .bg-gray-50 { background-color: #1E1E1E !important; }
+        .dark .bg-gray-100 { background-color: #2F2F2F !important; }
+        .dark .bg-\[\#FDFBF7\] { background-color: #191919 !important; }
+        .dark .bg-\[\#F4F0EA\] { background-color: #252525 !important; }
+        .dark .bg-\[\#F3F8F5\] { background-color: #1F2A24 !important; }
+        .dark .hover\:bg-\[\#E8F2EC\]:hover { background-color: #24352B !important; }
+        .dark .bg-\[\#FFF5F2\] { background-color: #2A211F !important; }
+        .dark .hover\:bg-\[\#FFE9E4\]:hover { background-color: #35231F !important; }
+        .dark .bg-\[\#FEF2F2\] { background-color: rgba(224, 122, 95, 0.14) !important; }
+        .dark .bg-\[\#F0F4FF\] { background-color: rgba(91, 111, 166, 0.16) !important; }
+        .dark .bg-white\/60 { background-color: rgba(255, 255, 255, 0.08) !important; }
+        .dark .border-gray-100,
+        .dark .border-gray-200,
+        .dark .border-\[\#EBE8DE\],
+        .dark .border-\[\#F4F0EA\] { border-color: #2F2F2F !important; }
+        .dark .text-gray-800,
+        .dark .text-gray-700 { color: #F3F4F6 !important; }
+        .dark .text-gray-600 { color: #D1D5DB !important; }
+        .dark .text-gray-500 { color: #9CA3AF !important; }
+        .dark .text-gray-400 { color: #8B949E !important; }
+        .dark .text-gray-300 { color: #6B7280 !important; }
+        .dark .text-\[\#5C3A21\] { color: #F3F4F6 !important; }
+        .dark .text-\[\#4a7c5e\] { color: #9CC3A8 !important; }
+        .dark .bg-\[\#4a7c5e\]\/10 { background-color: rgba(156, 195, 168, 0.14) !important; }
+        .dark .soft-card { box-shadow: none !important; }
+        .dark [style*="rgb(31, 41, 55)"],
+        .dark [style*="#1a1a1a"] { color: #F3F4F6 !important; }
     </style>
     <script>
         try {
@@ -185,7 +217,7 @@
     </script>
 </head>
 <body>
-<div id="root" class="w-full flex flex-col gap-4" style="padding: 1.25rem; box-sizing: border-box;"></div>
+<div id="root" class="w-full flex flex-col gap-4 bg-transparent" style="padding: 1.25rem; box-sizing: border-box;"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
@@ -1788,20 +1820,20 @@ const App = () => {
                 </nav>
 
                 <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => setIsDark(!isDark)} className="w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all" title={isDark ? "라이트모드" : "다크모드"}>
+                    <button onClick={() => setIsDark(!isDark)} className="w-9 h-9 rounded-full border border-gray-100 dark:border-[#2F2F2F] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-[#252525] transition-all" title={isDark ? "라이트모드" : "다크모드"}>
                         {isDark ? <SunIcon/> : <MoonIcon/>}
                     </button>
-                    <button onClick={openSettings} className="w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all" title="설정">
+                    <button onClick={openSettings} className="w-9 h-9 rounded-full border border-gray-100 dark:border-[#2F2F2F] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-[#252525] transition-all" title="설정">
                         <SettingsIcon/>
                     </button>
-                    <button onClick={() => fetchData()} className="gnb-refresh w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all" title="새로고침">
+                    <button onClick={() => fetchData()} className="gnb-refresh w-9 h-9 rounded-full border border-gray-100 dark:border-[#2F2F2F] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-[#252525] transition-all" title="새로고침">
                         {loading ? <span className="spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"/> : <RefreshIcon size={18} />}
                     </button>
                 </div>
             </header>
 
             {/* 메인 */}
-            <main className="w-full bg-[#FDFBF7] rounded-[2.5rem] border border-[#EBE8DE] p-6 shadow-sm flex flex-col gap-6 relative">
+            <main className="w-full bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] p-6 shadow-sm flex flex-col gap-6 relative">
                 <div className="flex justify-between items-end mb-2">
                     <div>
                         <span className="text-[11px] font-extrabold tracking-[0.15em] text-gray-400 uppercase mb-1 block">
@@ -1963,7 +1995,7 @@ const App = () => {
                         </div>
 
                         <div className="flex flex-col gap-6">
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex justify-between items-end mb-6">
                                     <div>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">WEEKLY STAMP</span>
@@ -2171,10 +2203,10 @@ const App = () => {
                                     </div>
 
                                     {/* ── 2. 가운데: 단어 암기 상태 (진행도 + 노트 연결) ── */}
-                                    <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col h-[650px] border-2 border-[#F4F0EA]">
+                                    <div className="bg-white dark:bg-[#252525] rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col h-[650px] border-2 border-[#F4F0EA] dark:border-[#2F2F2F]">
                                         <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-[16px] font-extrabold text-[#5C3A21]">단어 암기 상태</h3>
-                                            <select value={vocabSort} onChange={e=>setVocabSort(e.target.value)} className="bg-transparent border border-gray-200 text-gray-600 text-[11px] font-bold px-2 py-1 rounded-md outline-none cursor-pointer focus:border-[#8B664B]">
+                                            <h3 className="text-[16px] font-extrabold text-[#5C3A21] dark:text-gray-100">단어 암기 상태</h3>
+                                            <select value={vocabSort} onChange={e=>setVocabSort(e.target.value)} className="bg-transparent border border-gray-200 dark:border-[#2F2F2F] text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2 py-1 rounded-md outline-none cursor-pointer focus:border-[#8B664B]">
                                                 <option value="created_desc">최근 생성순</option>
                                                 <option value="created_asc">과거 생성순</option>
                                                 <option value="name_asc">가나다순</option>
@@ -2284,7 +2316,7 @@ const App = () => {
                                 <button
                                     key={f.key}
                                     onClick={() => { setStudyLogFilter(f.key); setSelectedRecord(null); setLogNavPath({ year: null, month: null }); }}
-                                    className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${studyLogFilter === f.key ? 'bg-[#A67B5B] text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:border-[#A67B5B] hover:text-[#A67B5B]'}`}
+                                    className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-colors ${studyLogFilter === f.key ? 'bg-[#A67B5B] text-white shadow-sm' : 'bg-white dark:bg-[#252525] border border-gray-200 dark:border-[#2F2F2F] text-gray-500 dark:text-gray-400 hover:border-[#A67B5B] hover:text-[#A67B5B]'}`}
                                 >{f.label}</button>
                             ))}
                         </div>
@@ -2295,25 +2327,25 @@ const App = () => {
                                 {
                                     label: '공부 시간',
                                     value: fmtMinToHour(filteredTimerRecords.reduce((a,r)=>a+r.minutes,0)),
-                                    icon: '⏱️', bg: 'bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: 'rgb(31, 41, 55)'
+                                    icon: '⏱️', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F] shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: isDark ? '#F3F4F6' : 'rgb(31, 41, 55)'
                                 },
                                 {
                                     label: '추가한 학습 노트',
                                     value: filteredNotes.length,
                                     unit: '개',
-                                    icon: '📝', bg: 'bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: 'rgb(31, 41, 55)'
+                                    icon: '📝', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F] shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: isDark ? '#F3F4F6' : 'rgb(31, 41, 55)'
                                 },
                                 {
                                     label: '추가한 오답 노트',
                                     value: filteredWrongs.length,
                                     unit: '개',
-                                    icon: '❌', bg: 'bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: 'rgb(31, 41, 55)'
+                                    icon: '❌', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F] shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: isDark ? '#F3F4F6' : 'rgb(31, 41, 55)'
                                 },
                                 {
                                     label: '뽀모도로 세션',
                                     value: filteredTimerRecords.filter(r=>r.mode==='pomodoro').length,
                                     unit: '회',
-                                    icon: '🍅', bg: 'bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: 'rgb(31, 41, 55)'
+                                    icon: '🍅', bg: 'bg-white dark:bg-[#252525] border border-gray-100 dark:border-[#2F2F2F] shadow-[0_4px_20px_rgba(0,0,0,0.02)]', accent: isDark ? '#F3F4F6' : 'rgb(31, 41, 55)'
                                 },
                             ].map(({ label, value, unit, icon, bg, accent }) => (
                                 <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-1 soft-card`}>
@@ -2329,7 +2361,7 @@ const App = () => {
                         </div>
 
                         {/* 타이머 공부 기록 */}
-                        <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                        <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                             {selectedSubject === null ? (
                                 /* ── 드릴다운 기반 전체 리스트 뷰 ── */
                                 (() => {
@@ -2652,9 +2684,9 @@ const App = () => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* 학습 노트 */}
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex items-center gap-2 mb-5">
-                                    <h3 className="text-[15px] font-bold text-gray-800">추가한 학습 노트</h3>
+                                    <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">추가한 학습 노트</h3>
                                     <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredNotes.length}건</span>
                                 </div>
                                 {!config.noteDbId ? (
@@ -2672,19 +2704,19 @@ const App = () => {
                                             const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                             const notionUrl = `https://www.notion.so/${n.id.replace(/-/g, '')}`;
                                             return (
-                                                <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#F3F8F5] rounded-xl px-3 py-2.5 hover:bg-[#E8F2EC] transition-colors cursor-pointer no-underline group">
+                                                <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#F3F8F5] dark:bg-[#1F2A24] rounded-xl px-3 py-2.5 hover:bg-[#E8F2EC] dark:hover:bg-[#24352B] transition-colors cursor-pointer no-underline group">
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#4a7c5e] transition-colors">{n.title}</div>
+                                                        <div className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate group-hover:text-[#4a7c5e] dark:group-hover:text-[#9CC3A8] transition-colors">{n.title}</div>
                                                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                             {n.subjects.map((subj, idx) => subj.name !== '기타' && (
                                                                 <div key={idx} className="flex items-center gap-1">
                                                                     {subj.parentName && (
                                                                         <>
-                                                                            <span className="text-[10px] font-bold text-[#4a7c5e] bg-[#4a7c5e]/10 px-1.5 py-0.5 rounded">{subj.parentName}</span>
+                                                                            <span className="text-[10px] font-bold text-[#4a7c5e] dark:text-[#9CC3A8] bg-[#4a7c5e]/10 dark:bg-[#9CC3A8]/10 px-1.5 py-0.5 rounded">{subj.parentName}</span>
                                                                             <span className="text-[8px] text-gray-300 opacity-80">▶</span>
                                                                         </>
                                                                     )}
-                                                                    <span className="text-[10px] font-bold text-gray-500 bg-white/60 border border-gray-100/50 shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-300 bg-white/60 dark:bg-white/10 border border-gray-100/50 dark:border-[#2F2F2F] shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2698,9 +2730,9 @@ const App = () => {
                             </div>
 
                             {/* 오답 노트 */}
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex items-center gap-2 mb-5">
-                                    <h3 className="text-[15px] font-bold text-gray-800">추가한 오답 노트</h3>
+                                    <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">추가한 오답 노트</h3>
                                     <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredWrongs.length}건</span>
                                 </div>
                                 {!config.wrongDbId ? (
@@ -2718,9 +2750,9 @@ const App = () => {
                                             const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                             const notionUrl = `https://www.notion.so/${w.id.replace(/-/g, '')}`;
                                             return (
-                                                <a key={w.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#FFF5F2] rounded-xl px-3 py-2.5 hover:bg-[#FFE9E4] transition-colors cursor-pointer no-underline group">
+                                                <a key={w.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#FFF5F2] dark:bg-[#2A211F] rounded-xl px-3 py-2.5 hover:bg-[#FFE9E4] dark:hover:bg-[#35231F] transition-colors cursor-pointer no-underline group">
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#c0614a] transition-colors">{w.title}</div>
+                                                        <div className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate group-hover:text-[#c0614a] dark:group-hover:text-[#E07A5F] transition-colors">{w.title}</div>
                                                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                                             {w.subjects.map((subj, idx) => subj.name !== '기타' && (
                                                                 <div key={idx} className="flex items-center gap-1">
@@ -2730,7 +2762,7 @@ const App = () => {
                                                                             <span className="text-[8px] text-gray-300 opacity-80">▶</span>
                                                                         </>
                                                                     )}
-                                                                    <span className="text-[10px] font-bold text-gray-500 bg-white/60 border border-gray-100/50 shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-300 bg-white/60 dark:bg-white/10 border border-gray-100/50 dark:border-[#2F2F2F] shadow-sm px-1.5 py-0.5 rounded">{subj.name}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2751,7 +2783,7 @@ const App = () => {
                             const list = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
                             const total = list.reduce((a,[,m])=>a+m,0);
                             return (
-                                <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                     <div className="flex items-center gap-2 mb-5">
                                         <h3 className="text-[15px] font-bold text-gray-800">과목별 공부 시간</h3>
                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full ml-auto" style={{background:'#F4EDE5', color:'#8B664B'}}>총 {fmtMinToHour(total)}</span>
