@@ -231,6 +231,7 @@ const App = () => {
     const [syncingCount, setSyncingCount] = useState(0); 
     
     const inputRef = useRef(null);
+    const wrongCountIncrementedIdsRef = useRef(new Set());
 
     /* ── Notion API 호출 프록시 ── */
     const notionFetch = useCallback(async (path, options = {}) => {
@@ -321,6 +322,7 @@ const App = () => {
                 if (!answer.trim()) return;
 
                 const passCount = props['누적 통과 횟수']?.number || 0;
+                const wrongCount = props['누적 오답 횟수']?.number || 0;
                 const isRetry = props['다시 학습']?.checkbox === true;
 
                 const rawDateProp = props['날짜'];
@@ -418,7 +420,7 @@ const App = () => {
                 parsedQuestions.push({ 
                     id: page.id, category, 
                     mainSubject, subSubject, subject: displaySubject,
-                    summary, content, answer, passCount, isRetry,
+                    summary, content, answer, passCount, wrongCount, isRetry,
                     relatedNoteIds 
                 });
             });
@@ -483,6 +485,7 @@ const App = () => {
         setAppState('testing');
         setCurrentIndex(0);
         setResults({});
+        wrongCountIncrementedIdsRef.current = new Set();
         setUserInput('');
         setIsRevealed(false);
         setIsNoteExpanded(false); 
@@ -507,6 +510,7 @@ const App = () => {
         setAppState('testing');
         setCurrentIndex(0);
         setResults({});
+        wrongCountIncrementedIdsRef.current = new Set();
         setUserInput('');
         setIsRevealed(false);
         setIsNoteExpanded(false);
@@ -540,6 +544,7 @@ const App = () => {
         // 랜덤 테스트 모드에서는 Notion DB 업데이트 생략
         if (sessionType !== 'random') {
             const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
+            let newWrongCount = currentQ.wrongCount || 0;
             const propertiesToUpdate = {
                 '누적 통과 횟수': { number: newPassCount }
             };
@@ -552,7 +557,19 @@ const App = () => {
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(tomorrow) } };
                 propertiesToUpdate['다시 학습'] = { checkbox: true };
+
+                if (!wrongCountIncrementedIdsRef.current.has(currentQ.id)) {
+                    newWrongCount += 1;
+                    propertiesToUpdate['누적 오답 횟수'] = { number: newWrongCount };
+                    wrongCountIncrementedIdsRef.current.add(currentQ.id);
+                }
             }
+
+            setAllQuestions(prev => prev.map(q => (
+                q.id === currentQ.id
+                    ? { ...q, passCount: newPassCount, wrongCount: newWrongCount, isRetry: !isPass }
+                    : q
+            )));
             
             setSyncingCount(c => c + 1); 
             
