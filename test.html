@@ -989,8 +989,9 @@ const App = () => {
     if (appState === 'testing') {
         const currentQ = testQueue[currentIndex];
         
-        const normalizedUserInput = userInput.replace(/\s+/g, '');
-        const answerOptions = currentQ.answer.split(',').map(ans => ans.replace(/\s+/g, ''));
+        const normalizeAnswer = (value) => value.replace(/\s+/g, '').toLowerCase();
+        const normalizedUserInput = normalizeAnswer(userInput);
+        const answerOptions = currentQ.answer.split(',').map(normalizeAnswer);
         const isExactMatch = answerOptions.includes(normalizedUserInput);
         
         let sessionLabel = '밀린 복습';
