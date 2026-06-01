@@ -112,7 +112,8 @@
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 /* ── 아이콘 ── */
-const RefreshIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const RefreshIcon = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const RetryIcon = ({size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
 const BookIcon    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>;
 const FireIcon    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07A5F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
 const CrownIcon   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2CC8F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="2 15 2 7 8 11 12 3 16 11 22 7 22 15"/><path d="M2 15h20v4H2z"/></svg>;
@@ -121,12 +122,12 @@ const TomatoIcon  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const SwapIcon    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>;
 const PlusIcon    = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 const HeartIcon   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
-const XIcon       = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" h1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const XIcon       = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const SettingsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 const LeftArrow   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
-const RightArrow  = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+const RightArrow  = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 const NotionIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.887l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933z"/></svg>;
-const DocumentIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+const DocumentIcon = ({size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
 
 /* ── 커피 종류별 스티커 SVG ── */
 const COFFEE_THEMES = {
@@ -163,9 +164,19 @@ const CHART_COLORS = ['#A67B5B', '#849F71', '#D4A373', '#D98891', '#E07A5F', '#5
 
 /* 과목 아이콘 렌더러 */
 const SubjectIcon = ({ icon, size = 18 }) => {
-    if (!icon) return React.createElement('span', {style:{width:size,height:size,display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:size*0.8,color:'#C4B5A5'}}, '📖');
-    if (icon.type === 'emoji') return React.createElement('span', {style:{fontSize:size,lineHeight:1}}, icon.value);
-    if (icon.type === 'img') return React.createElement('img', {src:icon.value, alt:'', style:{width:size,height:size,borderRadius:3,objectFit:'cover'}});
+    if (!icon) return (
+        <span style={{width:size, height:size, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:size*0.8, color:'#C4B5A5'}}>
+            📖
+        </span>
+    );
+    if (icon.type === 'emoji') return (
+        <span style={{fontSize:size, lineHeight:1, display:'inline-flex', alignItems:'center', justifyContent:'center', width:size, height:size}}>
+            {icon.value}
+        </span>
+    );
+    if (icon.type === 'img') return (
+        <img src={icon.value} alt="" style={{width:size, height:size, borderRadius:3, objectFit:'contain', display:'block'}} />
+    );
     return null;
 };
 
@@ -183,6 +194,15 @@ const formatKORDateShort = (dNum) => {
     const d = new Date(parseInt(dNum));
     const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
     return `${d.getMonth()+1}월 ${d.getDate()}일 (${day})`;
+};
+
+
+const extractNotionId = (value) => {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    const matches = raw.match(/[0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g);
+    if (matches && matches.length > 0) return matches[matches.length - 1].replace(/-/g, '');
+    return raw.replace(/-/g, '');
 };
 
 // ── 데이터 파싱: 복수 하위항목 판별 및 중복 상위항목 정리 ──
@@ -219,7 +239,6 @@ const extractSubjectInfoList = (props, subjectMap) => {
 
     if (results.length === 0) return [{ name: '기타', parentName: null }];
 
-    // 이름 기준 중복 제거
     const unique = [];
     const seen = new Set();
     for (const r of results) {
@@ -229,14 +248,12 @@ const extractSubjectInfoList = (props, subjectMap) => {
         }
     }
 
-    // 만약 사용자가 [경제], [주식(부모:경제)]를 모두 태그한 경우, 깔끔한 표시를 위해 [경제] 단독 태그를 숨김
     const parentNamesInList = new Set(unique.map(r => r.parentName).filter(Boolean));
     const filtered = unique.filter(r => !parentNamesInList.has(r.name));
 
     return filtered.length > 0 ? filtered : [{ name: '기타', parentName: null }];
 };
 
-// 기존 단일 항목 반환용 (타이머 기록 등에 사용)
 const extractSubjectInfo = (props, subjectMap) => {
     return extractSubjectInfoList(props, subjectMap)[0] || { name: '기타', parentName: null };
 };
@@ -255,8 +272,12 @@ const loadConfigFromURL = () => {
         const statsDbId = params.get('stats') || params.get('statsDbId') || '';
         const noteDbId = params.get('note') || params.get('noteDbId') || '';
         const wrongDbId = params.get('wrong') || params.get('wrongDbId') || '';
+        const vocabDbId = params.get('vocab') || params.get('vocabDbId') || '';
+        const testDbId  = params.get('test')  || params.get('testDbId')  || '';
+        const dashboardPageId = extractNotionId(params.get('dashboardPageId') || params.get('statPageId') || params.get('dashboardPageUrl') || '');
+        const dashboardRelationProp = params.get('dashboardRelationProp') || '대시보드 통계용';
         if (proxyUrl && apiKey && recordDbId) {
-            return { proxyUrl, apiKey, recordDbId, subjectDbId, todoDbId, statsDbId, noteDbId, wrongDbId, saved: true };
+            return { proxyUrl, apiKey, recordDbId, subjectDbId, todoDbId, statsDbId, noteDbId, wrongDbId, vocabDbId, testDbId, dashboardPageId, dashboardRelationProp, saved: true };
         }
     } catch {}
     return null;
@@ -285,19 +306,15 @@ const App = () => {
     /* ── 상태 관리 ── */
     const [config, setConfig] = useState(loadConfig());
     const [showSetup, setShowSetup] = useState(!loadConfig().saved);
-    const [setupForm, setSetupForm] = useState({ proxyUrl:'', apiKey:'', recordDbId:'', subjectDbId:'', todoDbId:'', statsDbId:'', noteDbId:'', wrongDbId:'' });
+    const [setupForm, setSetupForm] = useState({ proxyUrl:'', apiKey:'', recordDbId:'', subjectDbId:'', todoDbId:'', statsDbId:'', noteDbId:'', wrongDbId:'', vocabDbId:'', testDbId:'', dashboardPageId:'', dashboardRelationProp:'대시보드 통계용' });
     const [setupError, setSetupError] = useState('');
     const [setupLoading, setSetupLoading] = useState(false);
 
     const [activeTab, setActiveTab] = useState('home');
-    
-    // PDF 내보내기 상태
     const [printMode, setPrintMode] = useState(false);
     const [showPrintOptions, setShowPrintOptions] = useState(false);
-    const [printOption, setPrintOption] = useState('full'); // 'full' or 'summary'
-    
-    // 차트 상태 추가
-    const [barChartMode, setBarChartMode] = useState('total'); // 'total' | 'subject'
+    const [printOption, setPrintOption] = useState('full');
+    const [barChartMode, setBarChartMode] = useState('total');
 
     const todayNum = normalizeDate(new Date());
     const [calendarDate, setCalendarDate] = useState(new Date());
@@ -315,16 +332,26 @@ const App = () => {
     const [notes, setNotes] = useState([]);
     const [wrongs, setWrongs] = useState([]);
     
-    // 공부 기록 탭 내비게이션 상태
+    const [vocabData, setVocabData] = useState({ todayAdded: [], recentWords: [], reviewList: [], masters: [], subjectCounts: {} });
+    const [vocabSubjectFilter, setVocabSubjectFilter] = useState('전체');
+    const [vocabSort, setVocabSort] = useState('created_desc');
+    const [resetModal, setResetModal] = useState({ isOpen: false, word: null });
+    
+    // 💡 단어장 임시 저장(Caching) 및 모달 상태 추가
+    const [cachedExplanations, setCachedExplanations] = useState({});
+    const [vocabDetailModal, setVocabDetailModal] = useState({ isOpen: false, word: null });
+    const [vocabDetailTab, setVocabDetailTab] = useState('explanation');
+
     const [studyLogFilter, setStudyLogFilter] = useState('today');
     const [logNavPath, setLogNavPath] = useState({ year: null, month: null });
-    
-    // { subject: string, date: number } | null
     const [selectedRecord, setSelectedRecord] = useState(null);
     const selectedSubject = selectedRecord ? selectedRecord.subject : null;
     const [loading, setLoading] = useState(true);
 
     const [showOverdueModal, setShowOverdueModal] = useState(false);
+    const [linkNoteModal, setLinkNoteModal] = useState({ isOpen: false, vocab: null, type: 'note' });
+    const [viewNotesModal, setViewNotesModal] = useState({ isOpen: false, vocab: null, type: 'note', notes: [] });
+    const [linkSearchTerm, setLinkSearchTerm] = useState('');
     const dateInputRef = useRef(null);
 
     const [toast, setToast] = useState({ message: '', visible: false, type: 'success' });
@@ -338,6 +365,31 @@ const App = () => {
         }, 3000);
     }, []);
 
+    const dashboardPageIdCacheRef = useRef(null);
+
+    const getDashboardPageId = useCallback(async (currentConfig = config) => {
+        const directId = extractNotionId(currentConfig.dashboardPageId || currentConfig.statPageId || currentConfig.dashboardPageUrl || '');
+        if (directId) return directId;
+        if (dashboardPageIdCacheRef.current) return dashboardPageIdCacheRef.current;
+        if (!currentConfig.saved || !currentConfig.statsDbId) return '';
+
+        try {
+            const statsRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.statsDbId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ page_size: 1 })
+            });
+            if (!statsRes.ok) return '';
+            const statsJson = await statsRes.json();
+            const firstPageId = statsJson.results?.[0]?.id || '';
+            if (firstPageId) dashboardPageIdCacheRef.current = firstPageId;
+            return firstPageId;
+        } catch (e) {
+            console.warn('대시보드 통계용 페이지 ID 확인 실패:', e);
+            return '';
+        }
+    }, [config]);
+
     const openSettings = useCallback(() => {
         setSetupForm({
             proxyUrl:    config.proxyUrl    || '',
@@ -348,12 +400,15 @@ const App = () => {
             statsDbId:   config.statsDbId   || '',
             noteDbId:    config.noteDbId    || '',
             wrongDbId:   config.wrongDbId   || '',
+            vocabDbId:   config.vocabDbId   || '',
+            testDbId:    config.testDbId    || '',
+            dashboardPageId: config.dashboardPageId || config.statPageId || '',
+            dashboardRelationProp: config.dashboardRelationProp || '대시보드 통계용',
         });
         setSetupError('');
         setShowSetup(true);
     }, [config]);
 
-    /* ── 설정 저장 ── */
     const handleSetupSave = async () => {
         const { proxyUrl, apiKey, recordDbId } = setupForm;
         if (!proxyUrl || !apiKey || !recordDbId) {
@@ -397,13 +452,26 @@ const App = () => {
                     subjData.results.forEach(p => {
                         const nameProp = Object.values(p.properties).find(prop => prop.type === 'title');
                         const name = nameProp?.title?.[0]?.plain_text || '미선택';
-                        const iconRaw = p.icon;
-                        const icon = iconRaw?.type === 'emoji' ? { type: 'emoji', value: iconRaw.emoji }
-                                   : iconRaw?.type === 'external' ? { type: 'img', value: iconRaw.external.url }
-                                   : iconRaw?.type === 'file' ? { type: 'img', value: iconRaw.file.url }
-                                   : null;
                         
-                        // 상위 항목 찾기
+                        const iconRaw = p.icon;
+                        let icon = null;
+                        
+                        if (iconRaw) {
+                            if (iconRaw.type === 'emoji') {
+                                icon = { type: 'emoji', value: iconRaw.emoji };
+                            } else if (iconRaw.type === 'external' && iconRaw.external) {
+                                icon = { type: 'img', value: iconRaw.external.url };
+                            } else if (iconRaw.type === 'file' && iconRaw.file) {
+                                icon = { type: 'img', value: iconRaw.file.url };
+                            } else if (iconRaw.type === 'custom_emoji' && iconRaw.custom_emoji) {
+                                icon = { type: 'img', value: iconRaw.custom_emoji.url };
+                            } else if (iconRaw.type === 'icon' && iconRaw.icon) {
+                                const iconName = iconRaw.icon.name;
+                                const iconColor = iconRaw.icon.color || 'gray';
+                                icon = { type: 'img', value: `https://www.notion.so/icons/${iconName}_${iconColor}.svg` };
+                            }
+                        }
+                        
                         let parentId = null;
                         const parentProp = p.properties['상위 항목'] || Object.values(p.properties).find(prop => prop.type === 'relation' && prop.name && prop.name.includes('상위'));
                         if (parentProp && parentProp.relation && parentProp.relation.length > 0) {
@@ -413,7 +481,6 @@ const App = () => {
                         subjectMap[p.id] = { id: p.id, name, icon, parentId };
                     });
 
-                    // 부모 이름 매핑
                     Object.values(subjectMap).forEach(s => {
                         if (s.parentId && subjectMap[s.parentId]) {
                             s.parentName = subjectMap[s.parentId].name;
@@ -442,7 +509,8 @@ const App = () => {
             });
             setRecords(parsedRecords);
 
-            if (currentConfig.todoDbId) {                const todoRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.todoDbId}/query`, {
+            if (currentConfig.todoDbId) {                
+                const todoRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.todoDbId}/query`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
                     body: JSON.stringify({ sorts: [{ property: '날짜', direction: 'descending' }], page_size: 100 })
                 });
@@ -543,7 +611,6 @@ const App = () => {
                 } catch (e) { console.warn('통계 DB 로드 실패:', e); }
             }
 
-            // 학습 노트 DB 페칭 (복수 과목 처리 적용)
             if (currentConfig.noteDbId) {
                 try {
                     const noteRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.noteDbId}/query`, {
@@ -557,14 +624,17 @@ const App = () => {
                             const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                             const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
                             const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
-                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList };
+                            const relatedIds = new Set();
+                            Object.values(p.properties).forEach(pr => {
+                                if (pr.type === 'relation') pr.relation?.forEach(r => relatedIds.add(r.id));
+                            });
+                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList, relatedIds };
                         });
                         setNotes(parsedNotes);
                     }
                 } catch (e) { console.warn('학습 노트 DB 로드 실패:', e); }
             }
 
-            // 오답 노트 DB 페칭 (복수 과목 처리 적용)
             if (currentConfig.wrongDbId) {
                 try {
                     const wrongRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.wrongDbId}/query`, {
@@ -578,17 +648,226 @@ const App = () => {
                             const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                             const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
                             const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
-                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList };
+                            const relatedIds = new Set();
+                            Object.values(p.properties).forEach(pr => {
+                                if (pr.type === 'relation') pr.relation?.forEach(r => relatedIds.add(r.id));
+                            });
+                            return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList, relatedIds };
                         });
                         setWrongs(parsedWrongs);
                     }
                 } catch (e) { console.warn('오답 노트 DB 로드 실패:', e); }
             }
 
+            if (currentConfig.vocabDbId && currentConfig.testDbId) {
+                const getLocalYMD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const todayYMD = getLocalYMD(new Date());
+                const weekAgoYMD = getLocalYMD(new Date(Date.now() - 7 * 86400000));
+
+                let allTestResults = []; let hasMore = true, cursor = undefined;
+                while (hasMore && allTestResults.length < 1000) {
+                    const res = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.testDbId}/query`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                        body: JSON.stringify({ page_size: 100, ...(cursor && {start_cursor: cursor}) })
+                    });
+                    if (!res.ok) break; const json = await res.json();
+                    allTestResults = allTestResults.concat(json.results || []); hasMore = json.has_more; cursor = json.next_cursor;
+                }
+
+                const vocabRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.vocabDbId}/query`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                    body: JSON.stringify({ filter: { property: '누적 통과 횟수', number: { greater_than_or_equal_to: 4 } }, sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 })
+                });
+
+                const extractText = (prop) => {
+                    if (!prop) return null; if (prop.title?.length) return prop.title[0].plain_text; if (prop.rich_text?.length) return prop.rich_text[0].plain_text;
+                    if (prop.rollup?.array?.length) return prop.rollup.array[0].title?.[0]?.plain_text || prop.rollup.array[0].rich_text?.[0]?.plain_text;
+                    return null;
+                };
+
+                const testItemMap = {};
+                const vocabIdToTestIdMap = {}; // ID 기반 매칭을 위한 맵
+                const todayAdded = [], recentWords = [], reviewList = [];
+                const subjectCounts = {};
+
+                allTestResults.forEach(page => {
+                    const props = page.properties;
+                    const answer = extractText(props['정답']) || '';
+                    if (!answer.trim()) return;
+                    
+                    testItemMap[answer] = page.id;
+
+                    const passCount = props['누적 통과 횟수']?.number || 0;
+                    const isRetry   = props['다시 학습']?.checkbox === true;
+                    const createdTime = page.created_time;
+                    const createdYMD = getLocalYMD(new Date(createdTime));
+                    const isAddedToday = createdYMD === todayYMD;
+
+                    let status = 'pending';
+                    if (passCount > 0) status = 'passed';
+                    if (isRetry) status = 'failed';
+
+                    const subjNames = (props['과목']?.relation || []).map(r => subjectMap[r.id]?.name).filter(Boolean);
+                    if (subjNames.length > 0) subjNames.forEach(s => { subjectCounts[s] = (subjectCounts[s]||0)+1; });
+
+                    const testRelatedIds = new Set();
+                    Object.values(props).forEach(pr => {
+                        if (pr.type === 'relation') {
+                            pr.relation?.forEach(r => {
+                                testRelatedIds.add(r.id);
+                                vocabIdToTestIdMap[r.id] = page.id; // 단어장 ID와 테스트 ID 연결
+                            });
+                        }
+                    });
+
+                    const item = { id: page.id, title: answer, passCount, subjects: subjNames, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
+
+                    if (isAddedToday) {
+                        todayAdded.push(item);
+                    } else if (createdYMD >= weekAgoYMD) {
+                        recentWords.push(item);
+                    }
+
+                    if (passCount < 4) {
+                        reviewList.push(item);
+                    }
+                });
+
+                const vocabPageRelMap = {};
+                let allVocabPages = [], hasMoreVocab = true, vocabCursor = undefined;
+                while (hasMoreVocab && allVocabPages.length < 2000) {
+                    const vRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.vocabDbId}/query`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                        body: JSON.stringify({ page_size: 100, ...(vocabCursor && {start_cursor: vocabCursor}) })
+                    });
+                    if (!vRes.ok) break;
+                    const vJson = await vRes.json();
+                    allVocabPages = allVocabPages.concat(vJson.results || []);
+                    hasMoreVocab = vJson.has_more; vocabCursor = vJson.next_cursor;
+                }
+                
+                // ID로도 찾을 수 있도록 맵핑 보강
+                allVocabPages.forEach(page => {
+                    const titleProp = Object.values(page.properties).find(p => p.type === 'title');
+                    const title = titleProp?.title?.[0]?.plain_text || '';
+                    if (!title) return;
+                    const relIds = new Set();
+                    Object.values(page.properties).forEach(pr => {
+                        if (pr.type === 'relation') pr.relation?.forEach(r => relIds.add(r.id));
+                    });
+                    vocabPageRelMap[title] = { vocabPageId: page.id, relatedIds: relIds };
+                    vocabPageRelMap[page.id] = { vocabPageId: page.id, relatedIds: relIds }; // ID 매핑 추가
+                });
+
+                // Relation ID를 통해 우선적으로 매칭
+                reviewList.forEach(item => {
+                    let vocabInfo = null;
+                    
+                    if (item.relatedIds) {
+                        for (const rId of item.relatedIds) {
+                            if (vocabPageRelMap[rId]) {
+                                vocabInfo = vocabPageRelMap[rId];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!vocabInfo) {
+                        vocabInfo = vocabPageRelMap[item.title];
+                    }
+
+                    if (vocabInfo) {
+                        item.vocabPageId = vocabInfo.vocabPageId;
+                        item.vocabRelatedIds = vocabInfo.relatedIds;
+                    }
+                });
+
+                let masters = [];
+                if (vocabRes.ok) {
+                    const vocabJson = await vocabRes.json();
+                    masters = vocabJson.results.map(page => {
+                        const title = extractText(Object.values(page.properties).find(p => p.type === 'title')) || '제목 없음';
+                        const passCount  = page.properties['누적 통과 횟수']?.rollup?.number ?? 4;
+                        const subjNames  = (page.properties['과목']?.relation || []).map(r => subjectMap[r.id]?.name).filter(Boolean);
+                        
+                        // 문자열 대신 ID를 우선적으로 사용하여 테스트 페이지 찾기
+                        const mappedTestPageId = vocabIdToTestIdMap[page.id] || testItemMap[title];
+                        
+                        return { id: page.id, title, passCount, subjects: subjNames, createdTime: page.created_time, testPageId: mappedTestPageId };
+                    });
+                }
+
+                setVocabData({ todayAdded, recentWords, reviewList, masters, subjectCounts });
+            }
+
         } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [config]);
 
     useEffect(() => { if(!showSetup) fetchData(); }, [fetchData, showSetup]);
+
+    /* ── 단어 뜻/설명 모달 호출 및 데이터 Fetch (Caching) ── */
+    const openVocabDetail = async (word) => {
+        setVocabDetailModal({ isOpen: true, word });
+        setVocabDetailTab('explanation');
+        
+        // 단어장 DB 페이지 ID를 우선시, 없으면 테스트 페이지 ID
+        const targetId = word.vocabPageId || word.id;
+        
+        if (cachedExplanations[targetId]) return; // 이미 캐싱된 데이터가 있으면 API 호출 생략
+        
+        // 로딩 상태 시작
+        setCachedExplanations(prev => ({ ...prev, [targetId]: { isLoading: true, text: null, error: null } }));
+        
+        try {
+            // 1. 단어장(또는 테스트) 페이지의 Property에서 뜻/설명 찾기 시도
+            const pageRes = await fetch(`${config.proxyUrl}/v1/pages/${targetId}`, {
+                method: 'GET',
+                headers: { 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }
+            });
+            if (!pageRes.ok) throw new Error('페이지 정보를 불러올 수 없습니다.');
+            const pageData = await pageRes.json();
+            
+            let explanationText = '';
+            const props = pageData.properties;
+            
+            // 뜻, 의미, 설명, 정의 등의 이름을 가진 속성(텍스트 타입) 찾기
+            const targetPropKey = Object.keys(props).find(k => 
+                k.includes('뜻') || k.includes('의미') || k.includes('설명') || k.includes('정의')
+            );
+            
+            if (targetPropKey && (props[targetPropKey].type === 'rich_text' || props[targetPropKey].type === 'title')) {
+                const richTextArr = props[targetPropKey][props[targetPropKey].type];
+                explanationText = richTextArr.map(t => t.plain_text).join('\n');
+            }
+            
+            // 2. Property에 뜻이 없다면 본문(블록 자식들) 내용 가져오기 시도
+            if (!explanationText.trim()) {
+                 const blockRes = await fetch(`${config.proxyUrl}/v1/blocks/${targetId}/children?page_size=50`, {
+                    method: 'GET',
+                    headers: { 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }
+                });
+                if (blockRes.ok) {
+                    const blockData = await blockRes.json();
+                    explanationText = blockData.results.map(block => {
+                        const type = block.type;
+                        if (block[type] && block[type].rich_text) {
+                            return block[type].rich_text.map(t => t.plain_text).join('');
+                        }
+                        return '';
+                    }).filter(t => t.trim()).join('\n');
+                }
+            }
+            
+            if (!explanationText.trim()) explanationText = '작성된 뜻/설명이 없습니다.';
+
+            // 가져온 텍스트를 State에 임시 저장 (Caching)
+            setCachedExplanations(prev => ({ ...prev, [targetId]: { isLoading: false, text: explanationText, error: null } }));
+        } catch (err) {
+            console.error(err);
+            setCachedExplanations(prev => ({ ...prev, [targetId]: { isLoading: false, text: null, error: err.message || '데이터를 불러오는데 실패했습니다.' } }));
+        }
+    };
+
 
     /* ── 투두 액션 ── */
     const toggleTodo = async (todo) => {
@@ -670,10 +949,196 @@ const App = () => {
         try {
             const properties = { [todoProps.title]: { title: [{ text: { content: title } }] }, [todoProps.date]: { date: { start: localISOTime } } };
             if (todoProps.subject && subjectId) properties[todoProps.subject] = { relation: [{ id: subjectId }] };
-            const res = await fetch(`${config.proxyUrl}/v1/pages`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }, body: JSON.stringify({ parent: { database_id: config.todoDbId }, properties }) });
-            const data = await res.json();
+
+            const dashboardRelationProp = config.dashboardRelationProp || '대시보드 통계용';
+            const dashboardPageId = await getDashboardPageId(config);
+            const hasDashboardRelation = Boolean(dashboardRelationProp && dashboardPageId);
+            if (hasDashboardRelation) {
+                properties[dashboardRelationProp] = { relation: [{ id: dashboardPageId }] };
+            }
+
+            const createTodoPage = async (propsToSave) => {
+                const res = await fetch(`${config.proxyUrl}/v1/pages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                    body: JSON.stringify({ parent: { database_id: config.todoDbId }, properties: propsToSave })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.message || `투두 생성 실패 (${res.status})`);
+                return data;
+            };
+
+            let data;
+            try {
+                data = await createTodoPage(properties);
+            } catch (relationError) {
+                if (!hasDashboardRelation) throw relationError;
+                const fallbackProperties = { ...properties };
+                delete fallbackProperties[dashboardRelationProp];
+                data = await createTodoPage(fallbackProperties);
+                showToast('투두는 추가됐지만 대시보드 통계용 연결에 실패했습니다. 관계형 속성 이름을 확인해주세요.', 'error');
+            }
+
             if(data.id) setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
-        } catch (e) { setTodos(prev => prev.filter(t => t.id !== tempId)); }
+            if (hasDashboardRelation) showToast('새 투두가 대시보드 통계용 페이지와 연결되었습니다.');
+        } catch (e) {
+            setTodos(prev => prev.filter(t => t.id !== tempId));
+            showToast(e.message || '투두 추가에 실패했습니다.', 'error');
+        }
+    };
+
+    /* ── 학습/오답 노트 연결 및 추가 ── */
+    const handleLinkNote = async (noteId) => {
+        const { vocab, type } = linkNoteModal;
+        if (!vocab || !config.saved) return;
+        
+        setLinkNoteModal(prev => ({ ...prev, isOpen: false }));
+        setLoading(true);
+        
+        try {
+            const targetId = vocab.vocabPageId || vocab.testPageId;
+            if (!targetId) throw new Error('연결할 대상 페이지 ID를 찾을 수 없습니다.');
+            
+            const resPage = await fetch(`${config.proxyUrl}/v1/pages/${targetId}`, {
+                method: 'GET', headers: { 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }
+            });
+            if (!resPage.ok) throw new Error('대상 페이지 정보를 불러올 수 없습니다.');
+            
+            const pageData = await resPage.json();
+            
+            // 연결할 relation 필드 찾기
+            let relPropName = Object.keys(pageData.properties).find(k => 
+                pageData.properties[k].type === 'relation' && (k.includes(type === 'note' ? '학습' : '오답'))
+            );
+            if (!relPropName) {
+                relPropName = Object.keys(pageData.properties).find(k => 
+                    pageData.properties[k].type === 'relation' && (k.includes('노트') || k.includes('자료'))
+                );
+            }
+            if (!relPropName) {
+                relPropName = Object.keys(pageData.properties).find(k => 
+                    pageData.properties[k].type === 'relation' && !k.includes('과목') && !k.includes('상위')
+                );
+            }
+            if (!relPropName) {
+                relPropName = Object.keys(pageData.properties).find(k => pageData.properties[k].type === 'relation');
+            }
+
+            if (!relPropName) throw new Error('단어장 DB에 Relation 속성이 존재하지 않습니다.');
+
+            // 기존 연결된 ID 유지하며 새 노트 추가
+            const existingRels = pageData.properties[relPropName]?.relation || [];
+            const newRels = [...existingRels];
+            if (!newRels.some(r => r.id === noteId)) {
+                newRels.push({ id: noteId });
+            }
+
+            const patchRes = await fetch(`${config.proxyUrl}/v1/pages/${targetId}`, {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ properties: { [relPropName]: { relation: newRels } } })
+            });
+            
+            if (!patchRes.ok) {
+                const errData = await patchRes.json();
+                throw new Error(`노션 연결 실패: ${errData.message || '권한 또는 스키마 오류'}`);
+            }
+            
+            showToast('노트가 성공적으로 연결되었습니다.');
+            fetchData();
+        } catch (e) {
+            console.error(e);
+            showToast(e.message || '노트 연결에 실패했습니다.', 'error');
+            setLoading(false);
+        }
+    };
+
+    const handleCreateAndLinkNote = async () => {
+        const { vocab, type } = linkNoteModal;
+        const dbId = type === 'note' ? config.noteDbId : config.wrongDbId;
+        if (!vocab || !dbId || !config.saved) return;
+        
+        setLinkNoteModal(prev => ({ ...prev, isOpen: false }));
+        setLoading(true);
+        
+        try {
+            const resDb = await fetch(`${config.proxyUrl}/v1/databases/${dbId}`, {
+                method: 'GET', headers: { 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }
+            });
+            if (!resDb.ok) throw new Error('노트 DB 정보를 불러올 수 없습니다.');
+            const dbData = await resDb.json();
+            
+            const titleKey = Object.keys(dbData.properties).find(k => dbData.properties[k].type === 'title');
+            
+            const subjectKey = Object.keys(dbData.properties).find(k => 
+                dbData.properties[k].type === 'relation' && (k.includes('과목'))
+            );
+            
+            let vocabKey = Object.keys(dbData.properties).find(k => 
+                dbData.properties[k].type === 'relation' && (k.includes('단어') || k.includes('테스트'))
+            );
+            if (!vocabKey) {
+                vocabKey = Object.keys(dbData.properties).find(k => 
+                    dbData.properties[k].type === 'relation' && !k.includes('과목')
+                );
+            }
+
+            const properties = {
+                [titleKey]: { title: [{ text: { content: `${vocab.title} - ${type === 'note' ? '학습' : '오답'}노트` } }] }
+            };
+            
+            if (subjectKey && vocab.subjects && vocab.subjects.length > 0) {
+                const subj = subjects.find(s => s.name === vocab.subjects[0]);
+                if (subj) properties[subjectKey] = { relation: [{ id: subj.id }] };
+            }
+            
+            if (vocabKey) {
+                const targetId = vocab.vocabPageId || vocab.testPageId;
+                properties[vocabKey] = { relation: [{ id: targetId }] };
+            }
+
+            const resNew = await fetch(`${config.proxyUrl}/v1/pages`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ parent: { database_id: dbId }, properties })
+            });
+            
+            if (!resNew.ok) {
+                const errData = await resNew.json();
+                throw new Error(`노트 생성 실패: ${errData.message || '권한/스키마 오류'}`);
+            }
+            
+            showToast('새로운 노트가 생성되고 연결되었습니다.');
+            fetchData();
+        } catch (e) {
+            console.error(e);
+            showToast(e.message || '노트 생성에 실패했습니다.', 'error');
+            setLoading(false);
+        }
+    };
+
+    /* ── 마스터 제외 확인 액션 ── */
+    const handleConfirmResetMaster = async () => {
+        const word = resetModal.word;
+        if (!word || !config.saved || !config.testDbId) return;
+
+        setResetModal({ isOpen: false, word: null });
+        setLoading(true);
+
+        if (!word.testPageId) {
+            showToast(`'${word.title}' 단어의 테스트 기록을 찾을 수 없습니다.`, 'error');
+            setLoading(false); return;
+        }
+
+        try {
+            await fetch(`${config.proxyUrl}/v1/pages/${word.testPageId}`, {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({ properties: { '누적 통과 횟수': { number: 0 }, '다시 학습': { checkbox: false } } })
+            });
+            showToast(`'${word.title}' 단어가 0부터 다시 시작됩니다.`);
+            fetchData();
+        } catch (e) {
+            showToast('단어 초기화에 실패했습니다.', 'error');
+            setLoading(false);
+        }
     };
 
     /* ── 데이터 가공 ── */
@@ -754,9 +1219,16 @@ const App = () => {
         return days;
     }, [records, todos, todayNum, selectedDate, calendarDate]);
 
-    const todaysTodos = useMemo(() => todos.filter(t => t.date === todayNum), [todos, todayNum]);
+    const sortTodosByTime = (list) => [...list].sort((a, b) => {
+        const aTime = Number.isFinite(a.timeSortValue) ? a.timeSortValue : 9999;
+        const bTime = Number.isFinite(b.timeSortValue) ? b.timeSortValue : 9999;
+        if (aTime !== bTime) return aTime - bTime;
+        return (a.title || '').localeCompare(b.title || '', 'ko');
+    });
+
+    const todaysTodos = useMemo(() => sortTodosByTime(todos.filter(t => t.date === todayNum)), [todos, todayNum]);
     const selectedDateTodos = useMemo(() => todos.filter(t => t.date === selectedDate), [todos, selectedDate]);
-    const selectedDateSchedule = useMemo(() => [...selectedDateTodos].sort((a, b) => a.timeSortValue - b.timeSortValue), [selectedDateTodos]);
+    const selectedDateSchedule = useMemo(() => sortTodosByTime(selectedDateTodos), [selectedDateTodos]);
 
     /* ── 데이터 가공 (RECORDS 뷰) ── */
     const recordStats = useMemo(() => {
@@ -871,7 +1343,7 @@ const App = () => {
         return { todayStart, weekStart, monthStart, yearStart };
     }, [todayNum]);
 
-    // 1단계: '올해', '이번 주' 등 탭 기반의 베이스 필터링 맵
+    // 1단계: 탭 기반 베이스 필터링
     const baseRecordsMap = useMemo(() => {
         const { todayStart, weekStart, monthStart, yearStart } = studyLogRange;
         const filterFn = (item, dateGetter) => {
@@ -880,7 +1352,7 @@ const App = () => {
             if (studyLogFilter === 'week') return d >= weekStart && d <= todayStart;
             if (studyLogFilter === 'month') return d >= monthStart && d <= todayStart;
             if (studyLogFilter === 'year') return d >= yearStart && d <= todayStart;
-            return true; // 'all'
+            return true;
         };
         return {
             records: records.filter(r => filterFn(r, r => r.date)),
@@ -889,7 +1361,7 @@ const App = () => {
         };
     }, [records, notes, wrongs, studyLogFilter, studyLogRange]);
 
-    // 2단계: 유저가 클릭해서 들어간 드릴다운 경로(logNavPath) 적용
+    // 2단계: 유저 클릭 드릴다운 적용
     const applyNav = (items, dateGetter) => {
         if (!logNavPath.year && !logNavPath.month) return items;
         return items.filter(item => {
@@ -900,11 +1372,47 @@ const App = () => {
         });
     };
 
-    // 최종 화면에 뿌려질 필터링 데이터
     const filteredTimerRecords = useMemo(() => applyNav(baseRecordsMap.records, r=>r.date), [baseRecordsMap.records, logNavPath]);
     const filteredNotes = useMemo(() => applyNav(baseRecordsMap.notes, n=>n.createdTime), [baseRecordsMap.notes, logNavPath]);
     const filteredWrongs = useMemo(() => applyNav(baseRecordsMap.wrongs, w=>w.createdTime), [baseRecordsMap.wrongs, logNavPath]);
 
+    const NoteBox = ({ matchedNotes, type, vocab }) => {
+        const count = matchedNotes.length;
+        const hasRelated = count > 0;
+        const colorClass = type === 'note' ? 'text-[#849F71] bg-[#F3F8F5] border-[#849F71]/40 hover:bg-[#E8F2EC] hover:border-[#849F71]/70' : 'text-[#E07A5F] bg-[#FFF5F2] border-[#E07A5F]/40 hover:bg-[#FFE8E2] hover:border-[#E07A5F]/70';
+        const emptyClass = 'text-gray-300 bg-gray-50 border-gray-200 hover:bg-white hover:text-gray-500 hover:border-gray-300';
+        const label = type === 'note' ? '학습' : '오답';
+        
+        const handleClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // 💡 단어 모달 이벤트와 겹치지 않게 전파 방지
+            if (!hasRelated) {
+                // 연결된 노트가 없으면 추가/연결 모달 열기
+                setLinkNoteModal({ isOpen: true, vocab, type });
+                setLinkSearchTerm('');
+            } else if (count === 1) {
+                // 1개면 바로 노션 열기
+                window.open(`https://www.notion.so/${matchedNotes[0].id.replace(/-/g,'')}`, '_blank');
+            } else {
+                // 2개 이상이면 목록 모달 열기
+                setViewNotesModal({ isOpen: true, vocab, type, notes: matchedNotes });
+            }
+        };
+
+        return (
+            <button onClick={handleClick}
+               className={`relative flex items-center justify-center w-8 h-8 rounded-[10px] border ${hasRelated ? colorClass : emptyClass} transition-all duration-200 shadow-sm cursor-pointer outline-none`} 
+               title={hasRelated ? `${count}개의 ${label}노트 연결됨` : `${label}노트 연결/추가`}>
+                <DocumentIcon size={14}/>
+                {!hasRelated && <span className="absolute -top-1 -right-1 flex items-center justify-center w-[14px] h-[14px] bg-white rounded-full border border-gray-200 text-[10px] font-extrabold text-gray-400 leading-none shadow-sm pb-[1px]">+</span>}
+                {count > 1 && (
+                    <span className={`absolute -top-1.5 -right-1.5 flex items-center justify-center w-[16px] h-[16px] text-white rounded-full text-[9px] font-extrabold shadow-sm ${type === 'note' ? 'bg-[#849F71]' : 'bg-[#E07A5F]'}`}>
+                        {count}
+                    </span>
+                )}
+            </button>
+        );
+    };
 
     /* ── 렌더링 ── */
     
@@ -931,6 +1439,8 @@ const App = () => {
                         <p className="text-[12px] font-bold text-latte-700 mb-0.5">누적 통계 DB <span className="font-medium text-latte-500">(선택)</span></p>
                         <p className="text-[11px] text-latte-600 mb-2">수백~수천 개의 페이지를 전부 불러오는 대신, 집계 결과만 담은 별도 DB를 연결하세요.</p>
                         <input type="text" placeholder="누적 통계 DB ID (선택)" value={setupForm.statsDbId} onChange={e=>setSetupForm(f=>({...f, statsDbId:e.target.value}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
+                        <input type="text" placeholder="대시보드 통계용 페이지 링크 또는 ID (선택)" value={setupForm.dashboardPageId} onChange={e=>setSetupForm(f=>({...f, dashboardPageId:extractNotionId(e.target.value)}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
+                        <input type="text" placeholder="관계형 속성 이름: 대시보드 통계용" value={setupForm.dashboardRelationProp} onChange={e=>setSetupForm(f=>({...f, dashboardRelationProp:e.target.value || '대시보드 통계용'}))} className="w-full bg-white border border-latte-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-latte-500" />
                     </div>
                 </div>
 
@@ -942,6 +1452,18 @@ const App = () => {
                         <div className="flex flex-col gap-2">
                             <input type="text" placeholder="학습 노트 DB ID (선택)" value={setupForm.noteDbId} onChange={e=>setSetupForm(f=>({...f, noteDbId:e.target.value}))} className="w-full bg-white border border-[#81B29A]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#81B29A]" />
                             <input type="text" placeholder="오답 노트 DB ID (선택)" value={setupForm.wrongDbId} onChange={e=>setSetupForm(f=>({...f, wrongDbId:e.target.value}))} className="w-full bg-white border border-[#81B29A]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#81B29A]" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#F0EDF8] rounded-xl p-3 flex gap-2 items-start">
+                    <span className="text-[#9B8EC4] text-lg mt-0.5">📚</span>
+                    <div className="flex-1">
+                        <p className="text-[12px] font-bold text-[#6B5FA6] mb-0.5">단어장 연결 <span className="font-medium text-[#9B8EC4]">(선택)</span></p>
+                        <p className="text-[11px] text-[#7B6FB6] mb-2">홈 탭에서 오늘 추가된 단어, 복습 현황, 마스터 목록을 확인할 수 있습니다. 두 DB 모두 입력해야 활성화됩니다.</p>
+                        <div className="flex flex-col gap-2">
+                            <input type="text" placeholder="단어장 DB ID (선택)" value={setupForm.vocabDbId} onChange={e=>setSetupForm(f=>({...f, vocabDbId:e.target.value}))} className="w-full bg-white border border-[#9B8EC4]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#9B8EC4]" />
+                            <input type="text" placeholder="테스트 DB ID (선택)" value={setupForm.testDbId} onChange={e=>setSetupForm(f=>({...f, testDbId:e.target.value}))} className="w-full bg-white border border-[#9B8EC4]/30 rounded-lg p-2.5 text-sm focus:outline-none focus:border-[#9B8EC4]" />
                         </div>
                     </div>
                 </div>
@@ -1090,12 +1612,18 @@ const App = () => {
                 <nav className="gnb-nav-full items-center gap-6">
                     <button onClick={() => setActiveTab('home')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>홈</button>
                     <button onClick={() => setActiveTab('study-log')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'study-log' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>공부 기록</button>
+                    {config.vocabDbId && config.testDbId && (
+                        <button onClick={() => setActiveTab('vocab')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'vocab' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>단어장</button>
+                    )}
                     <button onClick={() => setActiveTab('records')} className={`px-4 py-2 rounded-full font-bold text-[14px] transition-colors whitespace-nowrap ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-500 hover:text-gray-800'}`}>통계</button>
                 </nav>
 
                 <nav className="gnb-nav-compact items-center gap-2">
                     <button onClick={() => setActiveTab('home')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'home' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>홈</button>
                     <button onClick={() => setActiveTab('study-log')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'study-log' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>기록</button>
+                    {config.vocabDbId && config.testDbId && (
+                        <button onClick={() => setActiveTab('vocab')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'vocab' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>단어</button>
+                    )}
                     <button onClick={() => setActiveTab('records')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>통계</button>
                 </nav>
 
@@ -1104,7 +1632,7 @@ const App = () => {
                         <SettingsIcon/>
                     </button>
                     <button onClick={() => fetchData()} className="gnb-refresh w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all" title="새로고침">
-                        {loading ? <span className="spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"/> : <RefreshIcon />}
+                        {loading ? <span className="spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"/> : <RefreshIcon size={18} />}
                     </button>
                 </div>
             </header>
@@ -1114,10 +1642,10 @@ const App = () => {
                 <div className="flex justify-between items-end mb-2">
                     <div>
                         <span className="text-[11px] font-extrabold tracking-[0.15em] text-gray-400 uppercase mb-1 block">
-                            {activeTab === 'home' ? 'DASHBOARD OVERVIEW' : activeTab === 'study-log' ? 'STUDY LOG' : 'STATISTICS'}
+                            {activeTab === 'home' ? 'DASHBOARD OVERVIEW' : activeTab === 'study-log' ? 'STUDY LOG' : activeTab === 'vocab' ? 'VOCABULARY' : 'STATISTICS'}
                         </span>
                         <h1 className="text-3xl font-bold text-gray-800">
-                            {activeTab === 'home' ? '오늘의 요약' : activeTab === 'study-log' ? '공부 기록' : '상세 통계'}
+                            {activeTab === 'home' ? '오늘의 요약' : activeTab === 'study-log' ? '공부 기록' : activeTab === 'vocab' ? '단어장' : '상세 통계'}
                         </h1>
                     </div>
                     
@@ -1409,6 +1937,174 @@ const App = () => {
                     </div>
                 )}
 
+                {/* ── VOCAB (단어장) ── */}
+                {activeTab === 'vocab' && config.vocabDbId && config.testDbId && (
+                    (() => {
+                        const allSubjects = ['전체', ...Object.keys(vocabData.subjectCounts)];
+                        const filterV = (list) => vocabSubjectFilter === '전체' ? list : list.filter(v => v.subjects.includes(vocabSubjectFilter));
+                        const notionVocabUrl = `https://www.notion.so/${config.vocabDbId.replace(/-/g,'')}`;
+
+                        let sortedReviewList = [...filterV(vocabData.reviewList)];
+                        if (vocabSort === 'created_desc') sortedReviewList.sort((a,b) => new Date(b.createdTime) - new Date(a.createdTime));
+                        else if (vocabSort === 'created_asc') sortedReviewList.sort((a,b) => new Date(a.createdTime) - new Date(b.createdTime));
+                        else if (vocabSort === 'name_asc') sortedReviewList.sort((a,b) => a.title.localeCompare(b.title, 'ko'));
+
+                        return (
+                            <div className="mt-2 h-full flex flex-col">
+                                <div className="flex items-center gap-3 mb-5 flex-wrap">
+                                    <a href={notionVocabUrl} target="_blank" rel="noopener noreferrer" className="text-[12px] font-bold bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-gray-600 hover:border-[#8B664B] hover:text-[#8B664B] transition-colors flex items-center gap-1.5 shadow-sm no-underline">
+                                        <NotionIcon/> 노션 단어장 열기
+                                    </a>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+                                    {/* ── 1. 왼쪽: 오늘/최근 추가된 단어 ── */}
+                                    <div className="flex flex-col gap-5">
+                                        <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col min-h-[200px]">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-[15px] font-bold text-gray-800">오늘 추가된 단어</h3>
+                                                <span className="text-[11px] font-bold bg-[#F4F0EA] text-[#8B664B] px-2 py-0.5 rounded-md">{vocabData.todayAdded.length}개</span>
+                                            </div>
+                                            {vocabData.todayAdded.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center flex-1 py-8 text-gray-400 gap-2">
+                                                    <span className="text-3xl">📝</span>
+                                                    <span className="text-[12px]">오늘 추가한 단어가 없습니다.</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-2 overflow-y-auto max-h-[240px] pr-1">
+                                                    {vocabData.todayAdded.map(v => (
+                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center justify-between p-3 rounded-xl bg-[#FDFBF7] border border-[#F4F0EA] cursor-pointer hover:bg-[#F4F0EA] hover:shadow-sm transition-all group" title="뜻/설명 보기">
+                                                            <span className={`text-[14px] font-bold truncate pr-3 group-hover:text-[#A67B5B] transition-colors ${v.status === 'passed' ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{v.title}</span>
+                                                            <div className="shrink-0 flex items-center">
+                                                                {v.status === 'passed' && <span className="text-[#849F71] text-lg leading-none" title="통과">✅</span>}
+                                                                {v.status === 'failed' && <span className="text-[#E56B6F]" title="다시 학습 필요"><RetryIcon size={18}/></span>}
+                                                                {v.status === 'pending' && <span className="w-4 h-4 rounded-full border-2 border-gray-200"></span>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col flex-1">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-[15px] font-bold text-gray-800">최근에 추가된 단어</h3>
+                                                <span className="text-[10px] text-gray-400">최근 7일</span>
+                                            </div>
+                                            {vocabData.recentWords.length === 0 ? (
+                                                <p className="text-[12px] text-gray-400 text-center py-6">최근에 추가된 단어가 없습니다.</p>
+                                            ) : (
+                                                <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1">
+                                                    {vocabData.recentWords.map(v => (
+                                                        <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-[#FDFBF7] cursor-pointer group transition-all" title="뜻/설명 보기">
+                                                            {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded whitespace-nowrap group-hover:border-[#D1CBBF] group-hover:text-gray-500 transition-colors">{v.subjects[0]}</span>}
+                                                            <span className="text-[13px] font-medium text-gray-700 truncate group-hover:text-[#A67B5B] transition-colors">{v.title}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ── 2. 가운데: 단어 암기 상태 (진행도 + 노트 연결) ── */}
+                                    <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col h-[650px] border-2 border-[#F4F0EA]">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-[16px] font-extrabold text-[#5C3A21]">단어 암기 상태</h3>
+                                            <select value={vocabSort} onChange={e=>setVocabSort(e.target.value)} className="bg-transparent border border-gray-200 text-gray-600 text-[11px] font-bold px-2 py-1 rounded-md outline-none cursor-pointer focus:border-[#8B664B]">
+                                                <option value="created_desc">최근 생성순</option>
+                                                <option value="created_asc">과거 생성순</option>
+                                                <option value="name_asc">가나다순</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex gap-2 overflow-x-auto pb-3 mb-1 shrink-0 border-b border-gray-100">
+                                            {allSubjects.map(s => (
+                                                <button key={s} onClick={() => setVocabSubjectFilter(s)}
+                                                    className={`px-3 py-1 rounded-full text-[12px] font-bold whitespace-nowrap transition-colors ${vocabSubjectFilter === s ? 'bg-[#5C3A21] text-white shadow-sm' : 'bg-[#FDFBF7] text-gray-500 hover:bg-[#EBE8DE]'}`}>
+                                                    {s} {s !== '전체' && <span className="opacity-60 ml-1 text-[10px]">{vocabData.subjectCounts[s]}</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex justify-end gap-4 mb-3 shrink-0">
+                                            <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#849F71]"></span><span className="text-[10px] text-gray-400">통과</span></div>
+                                            <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-gray-200"></span><span className="text-[10px] text-gray-400">미통과</span></div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2.5 overflow-y-auto flex-1 pr-1 pb-4">
+                                            {sortedReviewList.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+                                                    <span className="text-3xl">🌱</span>
+                                                    <span className="text-[12px]">암기할 단어가 없습니다.</span>
+                                                </div>
+                                            ) : (
+                                                sortedReviewList.map(v => {
+                                                    const matchedNotes = notes.filter(n => n.relatedIds?.has(v.id) || n.relatedIds?.has(v.vocabPageId) || v.relatedIds?.has(n.id) || v.vocabRelatedIds?.has(n.id) || n.title.includes(v.title) || v.title.includes(n.title));
+                                                    const matchedWrongs = wrongs.filter(w => w.relatedIds?.has(v.id) || w.relatedIds?.has(v.vocabPageId) || v.relatedIds?.has(w.id) || v.vocabRelatedIds?.has(w.id) || w.title.includes(v.title) || v.title.includes(w.title));
+                                                    return (
+                                                        <div key={v.id} className="flex flex-col p-3.5 rounded-[14px] bg-white border border-gray-100 shadow-sm hover:border-[#D1CBBF] hover:shadow-md transition-all">
+                                                            <div className="flex items-start justify-between mb-3">
+                                                                <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openVocabDetail(v)} title="뜻/설명 보기">
+                                                                    <span className="text-[15px] font-bold text-gray-800 leading-tight hover:text-[#A67B5B] transition-colors">{v.title}</span>
+                                                                    {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 mt-0.5">{v.subjects[0]}</span>}
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <NoteBox matchedNotes={matchedNotes} type="note" vocab={v} />
+                                                                    <NoteBox matchedNotes={matchedWrongs} type="wrong" vocab={v} />
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 px-1">
+                                                                {[1, 2, 3, 4].map(dot => (
+                                                                    <div key={dot} className={`w-2.5 h-2.5 rounded-full transition-colors ${dot <= v.passCount ? 'bg-[#849F71] shadow-inner' : 'bg-gray-200'}`}></div>
+                                                                ))}
+                                                                <span className="text-[10px] font-bold text-gray-300 ml-1">마스터까지 {Math.max(4 - v.passCount, 0)}단계</span>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ── 3. 오른쪽: 마스터한 단어들 ── */}
+                                    <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card flex flex-col h-[650px]">
+                                        <div className="flex items-center justify-between mb-5">
+                                            <h3 className="text-[15px] font-bold text-gray-800">마스터한 단어들</h3>
+                                            <span className="text-[11px] font-bold bg-[#F3F8F5] text-[#849F71] px-2 py-0.5 rounded-md">{vocabData.masters.length}개</span>
+                                        </div>
+                                        
+                                        {vocabData.masters.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center flex-1 py-8 text-gray-400 gap-2 text-center">
+                                                <span className="text-3xl">👑</span>
+                                                <span className="text-[12px]">아직 마스터한 단어가 없습니다.<br/>꾸준히 복습하면 늘어납니다!</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2.5 overflow-y-auto flex-1 pr-1">
+                                                {filterV(vocabData.masters).map(m => (
+                                                    <div key={m.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#F3F8F5] border border-[#E8F2EC] group transition-all hover:shadow-sm">
+                                                        <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity w-full min-w-0" onClick={() => openVocabDetail(m)} title="뜻/설명 보기">
+                                                            <span className="text-[14px] font-bold text-[#5a8a6e] truncate pr-2">{m.title}</span>
+                                                            <span className="text-[10px] text-[#849F71] opacity-80 mt-0.5 font-medium">{formatKORDateShort(m.createdTime)} 마스터</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => setResetModal({ isOpen: true, word: m })} 
+                                                            className="w-7 h-7 shrink-0 rounded-lg bg-white border border-[#E8F2EC] flex items-center justify-center text-[#5a8a6e] hover:bg-[#E56B6F] hover:text-white hover:border-[#E56B6F] transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                                                            title="마스터에서 제외 (다시 학습)"
+                                                        >
+                                                            <XIcon size={14}/>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                </div>
+                            </div>
+                        );
+                    })()
+                )}
 
                 {/* ── STUDY LOG VIEW ── */}
                 {activeTab === 'study-log' && (
@@ -1697,24 +2393,31 @@ const App = () => {
                                                 </div>
                                             </div>
 
-                                            {/* stat 3칸 그리드 */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                                                <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
-                                                    <p className="text-[10px] text-gray-400 mb-1">
-                                                        {clickedDate ? `${formatKORDateShort(clickedDate)} 공부` : `${filterLabel} 공부`}
-                                                    </p>
-                                                    <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>
-                                                        {fmtMinToHour(
-                                                            clickedDate 
-                                                                ? subjectRecords.filter(r => r.date === clickedDate).reduce((a, r) => a + r.minutes, 0)
-                                                                : totalMin
-                                                        )}
-                                                    </p>
-                                                </div>
+                                            {/* stat 다이내믹 그리드 */}
+                                            <div className={`grid grid-cols-1 ${studyLogFilter === 'today' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3 mb-4`}>
+                                                {/* 첫 번째 카드: '오늘' 탭이 아닐 때만 렌더링 */}
+                                                {studyLogFilter !== 'today' && (
+                                                    <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
+                                                        <p className="text-[10px] text-gray-400 mb-1">
+                                                            {clickedDate ? `${formatKORDateShort(clickedDate)} 공부` : `${filterLabel} 공부`}
+                                                        </p>
+                                                        <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>
+                                                            {fmtMinToHour(
+                                                                clickedDate 
+                                                                    ? subjectRecords.filter(r => r.date === clickedDate).reduce((a, r) => a + r.minutes, 0)
+                                                                    : totalMin
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* 두 번째 카드 */}
                                                 <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
                                                     <p className="text-[10px] text-gray-400 mb-1">{selectedSubject} {filterLabel} 총 공부 시간</p>
                                                     <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>{fmtMinToHour(totalMin)}</p>
                                                 </div>
+                                                
+                                                {/* 세 번째 카드 */}
                                                 <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
                                                     <p className="text-[10px] text-gray-400 mb-1">누적 전체 공부</p>
                                                     <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>{fmtMinToHour(allTotalMin)}</p>
@@ -2221,6 +2924,148 @@ const App = () => {
                 )}
             </main>
 
+            {/* ── 단어 상세 설명 모달 ── */}
+            {vocabDetailModal.isOpen && vocabDetailModal.word && (() => {
+                const word = vocabDetailModal.word;
+                const matchedNotes = notes.filter(n => n.relatedIds?.has(word.id) || n.relatedIds?.has(word.vocabPageId) || word.relatedIds?.has(n.id) || word.vocabRelatedIds?.has(n.id) || n.title.includes(word.title) || word.title.includes(n.title));
+                const matchedWrongs = wrongs.filter(w => w.relatedIds?.has(word.id) || w.relatedIds?.has(word.vocabPageId) || word.relatedIds?.has(w.id) || word.vocabRelatedIds?.has(w.id) || w.title.includes(word.title) || word.title.includes(w.title));
+
+                return (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+                        <div className="bg-white rounded-[2rem] w-full max-w-sm max-h-[85vh] flex flex-col shadow-2xl relative transform transition-all">
+                            <div className="p-6 pb-4 border-b border-gray-100 flex items-center justify-between">
+                                <h3 className="text-[18px] font-extrabold text-gray-800 flex items-center gap-2">
+                                    📖 단어 상세
+                               </h3>
+                                <button onClick={() => setVocabDetailModal({ isOpen: false, word: null })} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors outline-none">
+                                    <XIcon/>
+                                </button>
+                            </div>
+                            
+                            <div className="px-6 mt-4 mb-2 flex items-center">
+                                <span className="text-[22px] font-bold text-gray-800">{word.title}</span>
+                                {word.subjects && word.subjects.length > 0 && (
+                                    <span className="ml-2 text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md inline-block align-middle">{word.subjects[0]}</span>
+                                )}
+                            </div>
+
+                            {/* 탭 메뉴 */}
+                            <div className="px-6 flex gap-2 border-b border-gray-100 pb-3 mb-2 shrink-0">
+                                <button onClick={() => setVocabDetailTab('explanation')}
+                                    className={`px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all ${vocabDetailTab === 'explanation' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400 hover:bg-gray-50'}`}>
+                                    뜻/설명
+                                </button>
+                                <button onClick={() => setVocabDetailTab('notes')}
+                                    className={`px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5 ${vocabDetailTab === 'notes' ? 'bg-[#F3F8F5] text-[#4a7c5e]' : 'text-gray-400 hover:bg-gray-50'}`}>
+                                    학습 노트
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${matchedNotes.length > 0 ? 'bg-[#849F71] text-white' : 'bg-gray-200 text-gray-500'}`}>{matchedNotes.length}</span>
+                                </button>
+                                <button onClick={() => setVocabDetailTab('wrongs')}
+                                    className={`px-3 py-1.5 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5 ${vocabDetailTab === 'wrongs' ? 'bg-[#FFF5F2] text-[#c0614a]' : 'text-gray-400 hover:bg-gray-50'}`}>
+                                    오답 노트
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${matchedWrongs.length > 0 ? 'bg-[#E07A5F] text-white' : 'bg-gray-200 text-gray-500'}`}>{matchedWrongs.length}</span>
+                                </button>
+                            </div>
+                            
+                            <div className="p-6 pt-2 overflow-y-auto flex-1">
+                                {/* 1. 뜻/설명 탭 */}
+                                {vocabDetailTab === 'explanation' && (
+                                    <div className="bg-[#FDFBF7] border border-[#F4F0EA] rounded-xl p-5 min-h-[120px]">
+                                        {(() => {
+                                            const targetId = word.vocabPageId || word.id;
+                                            const cache = cachedExplanations[targetId];
+                                            if (!cache || cache.isLoading) {
+                                                return (
+                                                    <div className="flex flex-col items-center justify-center h-full min-h-[100px] gap-3 text-gray-400">
+                                                        <span className="spin inline-block w-6 h-6 border-[3px] border-gray-200 border-t-[#A67B5B] rounded-full"/>
+                                                        <span className="text-[12px] font-bold">노션에서 뜻을 불러오는 중...</span>
+                                                    </div>
+                                                );
+                                            }
+                                            if (cache.error) {
+                                                return <div className="text-[#E56B6F] text-[13px] font-medium">{cache.error}</div>;
+                                            }
+                                            return <div className="text-[14px] text-gray-700 whitespace-pre-wrap leading-relaxed">{cache.text}</div>;
+                                        })()}
+                                    </div>
+                                )}
+
+                                {/* 2. 학습 노트 탭 */}
+                                {vocabDetailTab === 'notes' && (
+                                    <div className="flex flex-col gap-2">
+                                        {matchedNotes.length === 0 ? (
+                                            <div className="text-center py-6 text-gray-400 text-[12px]">연결된 학습 노트가 없습니다.</div>
+                                        ) : (
+                                            matchedNotes.map(n => (
+                                                <a key={n.id} href={`https://www.notion.so/${n.id.replace(/-/g, '')}`} target="_blank" rel="noopener noreferrer" 
+                                                    className="w-full flex items-center justify-between p-3.5 rounded-xl bg-white border border-gray-100 hover:border-[#849F71] hover:shadow-md transition-all text-left group no-underline">
+                                                    <div className="flex flex-col min-w-0 mr-3">
+                                                        <span className="text-[13px] font-bold text-gray-700 truncate group-hover:text-[#4a7c5e] transition-colors">{n.title}</span>
+                                                        <span className="text-[10px] text-gray-400 mt-0.5">{new Date(n.createdTime).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#F3F8F5] group-hover:text-[#849F71] transition-colors shrink-0">
+                                                        <RightArrow size={14} />
+                                                    </div>
+                                                </a>
+                                            ))
+                                        )}
+                                        <button onClick={() => { setVocabDetailModal({isOpen: false, word: null}); setLinkNoteModal({ isOpen: true, vocab: word, type: 'note' }); setLinkSearchTerm(''); }}
+                                            className="mt-2 w-full border border-dashed border-[#849F71]/50 text-[#4a7c5e] bg-[#F3F8F5]/50 hover:bg-[#F3F8F5] font-bold py-3 rounded-xl transition text-[12px] flex items-center justify-center gap-1.5">
+                                            <PlusIcon/> 새 학습 노트 연결/추가
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* 3. 오답 노트 탭 */}
+                                {vocabDetailTab === 'wrongs' && (
+                                    <div className="flex flex-col gap-2">
+                                        {matchedWrongs.length === 0 ? (
+                                            <div className="text-center py-6 text-gray-400 text-[12px]">연결된 오답 노트가 없습니다.</div>
+                                        ) : (
+                                            matchedWrongs.map(w => (
+                                                <a key={w.id} href={`https://www.notion.so/${w.id.replace(/-/g, '')}`} target="_blank" rel="noopener noreferrer" 
+                                                    className="w-full flex items-center justify-between p-3.5 rounded-xl bg-white border border-gray-100 hover:border-[#E07A5F] hover:shadow-md transition-all text-left group no-underline">
+                                                    <div className="flex flex-col min-w-0 mr-3">
+                                                        <span className="text-[13px] font-bold text-gray-700 truncate group-hover:text-[#c0614a] transition-colors">{w.title}</span>
+                                                        <span className="text-[10px] text-gray-400 mt-0.5">{new Date(w.createdTime).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#FFF5F2] group-hover:text-[#E07A5F] transition-colors shrink-0">
+                                                        <RightArrow size={14} />
+                                                    </div>
+                                                </a>
+                                            ))
+                                        )}
+                                        <button onClick={() => { setVocabDetailModal({isOpen: false, word: null}); setLinkNoteModal({ isOpen: true, vocab: word, type: 'wrong' }); setLinkSearchTerm(''); }}
+                                            className="mt-2 w-full border border-dashed border-[#E07A5F]/50 text-[#c0614a] bg-[#FFF5F2]/50 hover:bg-[#FFF5F2] font-bold py-3 rounded-xl transition text-[12px] flex items-center justify-center gap-1.5">
+                                            <PlusIcon/> 새 오답 노트 연결/추가
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* ── 마스터 단어 초기화 확인 모달 ── */}
+            {resetModal.isOpen && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+                    <div className="bg-white rounded-[2rem] w-full max-w-sm p-7 shadow-2xl relative flex flex-col transform transition-all">
+                        <div className="w-12 h-12 rounded-full bg-[#FFF5F2] flex items-center justify-center text-[#E56B6F] mb-5 border border-[#FFE9E4]">
+                            <RefreshIcon size={20} />
+                        </div>
+                        <h3 className="text-[17px] font-extrabold text-gray-800 mb-2">마스터한 단어에서 제외할까요?</h3>
+                        <p className="text-[13px] text-gray-500 mb-8 leading-relaxed">
+                            <span className="font-bold text-[#E56B6F]">'{resetModal.word?.title}'</span> 단어의 누적 통과 횟수가 0으로 초기화되며, 암기 목록으로 다시 돌아갑니다.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setResetModal({ isOpen: false, word: null })} className="flex-1 py-3.5 rounded-xl text-sm font-bold bg-[#FDFBF7] text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors">유지하기</button>
+                            <button onClick={handleConfirmResetMaster} disabled={loading} className="flex-1 py-3.5 rounded-xl text-sm font-bold bg-[#E56B6F] text-white shadow-sm hover:bg-[#d4585d] transition-colors disabled:opacity-50">{loading ? '처리 중...' : '0부터 다시 시작'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 밀린 할일 전체보기 모달 */}
             {showOverdueModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
@@ -2334,6 +3179,117 @@ const App = () => {
                         >
                             출력 뷰어 열기
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 노트 연결/추가 모달 ── */}
+            {linkNoteModal.isOpen && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+                    <div className="bg-white rounded-[2rem] w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl relative transform transition-all">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-[18px] font-extrabold text-gray-800">
+                                    {linkNoteModal.type === 'note' ? '학습 노트' : '오답 노트'} 연결
+                                </h3>
+                                <p className="text-[12px] text-gray-400 font-medium mt-0.5">'{linkNoteModal.vocab?.title}' 단어와 연결할 노트를 선택하세요.</p>
+                            </div>
+                            <button onClick={() => setLinkNoteModal({ ...linkNoteModal, isOpen: false })} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors outline-none">
+                                <XIcon/>
+                            </button>
+                        </div>
+                        
+                        <div className="p-5 flex flex-col gap-4 overflow-hidden">
+                            {/* 검색창 */}
+                            <div className="relative">
+                                <input 
+                                    type="text" 
+                                    placeholder="기존 노트 검색..." 
+                                    value={linkSearchTerm}
+                                    onChange={e => setLinkSearchTerm(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-4 pr-10 text-sm focus:outline-none focus:border-[#A67B5B] transition-colors"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                </div>
+                            </div>
+
+                            {/* 검색 결과 리스트 */}
+                            <div className="flex-1 overflow-y-auto space-y-2 min-h-[200px] pr-1">
+                                {(() => {
+                                    const pool = linkNoteModal.type === 'note' ? notes : wrongs;
+                                    const filtered = pool.filter(n => n.title.toLowerCase().includes(linkSearchTerm.toLowerCase())).slice(0, 10);
+                                    
+                                    if (filtered.length === 0) return (
+                                        <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                                            <span className="text-2xl mb-2">🔍</span>
+                                            <p className="text-[12px]">검색 결과가 없습니다.</p>
+                                        </div>
+                                    );
+
+                                    return filtered.map(n => (
+                                        <button 
+                                            key={n.id}
+                                            onClick={() => handleLinkNote(n.id)}
+                                            className="w-full flex items-center justify-between p-3.5 rounded-xl bg-white border border-gray-100 hover:border-[#A67B5B] hover:bg-[#FDFBF7] transition-all text-left group"
+                                        >
+                                            <div className="flex flex-col min-w-0 mr-3">
+                                                <span className="text-[14px] font-bold text-gray-700 truncate">{n.title}</span>
+                                                <span className="text-[10px] text-gray-400 mt-0.5">{new Date(n.createdTime).toLocaleDateString()}</span>
+                                            </div>
+                                            <span className="shrink-0 text-[11px] font-bold text-[#A67B5B] opacity-0 group-hover:opacity-100 transition-opacity">연결하기</span>
+                                        </button>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50 rounded-b-[2rem] border-t border-gray-100">
+                            <button 
+                                onClick={handleCreateAndLinkNote}
+                                className="w-full bg-[#A67B5B] text-white font-bold py-4 rounded-xl hover:bg-[#8B664B] transition shadow-md flex items-center justify-center gap-2"
+                            >
+                                <PlusIcon/> 새로운 {linkNoteModal.type === 'note' ? '학습' : '오답'} 노트 만들기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 다중 노트 목록 보기 모달 ── */}
+            {viewNotesModal.isOpen && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+                    <div className="bg-white rounded-[2rem] w-full max-w-sm max-h-[80vh] flex flex-col shadow-2xl relative transform transition-all">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-[18px] font-extrabold text-gray-800 flex items-center gap-2">
+                                    {viewNotesModal.type === 'note' ? '📚 학습 노트 목록' : '🚨 오답 노트 목록'}
+                                </h3>
+                                <p className="text-[12px] text-gray-400 font-medium mt-1">'{viewNotesModal.vocab?.title}' 단어에 연결된 노트들입니다.</p>
+                            </div>
+                            <button onClick={() => setViewNotesModal({ ...viewNotesModal, isOpen: false })} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors outline-none">
+                                <XIcon/>
+                            </button>
+                        </div>
+                        
+                        <div className="p-5 flex-1 overflow-y-auto space-y-2 max-h-[350px]">
+                            {viewNotesModal.notes.map(n => (
+                                <a 
+                                    key={n.id}
+                                    href={`https://www.notion.so/${n.id.replace(/-/g, '')}`} 
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-between p-4 rounded-xl bg-white border border-gray-100 hover:border-[#A67B5B] hover:shadow-md transition-all text-left group no-underline"
+                                >
+                                    <div className="flex flex-col min-w-0 mr-3">
+                                        <span className="text-[14px] font-bold text-gray-700 truncate group-hover:text-[#A67B5B] transition-colors">{n.title}</span>
+                                        <span className="text-[10px] text-gray-400 mt-0.5">{new Date(n.createdTime).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#F4F0EA] group-hover:text-[#A67B5B] transition-colors shrink-0">
+                                        <RightArrow size={14} />
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
