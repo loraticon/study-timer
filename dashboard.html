@@ -1697,7 +1697,7 @@ const App = () => {
                                     { label: '과목', value: statsData.subjects, unit: '개', icon: '📚', bg: 'bg-white', accent: '#1a1a1a' },
                                 ].map(({ label, value, unit, icon, bg, accent }) => (
                                     <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-2 border border-gray-100`}>
-                                        <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-gray-500">{label}</span><span className="text-base">{icon}</span></div>
+                                        <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-gray-500 dark:text-gray-300">{label}</span><span className="text-base">{icon}</span></div>
                                         <div className="text-2xl font-extrabold" style={{ color: accent }}>
                                             {value !== null && value !== undefined ? <>{value.toLocaleString()}<span className="text-sm font-bold ml-0.5 opacity-70">{unit}</span></> : <span className="text-gray-300">-</span>}
                                         </div>
@@ -1995,7 +1995,7 @@ const App = () => {
                         </div>
 
                         <div className="flex flex-col gap-6">
-                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex justify-between items-end mb-6">
                                     <div>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">WEEKLY STAMP</span>
@@ -2350,7 +2350,7 @@ const App = () => {
                             ].map(({ label, value, unit, icon, bg, accent }) => (
                                 <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-1 soft-card`}>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-bold text-gray-500">{label}</span>
+                                        <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300">{label}</span>
                                         <span className="text-base">{icon}</span>
                                     </div>
                                     <div className="text-2xl font-extrabold" style={{ color: accent }}>
@@ -2361,7 +2361,7 @@ const App = () => {
                         </div>
 
                         {/* 타이머 공부 기록 */}
-                        <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                        <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                             {selectedSubject === null ? (
                                 /* ── 드릴다운 기반 전체 리스트 뷰 ── */
                                 (() => {
@@ -2375,7 +2375,7 @@ const App = () => {
                                             {isYearNav && (
                                                 <>
                                                     <div className="flex items-center gap-2 mb-4">
-                                                        <h3 className="text-[15px] font-bold text-gray-800">연도별 기록</h3>
+                                                        <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">연도별 기록</h3>
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
                                                         {Object.entries(baseRecordsMap.records.reduce((acc, r) => {
@@ -2384,13 +2384,13 @@ const App = () => {
                                                             acc[y].total += r.minutes; acc[y].days.add(r.date); return acc;
                                                         }, {})).sort((a,b)=>b[0]-a[0]).map(([y, data]) => (
                                                             <button key={y} onClick={() => setLogNavPath({ year: parseInt(y), month: null })}
-                                                                    className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-4 hover:border-[#A67B5B] transition-colors shadow-sm text-left group">
+                                                                    className="flex items-center justify-between bg-white dark:bg-[#1E1E1E] border border-gray-100 dark:border-[#2F2F2F] rounded-2xl p-4 hover:border-[#A67B5B] transition-colors shadow-sm text-left group">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-12 h-12 rounded-full bg-[#F4F0EA] group-hover:bg-[#A67B5B] group-hover:text-white transition-colors flex items-center justify-center text-[#8B664B] font-bold text-lg">
+                                                                    <div className="w-12 h-12 rounded-full bg-[#F4F0EA] dark:bg-[#2F2F2F] group-hover:bg-[#A67B5B] group-hover:text-white transition-colors flex items-center justify-center text-[#8B664B] dark:text-[#D4A373] font-bold text-lg">
                                                                         {y}
                                                                     </div>
                                                                     <div>
-                                                                        <div className="text-[15px] font-bold text-gray-800">{y}년</div>
+                                                                        <div className="text-[15px] font-bold text-gray-800 dark:text-gray-100">{y}년</div>
                                                                         <div className="text-[11px] text-gray-400 mt-0.5">{data.days.size}일의 기록</div>
                                                                     </div>
                                                                 </div>
@@ -2415,7 +2415,7 @@ const App = () => {
                                                                 {logNavPath.year}년
                                                             </button>
                                                         ) : (
-                                                            <h3 className="text-[15px] font-bold text-gray-800">월별 기록</h3>
+                                                            <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">월별 기록</h3>
                                                         )}
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
@@ -2425,13 +2425,13 @@ const App = () => {
                                                             acc[m].total += r.minutes; acc[m].days.add(r.date); return acc;
                                                         }, {})).sort((a,b)=>b[0]-a[0]).map(([m, data]) => (
                                                             <button key={m} onClick={() => setLogNavPath(prev => ({ ...prev, month: parseInt(m) }))}
-                                                                    className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-4 hover:border-[#A67B5B] transition-colors shadow-sm text-left group">
+                                                                    className="flex items-center justify-between bg-white dark:bg-[#1E1E1E] border border-gray-100 dark:border-[#2F2F2F] rounded-2xl p-4 hover:border-[#A67B5B] transition-colors shadow-sm text-left group">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-12 h-12 rounded-full bg-[#F4F0EA] group-hover:bg-[#A67B5B] group-hover:text-white transition-colors flex items-center justify-center text-[#8B664B] font-bold text-lg">
+                                                                    <div className="w-12 h-12 rounded-full bg-[#F4F0EA] dark:bg-[#2F2F2F] group-hover:bg-[#A67B5B] group-hover:text-white transition-colors flex items-center justify-center text-[#8B664B] dark:text-[#D4A373] font-bold text-lg">
                                                                         {m}월
                                                                     </div>
                                                                     <div>
-                                                                        <div className="text-[15px] font-bold text-gray-800">{m}월</div>
+                                                                        <div className="text-[15px] font-bold text-gray-800 dark:text-gray-100">{m}월</div>
                                                                         <div className="text-[11px] text-gray-400 mt-0.5">{data.days.size}일의 기록</div>
                                                                     </div>
                                                                 </div>
@@ -2456,9 +2456,9 @@ const App = () => {
                                                                 {logNavPath.year ? `${logNavPath.year}년 ${logNavPath.month}월` : `${logNavPath.month}월`} 기록
                                                             </button>
                                                         ) : (
-                                                            <h3 className="text-[15px] font-bold text-gray-800">타이머 공부 기록</h3>
+                                                            <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">타이머 공부 기록</h3>
                                                         )}
-                                                        <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredTimerRecords.length}건</span>
+                                                        <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-[#2F2F2F] dark:text-gray-300 px-2 py-0.5 rounded-full">{filteredTimerRecords.length}건</span>
                                                     </div>
                                                     
                                                     {filteredTimerRecords.length === 0 ? (
@@ -2482,7 +2482,7 @@ const App = () => {
                                                                             <div key={dateStr} className="mb-3">
                                                                                 <div className="flex items-center justify-between mb-1.5">
                                                                                     <span className="text-[11px] font-bold text-gray-400">{dayLabel}</span>
-                                                                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{background:'#F4EDE5', color:'#8B664B'}}>총 {fmtMinToHour(totalMin)}</span>
+                                                                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{background: isDark ? '#2F2F2F' : '#F4EDE5', color: isDark ? '#F3F4F6' : '#8B664B'}}>총 {fmtMinToHour(totalMin)}</span>
                                                                                 </div>
                                                                                 <div className="flex flex-col gap-1.5">
                                                                                     {recs.map((r, i) => (
@@ -2490,17 +2490,17 @@ const App = () => {
                                                                                             key={i}
                                                                                             onClick={() => setSelectedRecord({ subject: r.subject, date: r.date })}
                                                                                             className="flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors group"
-                                                                                            style={{background:'#FDFBF7'}}
-                                                                                            onMouseEnter={e => e.currentTarget.style.background='#F4EDE5'}
-                                                                                            onMouseLeave={e => e.currentTarget.style.background='#FDFBF7'}
+                                                                                            style={{background: isDark ? '#1E1E1E' : '#FDFBF7', border: isDark ? '1px solid #2F2F2F' : '1px solid transparent'}}
+                                                                                            onMouseEnter={e => e.currentTarget.style.background = isDark ? '#252525' : '#F4EDE5'}
+                                                                                            onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1E1E1E' : '#FDFBF7'}
                                                                                         >
                                                                                             <SubjectIcon icon={subjects.find(s => s.name === r.subject)?.icon} size={18} />
                                                                                             <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                                                                                                {r.subjectParent && <span className="text-[10px] font-bold text-gray-400 shrink-0 bg-gray-100 px-1.5 py-0.5 rounded group-hover:bg-white transition-colors">{r.subjectParent}</span>}
-                                                                                                <span className="text-[13px] font-medium text-gray-700 truncate">{r.subject}</span>
+                                                                                                {r.subjectParent && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-300 shrink-0 bg-gray-100 dark:bg-[#2F2F2F] px-1.5 py-0.5 rounded group-hover:bg-white dark:group-hover:bg-[#333333] transition-colors">{r.subjectParent}</span>}
+                                                                                                <span className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate">{r.subject}</span>
                                                                                             </div>
                                                                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style={r.mode === 'pomodoro' ? {background:'#FEF2F2', color:'#C0614A'} : {background:'#F0F4FF', color:'#5B6FA6'}}>{r.mode === 'pomodoro' ? '뽀모도로' : '타이머'}</span>
-                                                                                            <span className="text-[12px] font-bold text-gray-500 shrink-0">{fmtMinToHour(r.minutes)}</span>
+                                                                                            <span className="text-[12px] font-bold text-gray-500 dark:text-gray-200 shrink-0">{fmtMinToHour(r.minutes)}</span>
                                                                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4B5A5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                                                                         </button>
                                                                                     ))}
@@ -2562,17 +2562,17 @@ const App = () => {
                                             <div className="flex items-center gap-2 mb-4">
                                                 <button
                                                     onClick={() => setSelectedRecord(null)}
-                                                    className="flex items-center gap-1 text-[12px] font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                                                    className="flex items-center gap-1 text-[12px] font-bold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                                                     전체 기록으로
                                                 </button>
-                                                <span className="text-[11px] text-gray-400 ml-auto bg-gray-100 px-2 py-0.5 rounded-full">{filterLabel} 보기 중</span>
+                                                <span className="text-[11px] text-gray-400 dark:text-gray-300 ml-auto bg-gray-100 dark:bg-[#2F2F2F] px-2 py-0.5 rounded-full">{filterLabel} 보기 중</span>
                                             </div>
 
                                             {/* 과목명 */}
                                             <div className="flex items-center gap-3 mb-5">
-                                                <div className="bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm">
+                                                <div className="bg-white dark:bg-[#252525] p-1.5 rounded-xl border border-gray-100 dark:border-[#2F2F2F] shadow-sm">
                                                     <SubjectIcon icon={subjObj?.icon} size={28} />
                                                 </div>
                                                 <div className="flex flex-col justify-center">
@@ -2582,7 +2582,7 @@ const App = () => {
                                                         </span>
                                                     )}
                                                     <div className="flex items-end gap-2">
-                                                        <span className="text-[20px] font-extrabold text-gray-800 leading-none">{selectedSubject}</span>
+                                                        <span className="text-[20px] font-extrabold text-gray-800 dark:text-gray-100 leading-none">{selectedSubject}</span>
                                                         {clickedDate && <span className="text-[12px] font-medium text-gray-400 mb-[2px]">{formatKORDateShort(clickedDate)}</span>}
                                                     </div>
                                                 </div>
@@ -2592,11 +2592,11 @@ const App = () => {
                                             <div className={`grid grid-cols-1 ${studyLogFilter === 'today' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3 mb-4`}>
                                                 {/* 첫 번째 카드: '오늘' 탭이 아닐 때만 렌더링 */}
                                                 {studyLogFilter !== 'today' && (
-                                                    <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
+                                                    <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
                                                         <p className="text-[10px] text-gray-400 mb-1">
                                                             {clickedDate ? `${formatKORDateShort(clickedDate)} 공부` : `${filterLabel} 공부`}
                                                         </p>
-                                                        <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>
+                                                        <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>
                                                             {fmtMinToHour(
                                                                 clickedDate 
                                                                     ? subjectRecords.filter(r => r.date === clickedDate).reduce((a, r) => a + r.minutes, 0)
@@ -2607,15 +2607,15 @@ const App = () => {
                                                 )}
                                                 
                                                 {/* 두 번째 카드 */}
-                                                <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
+                                                <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
                                                     <p className="text-[10px] text-gray-400 mb-1">{selectedSubject} {filterLabel} 총 공부 시간</p>
-                                                    <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>{fmtMinToHour(totalMin)}</p>
+                                                    <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>{fmtMinToHour(totalMin)}</p>
                                                 </div>
                                                 
                                                 {/* 세 번째 카드 */}
-                                                <div className="rounded-2xl p-3" style={{background:'#FDF8F4', border:'1px solid #EDE0D0'}}>
+                                                <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
                                                     <p className="text-[10px] text-gray-400 mb-1">누적 전체 공부</p>
-                                                    <p className="text-[18px] font-bold" style={{color:'#A67B5B'}}>{fmtMinToHour(allTotalMin)}</p>
+                                                    <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>{fmtMinToHour(allTotalMin)}</p>
                                                 </div>
                                             </div>
 
@@ -2624,7 +2624,7 @@ const App = () => {
                                                 <div className="mb-3">
                                                     <div className="flex items-center gap-1.5 mb-2">
                                                         <p className="text-[10px] font-bold text-gray-400">학습 노트</p>
-                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto" style={{background:'#F3F8F5', color:'#5a8a6e'}}>{subjectNotes.length}건</span>
+                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto" style={{background: isDark ? '#1F2A24' : '#F3F8F5', color: isDark ? '#A7D7B8' : '#5a8a6e'}}>{subjectNotes.length}건</span>
                                                     </div>
                                                     {subjectNotes.length === 0 ? (
                                                         <p className="text-[12px] text-gray-400 text-center py-2">해당 기간에 추가한 학습 노트가 없습니다.</p>
@@ -2635,8 +2635,8 @@ const App = () => {
                                                                 const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                                                 const notionUrl = `https://www.notion.so/${n.id.replace(/-/g, '')}`;
                                                                 return (
-                                                                    <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#E8F2EC] transition-colors cursor-pointer no-underline group" style={{background:'#F3F8F5'}}>
-                                                                        <span className="text-[12px] font-medium text-gray-700 flex-1 truncate group-hover:text-[#4a7c5e] transition-colors">{n.title}</span>
+                                                                    <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors cursor-pointer no-underline group" style={{background: isDark ? '#1F2A24' : '#F3F8F5', border: isDark ? '1px solid #2F3A34' : '1px solid transparent'}} onMouseEnter={e => e.currentTarget.style.background = isDark ? '#24352B' : '#E8F2EC'} onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1F2A24' : '#F3F8F5'}>
+                                                                        <span className="text-[12px] font-medium text-gray-700 dark:text-gray-100 flex-1 truncate group-hover:text-[#4a7c5e] dark:group-hover:text-[#A7D7B8] transition-colors">{n.title}</span>
                                                                         <span className="text-[10px] text-gray-400 shrink-0">{dateStr}</span>
                                                                     </a>
                                                                 );
@@ -2651,7 +2651,7 @@ const App = () => {
                                                 <div>
                                                     <div className="flex items-center gap-1.5 mb-2">
                                                         <p className="text-[10px] font-bold text-gray-400">오답 노트</p>
-                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto" style={{background:'#FFF5F2', color:'#c0614a'}}>{subjectWrongs.length}건</span>
+                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto" style={{background: isDark ? '#2A211F' : '#FFF5F2', color: isDark ? '#F1A38E' : '#c0614a'}}>{subjectWrongs.length}건</span>
                                                     </div>
                                                     {subjectWrongs.length === 0 ? (
                                                         <p className="text-[12px] text-gray-400 text-center py-2">해당 기간에 추가한 오답 노트가 없습니다.</p>
@@ -2662,8 +2662,8 @@ const App = () => {
                                                                 const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                                                 const notionUrl = `https://www.notion.so/${w.id.replace(/-/g, '')}`;
                                                                 return (
-                                                                    <a key={w.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#FFE9E4] transition-colors cursor-pointer no-underline group" style={{background:'#FFF5F2'}}>
-                                                                        <span className="text-[12px] font-medium text-gray-700 flex-1 truncate group-hover:text-[#c0614a] transition-colors">{w.title}</span>
+                                                                    <a key={w.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors cursor-pointer no-underline group" style={{background: isDark ? '#2A211F' : '#FFF5F2', border: isDark ? '1px solid #3A2A26' : '1px solid transparent'}} onMouseEnter={e => e.currentTarget.style.background = isDark ? '#35231F' : '#FFE9E4'} onMouseLeave={e => e.currentTarget.style.background = isDark ? '#2A211F' : '#FFF5F2'}>
+                                                                        <span className="text-[12px] font-medium text-gray-700 dark:text-gray-100 flex-1 truncate group-hover:text-[#c0614a] dark:group-hover:text-[#F1A38E] transition-colors">{w.title}</span>
                                                                         <span className="text-[10px] text-gray-400 shrink-0">{dateStr}</span>
                                                                     </a>
                                                                 );
@@ -2684,10 +2684,10 @@ const App = () => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* 학습 노트 */}
-                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex items-center gap-2 mb-5">
                                     <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">추가한 학습 노트</h3>
-                                    <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredNotes.length}건</span>
+                                    <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-[#2F2F2F] dark:text-gray-300 px-2 py-0.5 rounded-full">{filteredNotes.length}건</span>
                                 </div>
                                 {!config.noteDbId ? (
                                     <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -2730,10 +2730,10 @@ const App = () => {
                             </div>
 
                             {/* 오답 노트 */}
-                            <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                            <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                 <div className="flex items-center gap-2 mb-5">
                                     <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">추가한 오답 노트</h3>
-                                    <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredWrongs.length}건</span>
+                                    <span className="ml-auto text-[11px] font-bold text-gray-400 bg-gray-100 dark:bg-[#2F2F2F] dark:text-gray-300 px-2 py-0.5 rounded-full">{filteredWrongs.length}건</span>
                                 </div>
                                 {!config.wrongDbId ? (
                                     <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -2783,7 +2783,7 @@ const App = () => {
                             const list = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
                             const total = list.reduce((a,[,m])=>a+m,0);
                             return (
-                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                                <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                                     <div className="flex items-center gap-2 mb-5">
                                         <h3 className="text-[15px] font-bold text-gray-800">과목별 공부 시간</h3>
                                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full ml-auto" style={{background:'#F4EDE5', color:'#8B664B'}}>총 {fmtMinToHour(total)}</span>
@@ -2824,7 +2824,7 @@ const App = () => {
                                     ].map(({ label, value, unit, icon, bg, accent }) => (
                                         <div key={label} className={`${bg} rounded-2xl p-4 flex flex-col gap-2 soft-card border border-gray-100`}>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-gray-500">{label}</span>
+                                                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-300">{label}</span>
                                                 <span className="text-base">{icon}</span>
                                             </div>
                                             <div className="text-2xl font-extrabold" style={{ color: accent }}>
