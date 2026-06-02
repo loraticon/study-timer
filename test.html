@@ -353,7 +353,7 @@ const App = () => {
 
                 const dueProp = props['오늘 복습 필요'];
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
-                if (category === 'none' && isDueByProp) category = 'pending';
+                if (category === 'none' && isDueByProp && !nextDateIso) category = 'pending';
                 if (passCount >= 4) category = 'none';
 		
 		if (category === 'pending') {
