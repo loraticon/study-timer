@@ -1389,6 +1389,22 @@ const App = () => {
         return cells;
     }, [records, todayNum]);
 
+    const monthFootprintColors = isDark
+        ? ['#363636', '#66503A', '#8B664B', '#B48762', '#D4A373']
+        : ['#F4F0EA', '#D1CBBF', '#A67B5B99', '#A67B5B', '#5C3A21'];
+    const getMonthFootprintStyle = (cell) => {
+        if (cell.empty) {
+            return {
+                backgroundColor: isDark ? '#222222' : '#FDFBF7',
+                borderColor: isDark ? '#303030' : '#F4F0EA',
+            };
+        }
+        return {
+            backgroundColor: monthFootprintColors[cell.level],
+            borderColor: cell.level === 0 && isDark ? '#4A4A4A' : 'transparent',
+        };
+    };
+
     const [coffeeView, setCoffeeView] = useState(false);
     const handlePrevMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     const handleNextMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
@@ -2086,27 +2102,24 @@ const App = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col">
+                            <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 soft-card flex flex-col">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-[15px] font-bold text-gray-800">이번 달의 발자취</h3>
+                                    <h3 className="text-[15px] font-bold text-gray-800 dark:text-gray-100">이번 달의 발자취</h3>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-gray-300 font-medium">Less</span>
+                                        <span className="text-[10px] text-gray-300 dark:text-gray-400 font-medium">Less</span>
                                         <div className="flex gap-1">
-                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#F4F0EA]"></div>
-                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#D1CBBF]"></div>
-                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#A67B5B] opacity-70"></div>
-                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#A67B5B]"></div>
-                                            <div className="w-2.5 h-2.5 rounded-sm bg-[#5C3A21]"></div>
+                                            {monthFootprintColors.map((c, i) => (
+                                                <div key={i} className="w-2.5 h-2.5 rounded-sm border border-transparent dark:border-white/10" style={{ backgroundColor: c }}></div>
+                                            ))}
                                         </div>
-                                        <span className="text-[10px] text-gray-300 font-medium">More</span>
+                                        <span className="text-[10px] text-gray-300 dark:text-gray-400 font-medium">More</span>
                                     </div>
                                 </div>
                                 <div className="calendar-grid flex-1 items-end pb-2">
-                                    {['일','월','화','수','목','금','토'].map(d=><div key={d} className="text-[10px] font-bold text-gray-400 text-center mb-2">{d}</div>)}
+                                    {['일','월','화','수','목','금','토'].map(d=><div key={d} className="text-[10px] font-bold text-gray-400 dark:text-gray-300 text-center mb-2">{d}</div>)}
                                     {monthFootprint.map((cell, i) => {
-                                        if (cell.empty) return <div key={`e${i}`} className="w-full aspect-square bg-[#FDFBF7] rounded-[8px]"></div>;
-                                        const bg = cell.level === 0 ? 'bg-[#F4F0EA]' : cell.level === 1 ? 'bg-[#D1CBBF]' : cell.level === 2 ? 'bg-[#A67B5B] opacity-70' : cell.level === 3 ? 'bg-[#A67B5B]' : 'bg-[#5C3A21]';
-                                        return <div key={i} className={`w-full aspect-square ${bg} rounded-[8px] transition-transform hover:scale-105`} title={`${cell.date}일: ${cell.mins}분`}></div>;
+                                        if (cell.empty) return <div key={`e${i}`} className="w-full aspect-square rounded-[8px] border" style={getMonthFootprintStyle(cell)}></div>;
+                                        return <div key={i} className="w-full aspect-square rounded-[8px] border transition-transform hover:scale-105" style={getMonthFootprintStyle(cell)} title={`${cell.date}일: ${cell.mins}분`}></div>;
                                     })}
                                 </div>
                             </div>
