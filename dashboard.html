@@ -837,11 +837,6 @@ const App = () => {
                     allTestResults = allTestResults.concat(json.results || []); hasMore = json.has_more; cursor = json.next_cursor;
                 }
 
-                const vocabRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.vocabDbId}/query`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
-                    body: JSON.stringify({ filter: { property: '누적 통과 횟수', number: { greater_than_or_equal_to: 4 } }, sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 })
-                });
-
                 const extractText = (prop) => {
                     if (!prop) return null; if (prop.title?.length) return prop.title[0].plain_text; if (prop.rich_text?.length) return prop.rich_text[0].plain_text;
                     if (prop.rollup?.array?.length) return prop.rollup.array[0].title?.[0]?.plain_text || prop.rollup.array[0].rich_text?.[0]?.plain_text;
@@ -924,7 +919,7 @@ const App = () => {
                 });
 
                 // Relation ID를 통해 우선적으로 매칭
-                reviewList.forEach(item => {
+                const attachVocabInfo = (item) => {
                     let vocabInfo = null;
                     
                     if (item.relatedIds) {
@@ -944,22 +939,39 @@ const App = () => {
                         item.vocabPageId = vocabInfo.vocabPageId;
                         item.vocabRelatedIds = vocabInfo.relatedIds;
                     }
-                });
+                };
 
-                let masters = [];
-                if (vocabRes.ok) {
-                    const vocabJson = await vocabRes.json();
-                    masters = vocabJson.results.map(page => {
-                        const title = extractText(Object.values(page.properties).find(p => p.type === 'title')) || '제목 없음';
-                        const passCount  = page.properties['누적 통과 횟수']?.rollup?.number ?? 4;
-                        const vocabSubjects = extractSubjectInfoList(page.properties, subjectMap).filter(s => s.name !== '기타');
-                        
-                        // 문자열 대신 ID를 우선적으로 사용하여 테스트 페이지 찾기
-                        const mappedTestPageId = vocabIdToTestIdMap[page.id] || testItemMap[title];
-                        
-                        return { id: page.id, title, passCount, subjects: vocabSubjects, createdTime: page.created_time, testPageId: mappedTestPageId };
-                    });
-                }
+                reviewList.forEach(attachVocabInfo);
+
+                const masters = allTestResults
+                    .map(page => {
+                        const props = page.properties;
+                        const title = extractText(props['정답']) || '';
+                        if (!title.trim()) return null;
+
+                        const passCount = props['누적 통과 횟수']?.number || 0;
+                        if (passCount < 4) return null;
+
+                        const item = {
+                            id: page.id,
+                            title,
+                            passCount,
+                            subjects: extractSubjectInfoList(props, subjectMap).filter(s => s.name !== '기타'),
+                            createdTime: page.created_time,
+                            testPageId: page.id,
+                            relatedIds: new Set()
+                        };
+
+                        Object.values(props).forEach(pr => {
+                            if (pr.type === 'relation') pr.relation?.forEach(r => item.relatedIds.add(r.id));
+                        });
+
+                        attachVocabInfo(item);
+                        if (item.vocabPageId) item.id = item.vocabPageId;
+                        return item;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 
                 setVocabData({ todayAdded, recentWords, reviewList, masters, subjectCounts });
             }
