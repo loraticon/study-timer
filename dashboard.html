@@ -852,12 +852,7 @@ const App = () => {
                 };
 
                 const getMasteredTime = (page) => {
-                    const masterDateKeys = ['마스터 날짜', '마스터일', '마스터한 날짜', '통과일', '완료일'];
-                    for (const key of masterDateKeys) {
-                        const value = extractDateTime(page.properties[key]);
-                        if (value) return value;
-                    }
-                    return page.last_edited_time || page.created_time;
+                    return extractDateTime(page.properties['마스터 날짜']);
                 };
 
                 const testItemMap = {};
@@ -988,7 +983,7 @@ const App = () => {
                         return item;
                     })
                     .filter(Boolean)
-                    .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+                    .sort((a, b) => (b.createdTime ? new Date(b.createdTime).getTime() : 0) - (a.createdTime ? new Date(a.createdTime).getTime() : 0));
 
                 setVocabData({ todayAdded, recentWords, reviewList, masters, subjectCounts });
             }
@@ -1325,7 +1320,7 @@ const App = () => {
         try {
             await fetch(`${config.proxyUrl}/v1/pages/${word.testPageId}`, {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
-                body: JSON.stringify({ properties: { '누적 통과 횟수': { number: 0 }, '다시 학습': { checkbox: false } } })
+                body: JSON.stringify({ properties: { '누적 통과 횟수': { number: 0 }, '다시 학습': { checkbox: false }, '마스터 날짜': { date: null } } })
             });
             showToast(`'${word.title}' 단어가 0부터 다시 시작됩니다.`);
             fetchData();
@@ -2349,7 +2344,7 @@ const App = () => {
                                                     <div key={m.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#F3F8F5] border border-[#E8F2EC] group transition-all hover:shadow-sm">
                                                         <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity w-full min-w-0" onClick={() => openVocabDetail(m)} title="뜻/설명 보기">
                                                             <span className="text-[14px] font-bold text-[#5a8a6e] truncate pr-2">{m.title}</span>
-                                                            <span className="text-[10px] text-[#849F71] opacity-80 mt-0.5 font-medium">{formatKORDateShort(m.createdTime)} 마스터</span>
+                                                            <span className="text-[10px] text-[#849F71] opacity-80 mt-0.5 font-medium">{m.createdTime ? `${formatKORDateShort(m.createdTime)} 마스터` : '마스터 날짜 없음'}</span>
                                                         </div>
                                                         <button 
                                                             onClick={() => setResetModal({ isOpen: true, word: m })} 
