@@ -355,20 +355,22 @@ const App = () => {
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
                 if (category === 'none' && isDueByProp) category = 'pending';
                 if (passCount >= 4) category = 'none';
-
+		
 		if (category === 'pending') {
+		    const debugNextYMD = nextDateIso ? getLocalYMD(new Date(nextDateIso)) : null;
+
 		    console.log('[밀린 복습 분류]', {
 		        summary,
-		        passCount,
+ 		       passCount,
  		       rawDateIso,
 		        rawYMD,
- 		       nextDateIso,
- 		       nextYMD,
- 		       todayYMD,
- 		       dueProp,
+		        nextDateIso,
+		        nextYMD: debugNextYMD,
+		        todayYMD,
+		        dueProp,
  		       isDueByProp,
- 		       category
- 		   });
+		        category
+		    });
 		}
 
                 const summary = extractText(props['문제 요약']) || '요약 없음';
