@@ -535,13 +535,16 @@ const App = () => {
         }, 3000);
     }, []);
 
+    const [reportSnapshotLoaded, setReportSnapshotLoaded] = useState(false);
+    const [reportSnapshotChecked, setReportSnapshotChecked] = useState(!initialPrintMode);
+
     useEffect(() => {
         if (!initialPrintMode) return;
         const reportKey = initialUrlParams.get('reportKey');
-        if (!reportKey) { setLoading(false); return; }
+        if (!reportKey) { setReportSnapshotChecked(true); return; }
         try {
             const raw = localStorage.getItem(reportKey);
-            if (!raw) { setLoading(false); return; }
+            if (!raw) { setReportSnapshotChecked(true); return; }
             const snapshot = JSON.parse(raw);
             setSubjects(snapshot.subjects || []);
             setRecords(snapshot.records || []);
@@ -550,11 +553,13 @@ const App = () => {
             setNotes(snapshot.notes || []);
             setWrongs(snapshot.wrongs || []);
             setVocabData(snapshot.vocabData || { todayAdded: [], recentWords: [], reviewList: [], masters: [], subjectCounts: {} });
+            setReportSnapshotLoaded(true);
+            setReportSnapshotChecked(true);
             setLoading(false);
             setTimeout(() => { try { localStorage.removeItem(reportKey); } catch {} }, 30000);
         } catch (e) {
             console.warn('리포트 스냅샷 로드 실패:', e);
-            setLoading(false);
+            setReportSnapshotChecked(true);
         }
     }, []);
     const dashboardPageIdCacheRef = useRef(null);
@@ -1020,7 +1025,7 @@ const App = () => {
         } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [config]);
 
-    useEffect(() => { if(!showSetup && !printMode) fetchData(); }, [fetchData, showSetup, printMode]);
+    useEffect(() => { if(!showSetup && (!printMode || (reportSnapshotChecked && !reportSnapshotLoaded))) fetchData(); }, [fetchData, showSetup, printMode, reportSnapshotChecked, reportSnapshotLoaded]);
 
     /* ── 단어 뜻/설명 모달 호출 및 데이터 Fetch (Caching) ── */
     const openVocabDetail = async (word) => {
@@ -1684,6 +1689,17 @@ const App = () => {
         }
     };
 
+    const closeReportViewer = () => {
+        window.close();
+        setTimeout(() => {
+            setPrintMode(false);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('print');
+            url.searchParams.delete('printOption');
+            url.searchParams.delete('reportKey');
+            window.history.replaceState(null, '', url.toString());
+        }, 120);
+    };
     const NoteBox = ({ matchedNotes, type, vocab }) => {
         const count = matchedNotes.length;
         const hasRelated = count > 0;
@@ -2026,8 +2042,8 @@ const App = () => {
                 </div>
                 
                 <div className="no-print mt-10">
-                    <button onClick={() => window.close()} className="text-gray-400 hover:text-gray-600 text-sm font-bold underline">
-                        창 닫기
+                    <button onClick={closeReportViewer} className="text-gray-400 hover:text-gray-600 text-sm font-bold underline">
+                        창 닫기 / 대시보드로 돌아가기
                     </button>
                 </div>
             </div>
@@ -3755,6 +3771,11 @@ root.render(<App/>);
 </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
