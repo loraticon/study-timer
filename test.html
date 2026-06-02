@@ -356,6 +356,21 @@ const App = () => {
                 if (category === 'none' && isDueByProp) category = 'pending';
                 if (passCount >= 4) category = 'none';
 
+		if (category === 'pending') {
+		    console.log('[밀린 복습 분류]', {
+		        summary,
+		        passCount,
+ 		       rawDateIso,
+		        rawYMD,
+ 		       nextDateIso,
+ 		       nextYMD,
+ 		       todayYMD,
+ 		       dueProp,
+ 		       isDueByProp,
+ 		       category
+ 		   });
+		}
+
                 const summary = extractText(props['문제 요약']) || '요약 없음';
                 const content = extractText(props['문제 내용']) || '내용 없음';
                 
