@@ -317,8 +317,11 @@ const fmtMinToHour = (min) => {
 const normalizeDate = (d) => { const nd = new Date(d); nd.setHours(0,0,0,0); return nd.getTime(); };
 const getDayKOR = (idx) => ['일', '월', '화', '수', '목', '금', '토'][idx];
 const formatKORDate = (d) => `${d.getMonth()+1}월 ${d.getDate()}일 ${getDayKOR(d.getDay())}`;
-const formatKORDateShort = (dNum) => {
-    const d = new Date(parseInt(dNum));
+const formatKORDateShort = (dateValue) => {
+    if (!dateValue) return '';
+    const raw = String(dateValue).trim();
+    const d = /^\d+$/.test(raw) ? new Date(Number(raw)) : new Date(raw);
+    if (isNaN(d.getTime())) return '';
     const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
     return `${d.getMonth()+1}월 ${d.getDate()}일 (${day})`;
 };
