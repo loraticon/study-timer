@@ -453,6 +453,10 @@ const loadConfig = () => {
 };
 
 const App = () => {
+    const initialUrlParams = new URLSearchParams(window.location.search);
+    const initialPrintMode = initialUrlParams.get('print') === '1';
+    const initialPrintOption = initialUrlParams.get('printOption') === 'summary' ? 'summary' : 'full';
+
     /* ── 다크모드 상태 관리 ── */
     const [isDark, setIsDark] = useState(() => {
         try {
@@ -477,9 +481,9 @@ const App = () => {
     const [setupLoading, setSetupLoading] = useState(false);
 
     const [activeTab, setActiveTab] = useState('home');
-    const [printMode, setPrintMode] = useState(false);
+    const [printMode, setPrintMode] = useState(initialPrintMode);
     const [showPrintOptions, setShowPrintOptions] = useState(false);
-    const [printOption, setPrintOption] = useState('full');
+    const [printOption, setPrintOption] = useState(initialPrintOption);
     const [barChartMode, setBarChartMode] = useState('total');
 
     const todayNum = normalizeDate(new Date());
@@ -531,6 +535,28 @@ const App = () => {
         }, 3000);
     }, []);
 
+    useEffect(() => {
+        if (!initialPrintMode) return;
+        const reportKey = initialUrlParams.get('reportKey');
+        if (!reportKey) { setLoading(false); return; }
+        try {
+            const raw = localStorage.getItem(reportKey);
+            if (!raw) { setLoading(false); return; }
+            const snapshot = JSON.parse(raw);
+            setSubjects(snapshot.subjects || []);
+            setRecords(snapshot.records || []);
+            setTodos(snapshot.todos || []);
+            setStatsData(snapshot.statsData || null);
+            setNotes(snapshot.notes || []);
+            setWrongs(snapshot.wrongs || []);
+            setVocabData(snapshot.vocabData || { todayAdded: [], recentWords: [], reviewList: [], masters: [], subjectCounts: {} });
+            setLoading(false);
+            setTimeout(() => { try { localStorage.removeItem(reportKey); } catch {} }, 30000);
+        } catch (e) {
+            console.warn('리포트 스냅샷 로드 실패:', e);
+            setLoading(false);
+        }
+    }, []);
     const dashboardPageIdCacheRef = useRef(null);
 
     const getDashboardPageId = useCallback(async (currentConfig = config) => {
@@ -994,7 +1020,7 @@ const App = () => {
         } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [config]);
 
-    useEffect(() => { if(!showSetup) fetchData(); }, [fetchData, showSetup]);
+    useEffect(() => { if(!showSetup && !printMode) fetchData(); }, [fetchData, showSetup, printMode]);
 
     /* ── 단어 뜻/설명 모달 호출 및 데이터 Fetch (Caching) ── */
     const openVocabDetail = async (word) => {
@@ -1584,6 +1610,80 @@ const App = () => {
     const filteredNotes = useMemo(() => applyNav(baseRecordsMap.notes, n=>n.createdTime), [baseRecordsMap.notes, logNavPath]);
     const filteredWrongs = useMemo(() => applyNav(baseRecordsMap.wrongs, w=>w.createdTime), [baseRecordsMap.wrongs, logNavPath]);
 
+    const reportMetrics = useMemo(() => {
+        const weekAgo = todayNum - 6 * 86400000;
+        const prevWeekStart = todayNum - 13 * 86400000;
+        const prevWeekEnd = todayNum - 7 * 86400000;
+        const weekRecords = records.filter(r => r.date >= weekAgo && r.date <= todayNum);
+        const prevWeekRecords = records.filter(r => r.date >= prevWeekStart && r.date <= prevWeekEnd);
+        const sumMin = list => list.reduce((a, r) => a + (r.minutes || 0), 0);
+        const weekTotal = sumMin(weekRecords);
+        const prevWeekTotal = sumMin(prevWeekRecords);
+        const diffMin = weekTotal - prevWeekTotal;
+        const diffPct = prevWeekTotal > 0 ? Math.round((diffMin / prevWeekTotal) * 100) : null;
+        const activeDays = new Set(weekRecords.filter(r => r.minutes > 0).map(r => r.date)).size;
+        const avgSession = records.length ? Math.round(sumMin(records) / records.length) : 0;
+        const doneTodos = todos.filter(t => t.done).length;
+        const todoRate = todos.length ? Math.round((doneTodos / todos.length) * 100) : 0;
+        const subjectMap = {};
+        records.forEach(r => {
+            if (!subjectMap[r.subject]) subjectMap[r.subject] = { name: r.subject, minutes: 0, sessions: 0, days: new Set(), notes: 0, wrongs: 0 };
+            subjectMap[r.subject].minutes += r.minutes || 0;
+            subjectMap[r.subject].sessions += 1;
+            subjectMap[r.subject].days.add(r.date);
+        });
+        notes.forEach(n => (n.subjects || []).forEach(s => { if (subjectMap[s.name]) subjectMap[s.name].notes += 1; }));
+        wrongs.forEach(w => (w.subjects || []).forEach(s => { if (subjectMap[s.name]) subjectMap[s.name].wrongs += 1; }));
+        const subjectDetails = Object.values(subjectMap).map(s => ({ ...s, days: s.days.size, avg: s.sessions ? Math.round(s.minutes / s.sessions) : 0 })).sort((a,b)=>b.minutes-a.minutes);
+        const thisWeekNotes = notes.filter(n => normalizeDate(new Date(n.createdTime)) >= weekAgo).length;
+        const thisWeekWrongs = wrongs.filter(w => normalizeDate(new Date(w.createdTime)) >= weekAgo).length;
+        const topSubject = subjectDetails[0]?.name || '-';
+        const topPercent = donutChartData.list[0] ? Math.round(donutChartData.list[0].percent) : 0;
+        const weekChangeText = diffPct === null ? '지난주 비교 데이터가 아직 부족합니다.' : `지난주보다 ${diffMin >= 0 ? fmtMinToHour(Math.abs(diffMin)) + ' 늘었습니다' : fmtMinToHour(Math.abs(diffMin)) + ' 줄었습니다'} (${diffMin >= 0 ? '+' : ''}${diffPct}%).`;
+        const insight = records.length
+            ? `이번 주는 ${topSubject} 비중이 가장 높고, ${recordStats.topTime} 시간대 집중 기록이 두드러집니다. ${weekChangeText}`
+            : '아직 리포트를 만들 학습 기록이 없습니다. 기록이 쌓이면 과목, 시간대, 복습 흐름을 자동으로 요약합니다.';
+        return {
+            weekTotal, prevWeekTotal, diffMin, diffPct, activeDays, avgSession, doneTodos, todoRate,
+            subjectDetails, thisWeekNotes, thisWeekWrongs, topSubject, topPercent, insight,
+            vocab: {
+                todayAdded: vocabData.todayAdded?.length || 0,
+                review: vocabData.reviewList?.length || 0,
+                masters: vocabData.masters?.length || 0,
+                highWrong: [...(vocabData.reviewList || [])].sort((a,b)=>(b.wrongCount || 0)-(a.wrongCount || 0)).slice(0, 5)
+            }
+        };
+    }, [records, notes, wrongs, todos, vocabData, todayNum, donutChartData, recordStats]);
+
+    const openReportViewer = () => {
+        const reportKey = `cozy_report_${Date.now()}`;
+        const snapshot = { subjects, records, todos, statsData, notes, wrongs, vocabData };
+        let snapshotSaved = false;
+        try {
+            localStorage.setItem(reportKey, JSON.stringify(snapshot));
+            snapshotSaved = true;
+        } catch (e) {
+            console.warn('리포트 스냅샷 저장 실패:', e);
+        }
+
+        setShowPrintOptions(false);
+        if (!snapshotSaved) {
+            showToast('브라우저 임시 저장소가 막혀 현재 탭에서 리포트를 엽니다.', 'error');
+            setPrintMode(true);
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('print', '1');
+        url.searchParams.set('printOption', printOption);
+        url.searchParams.set('reportKey', reportKey);
+        const reportWindow = window.open(url.toString(), '_blank');
+        if (!reportWindow) {
+            showToast('새 탭이 차단되어 현재 탭에서 리포트를 엽니다.', 'error');
+            setPrintMode(true);
+        }
+    };
+
     const NoteBox = ({ matchedNotes, type, vocab }) => {
         const count = matchedNotes.length;
         const hasRelated = count > 0;
@@ -1797,6 +1897,26 @@ const App = () => {
                                 <div><div className="text-[11px] font-bold text-gray-400">집중 모드 선호도</div><div className="text-lg font-bold text-gray-800">{recordStats.preferredMode} <span className="text-[#E56B6F] text-sm">{recordStats.preferredPct}%</span></div></div>
                             </div>
                         </div>
+
+                        <div className="mt-6 bg-[#FDFBF7] rounded-3xl p-6 border border-[#EBE8DE]">
+                            <p className="text-[11px] font-extrabold tracking-[0.12em] text-gray-400 uppercase mb-2">자동 진단</p>
+                            <p className="text-[15px] leading-relaxed font-bold text-gray-800">{reportMetrics.insight}</p>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-3 mt-4">
+                            {[
+                                { label: '이번 주 공부', value: fmtMinToHour(reportMetrics.weekTotal), hint: reportMetrics.diffPct === null ? '비교 대기' : `${reportMetrics.diffMin >= 0 ? '+' : '-'}${fmtMinToHour(Math.abs(reportMetrics.diffMin))}` },
+                                { label: '학습한 날', value: `${reportMetrics.activeDays}일`, hint: '최근 7일 기준' },
+                                { label: '평균 세션', value: fmtMinToHour(reportMetrics.avgSession), hint: `${records.length}개 기록` },
+                                { label: '노트/오답', value: `${reportMetrics.thisWeekNotes}/${reportMetrics.thisWeekWrongs}`, hint: '이번 주 생성' },
+                            ].map(item => (
+                                <div key={item.label} className="bg-white rounded-2xl p-4 border border-gray-200">
+                                    <div className="text-[11px] font-bold text-gray-400 mb-1">{item.label}</div>
+                                    <div className="text-xl font-extrabold text-gray-800">{item.value}</div>
+                                    <div className="text-[10px] font-bold text-gray-400 mt-1">{item.hint}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {printOption === 'full' && (
@@ -1856,13 +1976,58 @@ const App = () => {
                                     })()}
                                 </div>
                             </div>
+                            <div className="bg-white rounded-3xl p-6 border border-gray-200 page-break-avoid">
+                                <h3 className="text-[13px] font-bold text-gray-800 mb-4">과목별 상세 리포트</h3>
+                                <div className="flex flex-col gap-2">
+                                    {reportMetrics.subjectDetails.slice(0, 8).map((s, i) => (
+                                        <div key={s.name} className="grid grid-cols-[1.2fr_0.8fr_0.6fr_0.6fr_0.6fr] gap-3 items-center rounded-xl bg-[#FDFBF7] px-4 py-3 border border-[#F4F0EA]">
+                                            <div className="flex items-center gap-2 min-w-0"><span className="w-5 h-5 rounded-full text-[10px] font-bold text-white bg-[#A67B5B] flex items-center justify-center">{i + 1}</span><span className="font-bold text-gray-800 truncate">{s.name}</span></div>
+                                            <div className="text-sm font-extrabold text-[#A67B5B]">{fmtMinToHour(s.minutes)}</div>
+                                            <div className="text-[11px] font-bold text-gray-500">{s.days}일</div>
+                                            <div className="text-[11px] font-bold text-gray-500">노트 {s.notes}</div>
+                                            <div className="text-[11px] font-bold text-gray-500">오답 {s.wrongs}</div>
+                                        </div>
+                                    ))}
+                                    {reportMetrics.subjectDetails.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">과목별 기록이 없습니다.</p>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6 page-break-avoid">
+                                <div className="bg-white rounded-3xl p-6 border border-gray-200">
+                                    <h3 className="text-[13px] font-bold text-gray-800 mb-4">월별 학습 추세</h3>
+                                    <div className="flex items-end gap-2 h-[120px]">
+                                        {monthlyTrend.months.map(m => (
+                                            <div key={m.label} className="flex-1 flex flex-col items-center justify-end h-full gap-2">
+                                                <div className={`w-full rounded-t-md ${m.isCurrent ? 'bg-[#A67B5B]' : 'bg-[#D1CBBF]'}`} style={{height: `${m.total > 0 ? Math.max((m.total / monthlyTrend.max) * 100, 6) : 2}%`, opacity: m.isFuture ? 0.2 : 1}}></div>
+                                                <span className="text-[9px] font-bold text-gray-400">{m.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="bg-white rounded-3xl p-6 border border-gray-200">
+                                    <h3 className="text-[13px] font-bold text-gray-800 mb-4">단어장 복습 흐름</h3>
+                                    <div className="grid grid-cols-3 gap-2 mb-4">
+                                        <div className="rounded-xl bg-[#FDFBF7] p-3"><div className="text-[10px] font-bold text-gray-400">오늘 추가</div><div className="text-xl font-extrabold text-gray-800">{reportMetrics.vocab.todayAdded}</div></div>
+                                        <div className="rounded-xl bg-[#FFF5F2] p-3"><div className="text-[10px] font-bold text-gray-400">복습 대상</div><div className="text-xl font-extrabold text-gray-800">{reportMetrics.vocab.review}</div></div>
+                                        <div className="rounded-xl bg-[#F3F8F5] p-3"><div className="text-[10px] font-bold text-gray-400">마스터</div><div className="text-xl font-extrabold text-gray-800">{reportMetrics.vocab.masters}</div></div>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {reportMetrics.vocab.highWrong.map(w => (
+                                            <div key={w.id || w.title} className="flex items-center justify-between text-[12px] font-bold text-gray-600 border-b border-gray-100 pb-1.5">
+                                                <span className="truncate pr-2">{w.title}</span><span className="text-[#E07A5F]">오답 {w.wrongCount || 0}</span>
+                                            </div>
+                                        ))}
+                                        {reportMetrics.vocab.highWrong.length === 0 && <p className="text-[12px] text-gray-400">오답 누적 단어가 없습니다.</p>}
+                                    </div>
+                                </div>
+                            </div>
                         </>
                     )}
                 </div>
                 
                 <div className="no-print mt-10">
-                    <button onClick={() => setPrintMode(false)} className="text-gray-400 hover:text-gray-600 text-sm font-bold underline">
-                        대시보드로 돌아가기
+                    <button onClick={() => window.close()} className="text-gray-400 hover:text-gray-600 text-sm font-bold underline">
+                        창 닫기
                     </button>
                 </div>
             </div>
@@ -3431,14 +3596,14 @@ const App = () => {
                     <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
                         <button onClick={() => setShowPrintOptions(false)} className="absolute top-4 right-4 p-1 text-gray-400 hover:bg-gray-100 rounded-full transition"><XIcon/></button>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">리포트 내보내기</h3>
-                        <p className="text-sm text-gray-500 mb-6">PDF로 저장할 리포트의 유형을 선택하세요.</p>
+                        <p className="text-sm text-gray-500 mb-6">새 탭에서 PDF로 저장할 리포트의 유형을 선택하세요. 추가 Notion 호출 없이 현재 데이터를 사용합니다.</p>
                         
                         <div className="flex flex-col gap-3">
                             <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${printOption === 'full' ? 'border-[#849F71] bg-[#F3F8F5]' : 'border-gray-100 hover:border-gray-200'}`}>
                                 <input type="radio" name="printOption" value="full" checked={printOption === 'full'} onChange={() => setPrintOption('full')} className="mt-1" />
                                 <div>
                                     <div className={`font-bold ${printOption === 'full' ? 'text-[#6c855a]' : 'text-gray-700'}`}>전체 리포트</div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">누적 현황, 차트, 과목 밸런스, 잔디 그래프 전체를 포함합니다.</div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">요약, 비교 진단, 차트, 과목 상세, 단어장 흐름까지 포함합니다.</div>
                                 </div>
                             </label>
                             
@@ -3446,16 +3611,16 @@ const App = () => {
                                 <input type="radio" name="printOption" value="summary" checked={printOption === 'summary'} onChange={() => setPrintOption('summary')} className="mt-1" />
                                 <div>
                                     <div className={`font-bold ${printOption === 'summary' ? 'text-[#6c855a]' : 'text-gray-700'}`}>핵심 요약 리포트</div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">핵심 누적 데이터와 주요 인사이트만 간략하게 포함합니다.</div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">주간 변화와 핵심 진단만 빠르게 확인합니다.</div>
                                 </div>
                             </label>
                         </div>
 
                         <button 
-                            onClick={() => { setShowPrintOptions(false); setPrintMode(true); }}
+                            onClick={openReportViewer}
                             className="w-full bg-[#849F71] text-white font-bold py-3.5 rounded-xl hover:bg-[#728d5f] transition shadow-sm mt-6"
                         >
-                            출력 뷰어 열기
+                            새 탭에서 리포트 열기
                         </button>
                     </div>
                 </div>
@@ -3590,3 +3755,6 @@ root.render(<App/>);
 </script>
 </body>
 </html>
+
+
+
