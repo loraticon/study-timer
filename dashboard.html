@@ -843,6 +843,23 @@ const App = () => {
                     return null;
                 };
 
+                const extractDateTime = (prop) => {
+                    if (!prop) return null;
+                    if (prop.date?.start) return prop.date.start;
+                    if (prop.formula?.date?.start) return prop.formula.date.start;
+                    if (prop.rollup?.date?.start) return prop.rollup.date.start;
+                    return null;
+                };
+
+                const getMasteredTime = (page) => {
+                    const masterDateKeys = ['마스터 날짜', '마스터일', '마스터한 날짜', '통과일', '완료일'];
+                    for (const key of masterDateKeys) {
+                        const value = extractDateTime(page.properties[key]);
+                        if (value) return value;
+                    }
+                    return page.last_edited_time || page.created_time;
+                };
+
                 const testItemMap = {};
                 const vocabIdToTestIdMap = {}; // ID 기반 매칭을 위한 맵
                 const todayAdded = [], recentWords = [], reviewList = [];
@@ -867,7 +884,6 @@ const App = () => {
                     if (isRetry) status = 'failed';
 
                     const vocabSubjects = extractSubjectInfoList(props, subjectMap).filter(s => s.name !== '기타');
-                    vocabSubjects.forEach(s => bumpSubjectCount(subjectCounts, s));
 
                     const testRelatedIds = new Set();
                     Object.values(props).forEach(pr => {
@@ -889,6 +905,7 @@ const App = () => {
 
                     if (passCount < 4) {
                         reviewList.push(item);
+                        vocabSubjects.forEach(s => bumpSubjectCount(subjectCounts, s));
                     }
                 });
 
@@ -957,7 +974,7 @@ const App = () => {
                             title,
                             passCount,
                             subjects: extractSubjectInfoList(props, subjectMap).filter(s => s.name !== '기타'),
-                            createdTime: page.created_time,
+                            createdTime: getMasteredTime(page),
                             testPageId: page.id,
                             relatedIds: new Set()
                         };
