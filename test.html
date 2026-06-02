@@ -354,6 +354,7 @@ const App = () => {
                 const dueProp = props['오늘 복습 필요'];
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
                 if (category === 'none' && isDueByProp) category = 'pending';
+                if (passCount >= 4) category = 'none';
 
                 const summary = extractText(props['문제 요약']) || '요약 없음';
                 const content = extractText(props['문제 내용']) || '내용 없음';
@@ -552,6 +553,9 @@ const App = () => {
             if (isPass) {
                 propertiesToUpdate['날짜'] = { date: { start: getLocalYMD(new Date()) } };
                 propertiesToUpdate['다시 학습'] = { checkbox: false }; 
+                if (currentQ.passCount < 4 && newPassCount >= 4) {
+                    propertiesToUpdate['마스터 날짜'] = { date: { start: getLocalYMD(new Date()) } };
+                }
             } else {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
