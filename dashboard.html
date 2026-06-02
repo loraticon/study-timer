@@ -385,6 +385,26 @@ const extractSubjectInfo = (props, subjectMap) => {
     return extractSubjectInfoList(props, subjectMap)[0] || { name: '기타', parentName: null };
 };
 
+const getSubjectName = (subject) => typeof subject === 'string' ? subject : subject?.name;
+const getSubjectParentName = (subject) => typeof subject === 'string' ? null : subject?.parentName;
+const formatSubjectName = (subject) => {
+    const name = getSubjectName(subject);
+    if (!name) return '';
+    const parentName = getSubjectParentName(subject);
+    return parentName ? `${parentName} ▶ ${name}` : name;
+};
+const subjectMatchesFilter = (subject, filterName) => {
+    if (!subject || !filterName) return false;
+    return getSubjectName(subject) === filterName || getSubjectParentName(subject) === filterName;
+};
+const bumpSubjectCount = (counts, subject) => {
+    const name = getSubjectName(subject);
+    if (!name || name === '기타') return;
+    counts[name] = (counts[name] || 0) + 1;
+    const parentName = getSubjectParentName(subject);
+    if (parentName) counts[parentName] = (counts[parentName] || 0) + 1;
+};
+
 /* ── 설정 로드 ── */
 const LS_CONFIG = 'cozy_dash_config';
 
@@ -851,8 +871,8 @@ const App = () => {
                     if (passCount > 0) status = 'passed';
                     if (isRetry) status = 'failed';
 
-                    const subjNames = (props['과목']?.relation || []).map(r => subjectMap[r.id]?.name).filter(Boolean);
-                    if (subjNames.length > 0) subjNames.forEach(s => { subjectCounts[s] = (subjectCounts[s]||0)+1; });
+                    const vocabSubjects = extractSubjectInfoList(props, subjectMap).filter(s => s.name !== '기타');
+                    vocabSubjects.forEach(s => bumpSubjectCount(subjectCounts, s));
 
                     const testRelatedIds = new Set();
                     Object.values(props).forEach(pr => {
@@ -864,7 +884,7 @@ const App = () => {
                         }
                     });
 
-                    const item = { id: page.id, title: answer, passCount, wrongCount, subjects: subjNames, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
+                    const item = { id: page.id, title: answer, passCount, wrongCount, subjects: vocabSubjects, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
 
                     if (isAddedToday) {
                         todayAdded.push(item);
@@ -932,12 +952,12 @@ const App = () => {
                     masters = vocabJson.results.map(page => {
                         const title = extractText(Object.values(page.properties).find(p => p.type === 'title')) || '제목 없음';
                         const passCount  = page.properties['누적 통과 횟수']?.rollup?.number ?? 4;
-                        const subjNames  = (page.properties['과목']?.relation || []).map(r => subjectMap[r.id]?.name).filter(Boolean);
+                        const vocabSubjects = extractSubjectInfoList(page.properties, subjectMap).filter(s => s.name !== '기타');
                         
                         // 문자열 대신 ID를 우선적으로 사용하여 테스트 페이지 찾기
                         const mappedTestPageId = vocabIdToTestIdMap[page.id] || testItemMap[title];
                         
-                        return { id: page.id, title, passCount, subjects: subjNames, createdTime: page.created_time, testPageId: mappedTestPageId };
+                        return { id: page.id, title, passCount, subjects: vocabSubjects, createdTime: page.created_time, testPageId: mappedTestPageId };
                     });
                 }
 
@@ -1231,7 +1251,8 @@ const App = () => {
             };
             
             if (subjectKey && vocab.subjects && vocab.subjects.length > 0) {
-                const subj = subjects.find(s => s.name === vocab.subjects[0]);
+                const subjName = getSubjectName(vocab.subjects[0]);
+                const subj = subjects.find(s => s.name === subjName);
                 if (subj) properties[subjectKey] = { relation: [{ id: subj.id }] };
             }
             
@@ -2160,7 +2181,7 @@ const App = () => {
                 {activeTab === 'vocab' && config.vocabDbId && config.testDbId && (
                     (() => {
                         const allSubjects = ['전체', ...Object.keys(vocabData.subjectCounts)];
-                        const filterV = (list) => vocabSubjectFilter === '전체' ? list : list.filter(v => v.subjects.includes(vocabSubjectFilter));
+                        const filterV = (list) => vocabSubjectFilter === '전체' ? list : list.filter(v => v.subjects.some(s => subjectMatchesFilter(s, vocabSubjectFilter)));
                         let sortedReviewList = [...filterV(vocabData.reviewList)];
                         if (vocabSort === 'wrong_desc') sortedReviewList = sortedReviewList.filter(v => (v.wrongCount || 0) > 0);
                         if (vocabSort === 'created_desc') sortedReviewList.sort((a,b) => new Date(b.createdTime) - new Date(a.createdTime));
@@ -2211,7 +2232,7 @@ const App = () => {
                                                 <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1">
                                                     {vocabData.recentWords.map(v => (
                                                         <div key={v.id} onClick={() => openVocabDetail(v)} className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-[#FDFBF7] dark:hover:bg-[#2A2A2A] cursor-pointer group transition-all" title="뜻/설명 보기">
-                                                            {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 border border-gray-200 dark:border-[#2F2F2F] px-1.5 py-0.5 rounded whitespace-nowrap group-hover:border-[#D1CBBF] dark:group-hover:border-[#3D3D3D] group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors">{v.subjects[0]}</span>}
+                                                            {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 border border-gray-200 dark:border-[#2F2F2F] px-1.5 py-0.5 rounded whitespace-nowrap group-hover:border-[#D1CBBF] dark:group-hover:border-[#3D3D3D] group-hover:text-gray-500 dark:group-hover:text-gray-300 transition-colors">{formatSubjectName(v.subjects[0])}</span>}
                                                             <span className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate group-hover:text-[#A67B5B] dark:group-hover:text-[#D4A373] transition-colors">{v.title}</span>
                                                         </div>
                                                     ))}
@@ -2261,7 +2282,7 @@ const App = () => {
                                                             <div className="flex items-start justify-between mb-3">
                                                                 <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openVocabDetail(v)} title="뜻/설명 보기">
                                                                     <span className="text-[15px] font-bold text-gray-800 leading-tight hover:text-[#A67B5B] transition-colors">{v.title}</span>
-                                                                    {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 mt-0.5">{v.subjects[0]}</span>}
+                                                                    {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 mt-0.5">{formatSubjectName(v.subjects[0])}</span>}
                                                                 </div>
                                                                 <div className="flex gap-2">
                                                                     <NoteBox matchedNotes={matchedNotes} type="note" vocab={v} />
@@ -3162,7 +3183,7 @@ const App = () => {
                             <div className="px-6 mt-4 mb-2 flex items-center">
                                 <span className="text-[22px] font-bold text-gray-800">{word.title}</span>
                                 {word.subjects && word.subjects.length > 0 && (
-                                    <span className="ml-2 text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md inline-block align-middle">{word.subjects[0]}</span>
+                                    <span className="ml-2 text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md inline-block align-middle">{formatSubjectName(word.subjects[0])}</span>
                                 )}
                             </div>
 
