@@ -776,6 +776,10 @@ function App() {
   const iconBg  = dark ? 'rgba(255,255,255,.08)' : 'rgba(92,58,33,.07)';
   const iconBgHover = dark ? 'rgba(255,255,255,.13)' : 'rgba(92,58,33,.11)';
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
+
   // 잠금 해제 여부
   const isUnlocked = (item) => !item.unlock || !!questDone[item.unlock];
 
@@ -895,33 +899,59 @@ function App() {
   ];
   const urlConnected = !!config?.fromUrl;
   const connected = !!config?.saved || !!config?.recordDbId;
+  const setupUi = {
+    pageBg: dark ? '#191919' : 'transparent',
+    boxBg: dark ? '#252525' : '#fff',
+    boxBorder: dark ? '#2F2F2F' : '#EBE8DE',
+    title: dark ? '#F3F4F6' : '#5C3A21',
+    muted: dark ? '#A3A3A3' : '#B5A898',
+    mutedStrong: dark ? '#D1D5DB' : '#5C3A21',
+    closeBg: dark ? '#333333' : '#F4F0EA',
+    closeHover: dark ? '#3D3D3D' : '#EBE8DE',
+    closeColor: dark ? '#D1D5DB' : '#A67B5B',
+    cardBg: dark ? '#1E1E1E' : '#FDFBF7',
+    cardAltBg: dark ? '#1E1E1E' : '#fff',
+    cardTintBg: dark ? '#24201C' : '#FDF8F1',
+    cardBorder: dark ? '#2F2F2F' : '#F0ECE5',
+    iconBg: dark ? '#252525' : '#fff',
+    pillBg: dark ? 'rgba(255,255,255,.06)' : '#fff',
+    optionBg: dark ? '#333333' : '#F4F0EA',
+    disabledBg: dark ? '#3D3D3D' : '#D1CBBF',
+    disabledColor: dark ? '#8B949E' : '#fff',
+    switchOff: dark ? '#3D3D3D' : '#E7E0D8',
+    errorBg: dark ? 'rgba(224,122,95,.12)' : '#FEF0ED',
+    connectedBg: connected ? (dark ? 'rgba(79,155,99,.12)' : '#F3FAF3') : (dark ? 'rgba(224,122,95,.12)' : '#FEF0ED'),
+    connectedBorder: connected ? (dark ? 'rgba(79,155,99,.28)' : '#D7EAD8') : (dark ? 'rgba(224,122,95,.28)' : '#F5D4CE'),
+    connectedTitle: connected ? (dark ? '#9CC3A8' : '#3E8A53') : (dark ? '#F1A38E' : '#C45F50'),
+    connectedText: connected ? (dark ? '#B8D6C0' : '#5E9E6E') : (dark ? '#F1A38E' : '#D27A6E'),
+  };
 
   if (showSetup) return (
-    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:'transparent'}}>
-      <div style={{width:'100%',maxWidth:'360px',background:'#fff',borderRadius:'2rem',padding:'1.65rem',border:'1px solid #EBE8DE',boxSizing:'border-box'}}>
+    <div style={{width:'100%',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',boxSizing:'border-box',background:setupUi.pageBg}}>
+      <div style={{width:'100%',maxWidth:'360px',background:setupUi.boxBg,borderRadius:'2rem',padding:'1.65rem',border:`1px solid ${setupUi.boxBorder}`,boxSizing:'border-box',boxShadow:dark ? '0 14px 40px rgba(0,0,0,.32)' : '0 4px 24px rgba(92,58,33,.1)'}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',marginBottom:'1.1rem'}}>
           <div>
             <div style={{fontSize:'.62rem',fontWeight:800,letterSpacing:'.16em',color:'#A67B5B',textTransform:'uppercase',marginBottom:'.28rem'}}>Cat Cafe Clock Settings</div>
-            <div style={{fontWeight:800,fontSize:'1.25rem',color:'#5C3A21',display:'flex',alignItems:'center',gap:'.45rem'}}>
+            <div style={{fontWeight:800,fontSize:'1.25rem',color:setupUi.title,display:'flex',alignItems:'center',gap:'.45rem'}}>
               <Icon name="settings" /> 냥이 카페 시계 설정
             </div>
-            <div style={{fontSize:'.72rem',color:'#B5A898',marginTop:'.3rem',lineHeight:1.5}}>
+            <div style={{fontSize:'.72rem',color:setupUi.muted,marginTop:'.3rem',lineHeight:1.5}}>
               이 위젯은 URL 파라미터로 Notion DB 설정값을 불러옵니다.
             </div>
           </div>
-          <button onClick={()=>setShowSetup(false)} title="닫기" aria-label="닫기" style={{width:'2rem',height:'2rem',borderRadius:'9999px',border:'none',background:'#F4F0EA',color:'#A67B5B',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontWeight:800,flexShrink:0}}>×</button>
+          <button onClick={()=>setShowSetup(false)} title="닫기" aria-label="닫기" style={{width:'2rem',height:'2rem',borderRadius:'9999px',border:'none',background:setupUi.closeBg,color:setupUi.closeColor,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontWeight:800,flexShrink:0}}>×</button>
         </div>
 
-        <div style={{border:`1px solid ${connected ? '#D7EAD8' : '#F5D4CE'}`,background:connected ? '#F3FAF3' : '#FEF0ED',borderRadius:'1.1rem',padding:'.9rem',marginBottom:'.85rem'}}>
+        <div style={{border:`1px solid ${setupUi.connectedBorder}`,background:setupUi.connectedBg,borderRadius:'1.1rem',padding:'.9rem',marginBottom:'.85rem'}}>
           <div style={{display:'flex',alignItems:'center',gap:'.7rem'}}>
-            <div style={{width:'2.2rem',height:'2.2rem',borderRadius:'9999px',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',color:connected ? '#4F9B63' : '#E07A5F',fontWeight:900,boxShadow:'0 1px 4px rgba(0,0,0,.03)'}}>
+            <div style={{width:'2.2rem',height:'2.2rem',borderRadius:'9999px',background:setupUi.iconBg,display:'flex',alignItems:'center',justifyContent:'center',color:connected ? '#4F9B63' : '#E07A5F',fontWeight:900,boxShadow:dark ? 'none' : '0 1px 4px rgba(0,0,0,.03)'}}>
               {connected ? '✓' : '!'}
             </div>
             <div>
-              <div style={{fontSize:'.82rem',fontWeight:800,color:connected ? '#3E8A53' : '#C45F50'}}>
+              <div style={{fontSize:'.82rem',fontWeight:800,color:setupUi.connectedTitle}}>
                 {urlConnected ? 'URL로 연결됨' : connected ? '저장된 설정으로 연결됨' : 'URL 파라미터가 필요합니다'}
               </div>
-              <div style={{fontSize:'.68rem',color:connected ? '#5E9E6E' : '#D27A6E',lineHeight:1.45,marginTop:'.1rem'}}>
+              <div style={{fontSize:'.68rem',color:setupUi.connectedText,lineHeight:1.45,marginTop:'.1rem'}}>
                 {connected ? '설정값은 이 화면에서 다시 입력하지 않고, 임베드 URL에서 자동으로 읽어옵니다.' : '위젯통합설정 페이지에서 생성한 냥이카페시계 링크를 노션 임베드에 붙여넣어 주세요.'}
               </div>
             </div>
@@ -929,65 +959,65 @@ function App() {
         </div>
 
         <div style={{marginBottom:'.95rem'}}>
-          <div style={{fontSize:'.78rem',fontWeight:800,color:'#5C3A21',marginBottom:'.55rem',display:'flex',alignItems:'center',gap:'.35rem'}}>연결된 DB 목록</div>
+          <div style={{fontSize:'.78rem',fontWeight:800,color:setupUi.mutedStrong,marginBottom:'.55rem',display:'flex',alignItems:'center',gap:'.35rem'}}>연결된 DB 목록</div>
           <div style={{display:'grid',gap:'.5rem'}}>
             {connectionRows.map(row => (
-              <div key={row.label} style={{display:'flex',alignItems:'center',gap:'.7rem',border:'1px solid #F0ECE5',background:'#FDFBF7',borderRadius:'1rem',padding:'.72rem'}}>
-                <div style={{width:'2rem',height:'2rem',borderRadius:'.75rem',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0}}>{row.icon}</div>
+              <div key={row.label} style={{display:'flex',alignItems:'center',gap:'.7rem',border:`1px solid ${setupUi.cardBorder}`,background:setupUi.cardBg,borderRadius:'1rem',padding:'.72rem'}}>
+                <div style={{width:'2rem',height:'2rem',borderRadius:'.75rem',background:setupUi.iconBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0}}>{row.icon}</div>
                 <div style={{minWidth:0,flex:1}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.4rem'}}>
-                    <div style={{fontSize:'.75rem',fontWeight:800,color:'#5C3A21',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.label}</div>
-                    <span style={{fontSize:'.58rem',fontWeight:800,borderRadius:'9999px',padding:'.14rem .45rem',border:`1px solid ${row.connected ? '#D7EAD8' : '#E7E0D8'}`,color:row.connected ? '#4F9B63' : '#B5A898',background:'#fff',whiteSpace:'nowrap'}}>
+                    <div style={{fontSize:'.75rem',fontWeight:800,color:setupUi.title,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.label}</div>
+                    <span style={{fontSize:'.58rem',fontWeight:800,borderRadius:'9999px',padding:'.14rem .45rem',border:`1px solid ${row.connected ? setupUi.connectedBorder : setupUi.cardBorder}`,color:row.connected ? setupUi.connectedTitle : setupUi.muted,background:setupUi.pillBg,whiteSpace:'nowrap'}}>
                       {row.connected ? '연결됨' : '대기'}
                     </span>
                   </div>
-                  <div style={{fontSize:'.64rem',color:'#B5A898',marginTop:'.12rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.desc}</div>
+                  <div style={{fontSize:'.64rem',color:setupUi.muted,marginTop:'.12rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.desc}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{border:'1px solid #F0ECE5',background:'#fff',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
-          <div style={{fontSize:'.76rem',fontWeight:800,color:'#5C3A21',marginBottom:'.25rem'}}>공부 기록 불러오기 기간</div>
-          <div style={{fontSize:'.64rem',color:'#B5A898',lineHeight:1.45,marginBottom:'.55rem'}}>
+        <div style={{border:`1px solid ${setupUi.cardBorder}`,background:setupUi.cardAltBg,borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{fontSize:'.76rem',fontWeight:800,color:setupUi.title,marginBottom:'.25rem'}}>공부 기록 불러오기 기간</div>
+          <div style={{fontSize:'.64rem',color:setupUi.muted,lineHeight:1.45,marginBottom:'.55rem'}}>
             기록이 많아질 때를 대비해 월별로 나누어 불러옵니다. 기간이 짧을수록 로딩이 빨라집니다.
           </div>
           <div style={{display:'flex',gap:'.32rem',flexWrap:'wrap'}}>
             {RECORD_MONTH_OPTIONS.map(opt => (
-              <button key={opt.value} onClick={()=>setRecordMonths(opt.value)} style={{border:'none',borderRadius:'9999px',padding:'.32rem .62rem',fontSize:'.62rem',fontWeight:800,fontFamily:'inherit',cursor:'pointer',background:recordMonths===opt.value ? '#A67B5B' : '#F4F0EA',color:recordMonths===opt.value ? '#fff' : '#8B664B'}}>
+              <button key={opt.value} onClick={()=>setRecordMonths(opt.value)} style={{border:'none',borderRadius:'9999px',padding:'.32rem .62rem',fontSize:'.62rem',fontWeight:800,fontFamily:'inherit',cursor:'pointer',background:recordMonths===opt.value ? '#A67B5B' : setupUi.optionBg,color:recordMonths===opt.value ? '#fff' : (dark ? '#D4A373' : '#8B664B')}}>
                 {opt.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div style={{border:'1px solid #F0ECE5',background:'#fff',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+        <div style={{border:`1px solid ${setupUi.cardBorder}`,background:setupUi.cardAltBg,borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.8rem'}}>
             <div>
-              <div style={{fontSize:'.76rem',fontWeight:800,color:'#5C3A21',marginBottom:'.18rem'}}>위젯 테두리</div>
-              <div style={{fontSize:'.62rem',color:'#B5A898',lineHeight:1.45}}>노션 페이지 배경과 자연스럽게 섞고 싶을 때 끌 수 있습니다.</div>
+              <div style={{fontSize:'.76rem',fontWeight:800,color:setupUi.title,marginBottom:'.18rem'}}>위젯 테두리</div>
+              <div style={{fontSize:'.62rem',color:setupUi.muted,lineHeight:1.45}}>노션 페이지 배경과 자연스럽게 섞고 싶을 때 끌 수 있습니다.</div>
             </div>
-            <button onClick={()=>setWidgetBorder(v=>!v)} aria-label="위젯 테두리 켜기/끄기" style={{width:'3.05rem',height:'1.55rem',border:'none',borderRadius:'9999px',background:widgetBorder ? '#A67B5B' : '#E7E0D8',padding:'.18rem',cursor:'pointer',transition:'background .2s',flexShrink:0}}>
+            <button onClick={()=>setWidgetBorder(v=>!v)} aria-label="위젯 테두리 켜기/끄기" style={{width:'3.05rem',height:'1.55rem',border:'none',borderRadius:'9999px',background:widgetBorder ? '#A67B5B' : setupUi.switchOff,padding:'.18rem',cursor:'pointer',transition:'background .2s',flexShrink:0}}>
               <span style={{display:'block',width:'1.18rem',height:'1.18rem',borderRadius:'9999px',background:'#fff',transform:widgetBorder ? 'translateX(1.45rem)' : 'translateX(0)',transition:'transform .2s'}} />
             </button>
           </div>
         </div>
 
-        <div style={{border:'1px solid #F0ECE5',background:'#FDF8F1',borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
-          <div style={{fontSize:'.76rem',fontWeight:800,color:'#8B664B',marginBottom:'.22rem'}}>화면 표시 안내</div>
-          <div style={{fontSize:'.66rem',color:'#A67B5B',lineHeight:1.55}}>
+        <div style={{border:`1px solid ${setupUi.cardBorder}`,background:setupUi.cardTintBg,borderRadius:'1rem',padding:'.85rem',marginBottom:'.9rem'}}>
+          <div style={{fontSize:'.76rem',fontWeight:800,color:dark ? '#D4A373' : '#8B664B',marginBottom:'.22rem'}}>화면 표시 안내</div>
+          <div style={{fontSize:'.66rem',color:dark ? '#C0A898' : '#A67B5B',lineHeight:1.55}}>
             데이터가 바로 보이지 않으면 아래 새로고침 버튼으로 Notion 데이터를 다시 불러오세요. 꾸미기, 프리셋, 테두리 표시, 다크모드 상태는 브라우저에 저장됩니다.
           </div>
         </div>
 
-        {error && <div style={{fontSize:'.68rem',color:'#E07A5F',marginBottom:'.75rem',padding:'.55rem .7rem',background:'#FEF0ED',borderRadius:'.75rem',lineHeight:1.45}}>{error}</div>}
+        {error && <div style={{fontSize:'.68rem',color:dark ? '#F1A38E' : '#E07A5F',marginBottom:'.75rem',padding:'.55rem .7rem',background:setupUi.errorBg,borderRadius:'.75rem',lineHeight:1.45}}>{error}</div>}
 
         <div style={{display:'flex',gap:'.5rem'}}>
-          <button onClick={()=>fetchData(config, recordMonths)} disabled={loading || !connected} style={{flex:1,border:'none',borderRadius:'.9rem',background:loading || !connected ? '#D1CBBF' : '#A67B5B',color:'#fff',fontWeight:800,fontSize:'.78rem',padding:'.78rem .9rem',fontFamily:'inherit',cursor:loading || !connected ? 'not-allowed' : 'pointer'}}>
+          <button onClick={()=>fetchData(config, recordMonths)} disabled={loading || !connected} style={{flex:1,border:'none',borderRadius:'.9rem',background:loading || !connected ? setupUi.disabledBg : '#A67B5B',color:loading || !connected ? setupUi.disabledColor : '#fff',fontWeight:800,fontSize:'.78rem',padding:'.78rem .9rem',fontFamily:'inherit',cursor:loading || !connected ? 'not-allowed' : 'pointer'}}>
             {loading ? '불러오는 중...' : '데이터 새로고침'}
           </button>
-          <button onClick={()=>setShowSetup(false)} style={{border:'none',borderRadius:'.9rem',background:'#F4F0EA',color:'#8B664B',fontWeight:800,fontSize:'.78rem',padding:'.78rem .95rem',fontFamily:'inherit',cursor:'pointer'}}>닫기</button>
+          <button onClick={()=>setShowSetup(false)} style={{border:'none',borderRadius:'.9rem',background:setupUi.optionBg,color:dark ? '#D4A373' : '#8B664B',fontWeight:800,fontSize:'.78rem',padding:'.78rem .95rem',fontFamily:'inherit',cursor:'pointer'}}>닫기</button>
         </div>
       </div>
     </div>
