@@ -545,14 +545,23 @@ const App = () => {
     };
 
     const handleEarlyExit = () => {
-        if (currentIndex === 0) {
-            setAppState('ready');
-        } else {
-            const completedQueue = testQueue.slice(0, currentIndex);
-            setTestQueue(completedQueue); 
-            setAppState('result');
-        }
-    };
+   	 if (currentIndex === 0) {
+  	      setAppState('ready');
+  	  } else {
+   	     const completedQueue = testQueue.slice(0, currentIndex);
+
+   	     if (sessionType !== 'random') {
+   	         const completedIds = completedQueue.map(q => q.id);
+   	         setAllQuestions(prev => prev.map(q => {
+   	             if (completedIds.includes(q.id)) return { ...q, category: 'none' };
+    	            return q;
+        	    }));
+        	}
+
+ 	       setTestQueue(completedQueue); 
+  	      setAppState('result');
+ 	   }
+	};
 
     const handleResult = (isPass) => {
         const currentQ = testQueue[currentIndex];
