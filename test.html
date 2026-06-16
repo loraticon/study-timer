@@ -32,7 +32,8 @@
         }
     </script>
     <style>
-        body { margin: 0; padding: 16px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: transparent; }
+        body { margin: 0; padding: 8px 12px; display: flex; justify-content: center; align-items: flex-start; min-height: auto; background-color: transparent; box-sizing: border-box; }
+        #root { align-items: flex-start !important; }
         html.dark, html.dark body, html.dark #root {
             background: #191919 !important;
             background-color: #191919 !important;
@@ -94,11 +95,11 @@
         }
 
         @media (max-width: 640px) {
-            body { padding: 10px; align-items: flex-start; }
+            body { padding: 8px; align-items: flex-start; }
             .test-shell {
                 max-width: 100%;
                 max-height: none;
-                min-height: calc(100vh - 20px);
+                min-height: 0;
                 border-radius: 1.75rem !important;
                 padding: 1.25rem !important;
             }
@@ -106,9 +107,9 @@
         }
 
         @media (max-width: 420px) {
-            body { padding: 8px; }
+            body { padding: 6px; }
             .test-shell {
-                min-height: calc(100vh - 16px);
+                min-height: 0;
                 border-radius: 1.5rem !important;
                 padding: 1rem !important;
             }
@@ -1179,9 +1180,6 @@ const App = () => {
                                     <div className="text-base font-black text-[#E07A5F] dark:text-[#F1A38E]">{displayWrongRate}</div>
                                 </div>
                             </div>
-                            <div className="mt-2 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                통과하면 누적 오답 횟수가 1 줄어듭니다. 다시 학습을 눌러도 오답 횟수는 늘어나지 않아요.
-                            </div>
                         </div>
                     )}
                     {currentQ.relatedNoteIds && currentQ.relatedNoteIds.length > 0 && (
@@ -1395,3 +1393,5 @@ root.render(<App/>);
 </script>
 </body>
 </html>
+
+
