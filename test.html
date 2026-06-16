@@ -599,7 +599,36 @@ const App = () => {
         
         setResults(prev => ({ ...prev, [currentQ.id]: isPass }));
 
-        // 랜덤/전용 연습 테스트에서는 Notion DB 업데이트 생략
+        if (sessionType === 'wrongRate') {
+            const currentWrongCount = currentQ.wrongCount || 0;
+            const newWrongCount = isPass ? Math.max(0, currentWrongCount - 1) : currentWrongCount;
+            const newWrongRate = currentQ.passCount > 0 ? newWrongCount / currentQ.passCount : newWrongCount;
+
+            if (isPass && newWrongCount !== currentWrongCount) {
+                setAllQuestions(prev => prev.map(q => (
+                    q.id === currentQ.id
+                        ? { ...q, wrongCount: newWrongCount, wrongRate: newWrongRate }
+                        : q
+                )));
+                setTestQueue(prev => prev.map(q => (
+                    q.id === currentQ.id
+                        ? { ...q, wrongCount: newWrongCount, wrongRate: newWrongRate }
+                        : q
+                )));
+
+                setSyncingCount(c => c + 1);
+                notionFetch(`/v1/pages/${currentQ.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ properties: { '누적 오답 횟수': { number: newWrongCount } } })
+                }).catch(err => {
+                    console.error("오답률 테스트 업데이트 오류:", err);
+                }).finally(() => {
+                    setSyncingCount(c => Math.max(0, c - 1));
+                });
+            }
+        }
+
+        // 랜덤/마스터 테스트에서는 Notion DB 업데이트 생략
         if (['new', 'today', 'pending'].includes(sessionType)) {
             const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
             let newWrongCount = currentQ.wrongCount || 0;
@@ -1086,6 +1115,14 @@ const App = () => {
         else if (sessionType === 'wrongRate') { sessionLabel = '오답률 높은 문제'; sessionIcon = '❌'; }
         else if (sessionType === 'mastered') { sessionLabel = '마스터 문제'; sessionIcon = '😊'; }
 
+        
+        const wrongRateExitCount = sessionType === 'wrongRate'
+            ? Math.max(0, currentQ.passCount > 0 ? (currentQ.wrongCount || 0) - currentQ.passCount + 1 : (currentQ.wrongCount || 0))
+            : 0;
+        const wrongRateExitAfterPass = Math.max(0, wrongRateExitCount - 1);
+        const displayWrongRate = currentQ.passCount > 0
+            ? ((currentQ.wrongCount || 0) / currentQ.passCount).toFixed(2)
+            : String(currentQ.wrongCount || 0);
         return (
             <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col min-h-[580px] max-h-[90vh] soft-shadow overflow-y-auto relative transition-colors">
                 <div className="pt-8 px-8 pb-4 relative">
@@ -1126,6 +1163,27 @@ const App = () => {
                         {currentQ.content}
                     </p>
 
+                    {sessionType === 'wrongRate' && (
+                        <div className="mt-3 rounded-2xl border border-[#FFE1DC] dark:border-[#4A2A25] bg-[#FFF5F2] dark:bg-[#2A211F] p-4 transition-colors">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-[11px] font-extrabold text-[#E07A5F] dark:text-[#F1A38E]">오답률 회복 목표</div>
+                                    <div className="mt-1 text-sm font-bold text-gray-800 dark:text-gray-100">
+                                        {wrongRateExitCount > 0
+                                            ? `${wrongRateExitCount}번 더 맞히면 오답률 테스트에서 제외됩니다.`
+                                            : '이번 문제는 이미 제외 기준에 도달했어요.'}
+                                    </div>
+                                </div>
+                                <div className="shrink-0 rounded-xl bg-white dark:bg-[#35231F] px-3 py-2 text-right border border-[#FFE1DC] dark:border-[#4A2A25]">
+                                    <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500">현재 오답률</div>
+                                    <div className="text-base font-black text-[#E07A5F] dark:text-[#F1A38E]">{displayWrongRate}</div>
+                                </div>
+                            </div>
+                            <div className="mt-2 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                통과하면 누적 오답 횟수가 1 줄어듭니다. 다시 학습을 눌러도 오답 횟수는 늘어나지 않아요.
+                            </div>
+                        </div>
+                    )}
                     {currentQ.relatedNoteIds && currentQ.relatedNoteIds.length > 0 && (
                         <div className="mt-3 bg-[#F4F0EA] dark:bg-[#2A2A2A] border border-[#EBE8DE] dark:border-[#333] rounded-2xl overflow-hidden transition-colors">
                             <button
@@ -1196,6 +1254,13 @@ const App = () => {
                                     )}
                                 </div>
 
+                                {sessionType === 'wrongRate' && (
+                                    <div className={`mt-3 rounded-2xl px-4 py-3 text-[12px] font-bold border ${isExactMatch ? 'bg-[#F3F8F5] dark:bg-[#1F2A24] border-[#DDEBDD] dark:border-[#2D3C31] text-[#4a7c5e] dark:text-[#A7D7B8]' : 'bg-[#FFF5F2] dark:bg-[#2A211F] border-[#FFE1DC] dark:border-[#4A2A25] text-[#E07A5F] dark:text-[#F1A38E]'}`}>
+                                        {isExactMatch
+                                            ? (wrongRateExitAfterPass > 0 ? `좋아요. 통과하면 제외까지 ${wrongRateExitAfterPass}번 남아요.` : '좋아요. 통과하면 이 문제는 오답률 테스트에서 제외됩니다.')
+                                            : '다시 학습을 눌러도 누적 오답 횟수는 유지됩니다.'}
+                                    </div>
+                                )}
                                 <div className="flex gap-3 mt-6">
                                     <button 
                                         onClick={() => handleResult(false)}
@@ -1224,6 +1289,10 @@ const App = () => {
         const scorePct = testQueue.length > 0 ? Math.round((passCount / testQueue.length) * 100) : 0;
         
         const remainingPending = allQuestions.filter(q => q.category === 'pending' && !testQueue.find(tq => tq.id === q.id));
+        const wrongRateRecoveredCount = sessionType === 'wrongRate'
+            ? testQueue.filter(q => results[q.id] && (q.passCount > 0 ? (q.wrongCount || 0) < q.passCount : (q.wrongCount || 0) < 1)).length
+            : 0;
+        const wrongRateReducedCount = sessionType === 'wrongRate' ? passCount : 0;
 
         return (
             <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col max-h-[90vh] min-h-[580px] soft-shadow overflow-hidden transition-colors">
@@ -1252,7 +1321,15 @@ const App = () => {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 pt-6">
+                    {sessionType === 'wrongRate' && (
+                        <div className="mx-8 mt-3 rounded-2xl border border-[#FFE1DC] dark:border-[#4A2A25] bg-[#FFF5F2] dark:bg-[#2A211F] p-4 text-center">
+                            <div className="text-[11px] font-bold text-[#E07A5F] dark:text-[#F1A38E]">오답률 회복 결과</div>
+                            <div className="mt-1 text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                                누적 오답 횟수 {wrongRateReducedCount}개 감소 · {wrongRateRecoveredCount}개 제외 기준 도달
+                            </div>
+                        </div>
+                    )}
+                                <div className="flex-1 overflow-y-auto p-8 pt-6">
                     <h3 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-3 tracking-wide">문항별 상세 결과</h3>
                     <div className="space-y-2.5">
                         {testQueue.map((q) => {
@@ -1265,6 +1342,13 @@ const App = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="text-[11px] text-latte-500 dark:text-latte-400 font-bold truncate">{q.answer}</div>
                                         <div className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{q.summary}</div>
+                                        {sessionType === 'wrongRate' && isPass && (
+                                            <div className="text-[10px] font-bold text-[#E07A5F] dark:text-[#F1A38E] mt-0.5">
+                                                {Math.max(0, q.passCount > 0 ? (q.wrongCount || 0) - q.passCount + 1 : (q.wrongCount || 0)) > 0
+                                                    ? `제외까지 ${Math.max(0, q.passCount > 0 ? (q.wrongCount || 0) - q.passCount + 1 : (q.wrongCount || 0))}번 남음`
+                                                    : '오답률 테스트 제외 기준 도달'}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -1311,7 +1395,3 @@ root.render(<App/>);
 </script>
 </body>
 </html>
-
-
-
-
