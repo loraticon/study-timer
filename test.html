@@ -76,7 +76,43 @@
         .toggle-inner {
             overflow: hidden;
         }
-    </style>
+
+        .test-shell {
+            width: 100%;
+            max-width: 760px;
+            max-height: 90vh;
+        }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .review-grid > .wide-card {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 10px; align-items: flex-start; }
+            .test-shell {
+                max-width: 100%;
+                max-height: none;
+                min-height: calc(100vh - 20px);
+                border-radius: 1.75rem !important;
+                padding: 1.25rem !important;
+            }
+            .review-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 420px) {
+            body { padding: 8px; }
+            .test-shell {
+                min-height: calc(100vh - 16px);
+                border-radius: 1.5rem !important;
+                padding: 1rem !important;
+            }
+        }    </style>
 </head>
 <body>
 <div id="root" class="w-full h-full flex justify-center items-center"></div>
@@ -323,6 +359,8 @@ const App = () => {
 
                 const passCount = props['누적 통과 횟수']?.number || 0;
                 const wrongCount = props['누적 오답 횟수']?.number || 0;
+                const wrongRate = passCount > 0 ? wrongCount / passCount : wrongCount;
+                const isMastered = passCount >= 4;
                 const isRetry = props['다시 학습']?.checkbox === true;
 
                 const rawDateProp = props['날짜'];
@@ -354,7 +392,10 @@ const App = () => {
                 const dueProp = props['오늘 복습 필요'];
                 const isDueByProp = dueProp?.checkbox === true || dueProp?.formula?.boolean === true;
                 if (category === 'none' && isDueByProp && !nextDateIso) category = 'pending';
-                if (passCount >= 4) category = 'none';
+                if (isMastered) category = 'none';
+
+                const summary = extractText(props['문제 요약']) || '요약 없음';
+                const content = extractText(props['문제 내용']) || '내용 없음';
 		
 		if (category === 'pending') {
 		    const debugNextYMD = nextDateIso ? getLocalYMD(new Date(nextDateIso)) : null;
@@ -373,9 +414,6 @@ const App = () => {
 		    });
 		}
 
-                const summary = extractText(props['문제 요약']) || '요약 없음';
-                const content = extractText(props['문제 내용']) || '내용 없음';
-                
                 let mainSubject = '미분류';
                 let subSubject = '';
                 let displaySubject = '미분류';
@@ -438,7 +476,7 @@ const App = () => {
                 parsedQuestions.push({ 
                     id: page.id, category, 
                     mainSubject, subSubject, subject: displaySubject,
-                    summary, content, answer, passCount, wrongCount, isRetry,
+                    summary, content, answer, passCount, wrongCount, wrongRate, isMastered, isRetry,
                     relatedNoteIds 
                 });
             });
@@ -494,6 +532,8 @@ const App = () => {
         let sourceQueue = [];
         if (type === 'new') sourceQueue = allQuestions.filter(q => q.category === 'new');
         else if (type === 'today') sourceQueue = allQuestions.filter(q => q.category === 'today');
+        else if (type === 'wrongRate') sourceQueue = allQuestions.filter(q => q.wrongRate >= 1).sort((a, b) => b.wrongRate - a.wrongRate || b.wrongCount - a.wrongCount);
+        else if (type === 'mastered') sourceQueue = allQuestions.filter(q => q.isMastered);
         else sourceQueue = allQuestions.filter(q => q.category === 'pending');
         
         const queue = limit ? sourceQueue.slice(0, limit) : [...sourceQueue];
@@ -545,31 +585,22 @@ const App = () => {
     };
 
     const handleEarlyExit = () => {
-   	 if (currentIndex === 0) {
-  	      setAppState('ready');
-  	  } else {
-   	     const completedQueue = testQueue.slice(0, currentIndex);
-
-   	     if (sessionType !== 'random') {
-   	         const completedIds = completedQueue.map(q => q.id);
-   	         setAllQuestions(prev => prev.map(q => {
-   	             if (completedIds.includes(q.id)) return { ...q, category: 'none' };
-    	            return q;
-        	    }));
-        	}
-
- 	       setTestQueue(completedQueue); 
-  	      setAppState('result');
- 	   }
-	};
+        if (currentIndex === 0) {
+            setAppState('ready');
+        } else {
+            const completedQueue = testQueue.slice(0, currentIndex);
+            setTestQueue(completedQueue); 
+            setAppState('result');
+        }
+    };
 
     const handleResult = (isPass) => {
         const currentQ = testQueue[currentIndex];
         
         setResults(prev => ({ ...prev, [currentQ.id]: isPass }));
 
-        // 랜덤 테스트 모드에서는 Notion DB 업데이트 생략
-        if (sessionType !== 'random') {
+        // 랜덤/전용 연습 테스트에서는 Notion DB 업데이트 생략
+        if (['new', 'today', 'pending'].includes(sessionType)) {
             const newPassCount = isPass ? (currentQ.passCount + 1) : 0;
             let newWrongCount = currentQ.wrongCount || 0;
             const propertiesToUpdate = {
@@ -620,7 +651,7 @@ const App = () => {
             setIsNoteExpanded(false); 
             if (inputRef.current) setTimeout(() => inputRef.current.focus(), 50);
         } else {
-            if (sessionType !== 'random') {
+            if (['new', 'today', 'pending'].includes(sessionType)) {
                 const completedIds = testQueue.map(q => q.id);
                 setAllQuestions(prev => prev.map(q => {
                     if(completedIds.includes(q.id)) return { ...q, category: 'none' };
@@ -730,10 +761,14 @@ const App = () => {
         const newQuestions = allQuestions.filter(q => q.category === 'new');
         const todayQuestions = allQuestions.filter(q => q.category === 'today');
         const pendingQuestions = allQuestions.filter(q => q.category === 'pending');
+        const wrongRateQuestions = allQuestions.filter(q => q.wrongRate >= 1);
+        const masteredQuestions = allQuestions.filter(q => q.isMastered);
 
         const hasNew = newQuestions.length > 0;
         const hasToday = todayQuestions.length > 0;
         const hasPending = pendingQuestions.length > 0;
+        const hasWrongRate = wrongRateQuestions.length > 0;
+        const hasMastered = masteredQuestions.length > 0;
         const isPendingOverloaded = pendingQuestions.length > BATCH_SIZE;
 
         const SubjectButton = ({ active, onClick, children }) => (
@@ -760,7 +795,7 @@ const App = () => {
         );
 
         return (
-            <div className="w-full max-w-[420px] max-h-[90vh] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] p-8 flex flex-col justify-start min-h-[580px] soft-shadow relative overflow-y-auto transition-colors">
+            <div className="test-shell bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] p-8 flex flex-col justify-start min-h-[580px] soft-shadow relative overflow-y-auto transition-colors">
                 <div className="absolute top-6 right-6 flex items-center gap-3">
                     <button onClick={() => setIsDark(!isDark)} className="text-gray-300 dark:text-gray-500 hover:text-latte-500 dark:hover:text-latte-400 transition-colors" title="다크모드">
                         {isDark ? <ThemeSunIcon /> : <ThemeMoonIcon />}
@@ -925,7 +960,7 @@ const App = () => {
 
                         {/* ──────── 복습 모드 탭 ──────── */}
                         {activeTab === 'review' && (
-                            <div className="flex flex-col gap-4 animate-fade-in pb-4">
+                            <div className="review-grid animate-fade-in pb-4">
                                 <div className="bg-white dark:bg-[#252525] rounded-3xl p-5 border-2 border-latte-100 dark:border-latte-900/30 flex flex-col relative overflow-hidden soft-shadow transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
@@ -937,16 +972,9 @@ const App = () => {
                                                 <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasNew ? '새롭게 익혀야 할 단어들' : '새로운 문제가 없어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasNew ? 'text-latte-500 dark:text-latte-400' : 'text-gray-300 dark:text-gray-600'}`}>
-                                            {newQuestions.length}
-                                        </div>
+                                        <div className={`text-2xl font-black ${hasNew ? 'text-latte-500 dark:text-latte-400' : 'text-gray-300 dark:text-gray-600'}`}>{newQuestions.length}</div>
                                     </div>
-                                    <button 
-                                        onClick={() => startReviewTest('new')}
-                                        disabled={!hasNew}
-                                        className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
-                                            ${hasNew ? 'bg-latte-500 dark:bg-latte-600 hover:bg-latte-700 dark:hover:bg-latte-500 text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
-                                    >
+                                    <button onClick={() => startReviewTest('new')} disabled={!hasNew} className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 ${hasNew ? 'bg-latte-500 dark:bg-latte-600 hover:bg-latte-700 dark:hover:bg-latte-500 text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
                                         {hasNew ? '오늘의 테스트 시작' : '완료됨'}
                                     </button>
                                 </div>
@@ -962,21 +990,14 @@ const App = () => {
                                                 <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasToday ? '잊어버리기 전에 다시 한번!' : '오늘 복습은 끝났어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasToday ? 'text-[#849F71]' : 'text-gray-300 dark:text-gray-600'}`}>
-                                            {todayQuestions.length}
-                                        </div>
+                                        <div className={`text-2xl font-black ${hasToday ? 'text-[#849F71]' : 'text-gray-300 dark:text-gray-600'}`}>{todayQuestions.length}</div>
                                     </div>
-                                    <button 
-                                        onClick={() => startReviewTest('today')}
-                                        disabled={!hasToday}
-                                        className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2
-                                            ${hasToday ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
-                                    >
+                                    <button onClick={() => startReviewTest('today')} disabled={!hasToday} className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 ${hasToday ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
                                         {hasToday ? '오늘의 복습 시작' : '완료됨'}
                                     </button>
                                 </div>
 
-                                <div className="bg-[#F4F0EA] dark:bg-[#1E1E1E] rounded-3xl p-5 border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col transition-colors">
+                                <div className="wide-card bg-[#F4F0EA] dark:bg-[#1E1E1E] rounded-3xl p-5 border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasPending ? 'bg-white dark:bg-[#2A2A2A] text-latte-700 dark:text-latte-400 shadow-sm' : 'bg-[#EBE8DE] dark:bg-[#333] text-gray-400 dark:text-gray-500'}`}>
@@ -987,42 +1008,58 @@ const App = () => {
                                                 <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{hasPending ? '여유가 될 때 조금씩 해결해요' : '밀린 문제가 없어요!'}</p>
                                             </div>
                                         </div>
-                                        <div className={`text-2xl font-black ${hasPending ? 'text-gray-800 dark:text-gray-100' : 'text-gray-300 dark:text-gray-600'}`}>
-                                            {pendingQuestions.length}
-                                        </div>
+                                        <div className={`text-2xl font-black ${hasPending ? 'text-gray-800 dark:text-gray-100' : 'text-gray-300 dark:text-gray-600'}`}>{pendingQuestions.length}</div>
                                     </div>
-                                    
                                     {hasPending ? (
                                         <div className="flex gap-2">
                                             {isPendingOverloaded ? (
                                                 <>
-                                                    <button 
-                                                        onClick={() => startReviewTest('pending', BATCH_SIZE)}
-                                                        className="flex-[2] py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm flex justify-center items-center gap-1 border border-[#EBE8DE] dark:border-[#333]"
-                                                    >
-                                                        <ZapIcon /> {BATCH_SIZE}개만 풀기
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => startReviewTest('pending')}
-                                                        className="flex-1 py-3.5 rounded-2xl bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-600 dark:text-gray-300 font-bold text-sm transition-colors text-center"
-                                                    >
-                                                        전체
-                                                    </button>
+                                                    <button onClick={() => startReviewTest('pending', BATCH_SIZE)} className="flex-[2] py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm flex justify-center items-center gap-1 border border-[#EBE8DE] dark:border-[#333]"><ZapIcon /> {BATCH_SIZE}개만 풀기</button>
+                                                    <button onClick={() => startReviewTest('pending')} className="flex-1 py-3.5 rounded-2xl bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-600 dark:text-gray-300 font-bold text-sm transition-colors text-center">전체</button>
                                                 </>
                                             ) : (
-                                                <button 
-                                                    onClick={() => startReviewTest('pending')}
-                                                    className="w-full py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm border border-[#EBE8DE] dark:border-[#333]"
-                                                >
-                                                    밀린 복습 시작
-                                                </button>
+                                                <button onClick={() => startReviewTest('pending')} className="w-full py-3.5 rounded-2xl bg-white dark:bg-[#2A2A2A] hover:bg-latte-50 dark:hover:bg-latte-900/30 text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors shadow-sm border border-[#EBE8DE] dark:border-[#333]">밀린 복습 시작</button>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="w-full py-3.5 rounded-2xl font-bold text-sm bg-[#EBE8DE]/50 dark:bg-[#333]/50 text-gray-400 dark:text-gray-600 text-center cursor-not-allowed">
-                                            깔끔합니다 ✨
-                                        </div>
+                                        <div className="w-full py-3.5 rounded-2xl font-bold text-sm bg-[#EBE8DE]/50 dark:bg-[#333]/50 text-gray-400 dark:text-gray-600 text-center cursor-not-allowed">깔끔합니다 ✨</div>
                                     )}
+                                </div>
+
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-5 border border-[#FFE1DC] dark:border-[#4A2A25] flex flex-col relative overflow-hidden transition-colors">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasWrongRate ? 'bg-[#FFF5F2] dark:bg-[#4A2A25]/50 text-[#E07A5F]' : 'bg-gray-50 dark:bg-[#333] text-gray-300 dark:text-gray-600'}`}>
+                                                <XIcon />
+                                            </div>
+                                            <div>
+                                                <h2 className={`font-bold ${hasWrongRate ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>오답률 높은 문제</h2>
+                                                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasWrongRate ? '오답률 1 이상만 모았어요' : '오답률 높은 문제가 없어요!'}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`text-2xl font-black ${hasWrongRate ? 'text-[#E07A5F]' : 'text-gray-300 dark:text-gray-600'}`}>{wrongRateQuestions.length}</div>
+                                    </div>
+                                    <button onClick={() => startReviewTest('wrongRate')} disabled={!hasWrongRate} className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 ${hasWrongRate ? 'bg-[#E07A5F] hover:bg-[#cf684f] text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
+                                        {hasWrongRate ? '오답률 높은 문제 시작' : '문제 없음'}
+                                    </button>
+                                </div>
+
+                                <div className="bg-white dark:bg-[#252525] rounded-3xl p-5 border border-[#DDEBDD] dark:border-[#2D3C31] flex flex-col relative overflow-hidden transition-colors">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasMastered ? 'bg-[#F3F8F5] dark:bg-[#1F2A24] text-[#849F71]' : 'bg-gray-50 dark:bg-[#333] text-gray-300 dark:text-gray-600'}`}>
+                                                <SmileIcon />
+                                            </div>
+                                            <div>
+                                                <h2 className={`font-bold ${hasMastered ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>마스터한 문제</h2>
+                                                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">{hasMastered ? '마스터한 문제만 가볍게 점검해요' : '마스터한 문제가 아직 없어요!'}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`text-2xl font-black ${hasMastered ? 'text-[#849F71]' : 'text-gray-300 dark:text-gray-600'}`}>{masteredQuestions.length}</div>
+                                    </div>
+                                    <button onClick={() => startReviewTest('mastered')} disabled={!hasMastered} className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-colors flex justify-center items-center gap-2 ${hasMastered ? 'bg-[#849F71] hover:bg-[#738C62] text-white shadow-sm' : 'bg-gray-50 dark:bg-[#333] text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
+                                        {hasMastered ? '마스터 문제 시작' : '문제 없음'}
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -1046,6 +1083,8 @@ const App = () => {
         if (sessionType === 'new') { sessionLabel = '오늘의 테스트'; sessionIcon = '⚡'; }
         else if (sessionType === 'today') { sessionLabel = '오늘의 복습'; sessionIcon = '☀️'; }
         else if (sessionType === 'random') { sessionLabel = '랜덤 테스트'; sessionIcon = '🎲'; }
+        else if (sessionType === 'wrongRate') { sessionLabel = '오답률 높은 문제'; sessionIcon = '❌'; }
+        else if (sessionType === 'mastered') { sessionLabel = '마스터 문제'; sessionIcon = '😊'; }
 
         return (
             <div className="w-full max-w-[420px] bg-[#FDFBF7] dark:bg-[#191919] rounded-[2.5rem] border border-[#EBE8DE] dark:border-[#2F2F2F] flex flex-col min-h-[580px] max-h-[90vh] soft-shadow overflow-y-auto relative transition-colors">
@@ -1272,3 +1311,7 @@ root.render(<App/>);
 </script>
 </body>
 </html>
+
+
+
+
