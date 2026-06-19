@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>코지 카페 와이드 대시보드</title>
-    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -364,14 +364,14 @@ const extractSubjectInfoList = (props, subjectMap) => {
     if (p.type === 'relation' && p.relation?.length > 0) {
         p.relation.forEach(rel => {
             const subj = subjectMap[rel.id];
-            if (subj) results.push({ name: subj.name, parentName: subj.parentName });
+            if (subj) results.push({ id: rel.id, name: subj.name, parentName: subj.parentName });
         });
     } else if (p.type === 'rollup' && p.rollup?.array) {
         for (const item of p.rollup.array) {
             if (item.type === 'relation' && item.relation?.length > 0) {
                 item.relation.forEach(rel => {
                     const subj = subjectMap[rel.id];
-                    if (subj) results.push({ name: subj.name, parentName: subj.parentName });
+                    if (subj) results.push({ id: rel.id, name: subj.name, parentName: subj.parentName });
                 });
             } else if (item.type === 'title' && item.title?.length > 0) {
                 results.push({ name: item.title[0].plain_text, parentName: null });
@@ -530,6 +530,7 @@ const App = () => {
     const [logNavPath, setLogNavPath] = useState({ year: null, month: null });
     const [selectedRecord, setSelectedRecord] = useState(null);
     const selectedSubject = selectedRecord ? selectedRecord.subject : null;
+    const selectedSubjectId = selectedRecord ? selectedRecord.subjectId : null;
     const [loading, setLoading] = useState(true);
 
     const [showOverdueModal, setShowOverdueModal] = useState(false);
@@ -716,7 +717,7 @@ const App = () => {
                 const modeName = page.properties['모드']?.select?.name || '';
                 const coffeeType = page.properties['커피 종류']?.select?.name || null;
                 
-                return { subject: subjInfo.name, subjectParent: subjInfo.parentName, minutes, date: normalizeDate(startIso), hour: new Date(startIso).getHours(), mode: modeName.includes('뽀모도로') ? 'pomodoro' : 'normal', coffeeType };
+                return { id: page.id, subjectId: subjInfo.id || null, subject: subjInfo.name, subjectParent: subjInfo.parentName, minutes, date: normalizeDate(startIso), hour: new Date(startIso).getHours(), mode: modeName.includes('뽀모도로') ? 'pomodoro' : 'normal', coffeeType };
             });
             setRecords(parsedRecords);
 
@@ -2763,7 +2764,7 @@ const App = () => {
                                                                                     {recs.map((r, i) => (
                                                                                         <button
                                                                                             key={i}
-                                                                                            onClick={() => setSelectedRecord({ subject: r.subject, date: r.date })}
+                                                                                            onClick={() => setSelectedRecord(r)}
                                                                                             className="flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors group"
                                                                                             style={{background: isDark ? '#1E1E1E' : '#FDFBF7', border: isDark ? '1px solid #2F2F2F' : '1px solid transparent'}}
                                                                                             onMouseEnter={e => e.currentTarget.style.background = isDark ? '#252525' : '#F4EDE5'}
@@ -2794,9 +2795,12 @@ const App = () => {
                             ) : (
                                 /* ── 과목 상세 뷰 (개정 영역) ── */
                                 (() => {
-                                    const subjectRecords = filteredTimerRecords.filter(r => r.subject === selectedSubject);
+                                    const isSelectedSubject = (item) => selectedSubjectId
+                                        ? item.subjectId === selectedSubjectId || item.subjects?.some(s => s.id === selectedSubjectId)
+                                        : item.subject === selectedSubject || item.subjects?.some(s => s.name === selectedSubject);
+                                    const subjectRecords = filteredTimerRecords.filter(isSelectedSubject);
                                     const totalMin = subjectRecords.reduce((a,r)=>a+r.minutes,0);
-                                    const allTotalMin = records.filter(r => r.subject === selectedSubject).reduce((a,r)=>a+r.minutes,0);
+                                    const allTotalMin = records.filter(isSelectedSubject).reduce((a,r)=>a+r.minutes,0);
                                     
                                     let filterLabel = { today:'오늘', week:'이번 주', month:'이번 달', year:'올해', all:'전체' }[studyLogFilter] || '';
                                     if (studyLogFilter === 'year' && logNavPath.month !== null) filterLabel = `${logNavPath.month}월`;
@@ -2806,30 +2810,32 @@ const App = () => {
                                     }
 
                                     const clickedDate = selectedRecord ? selectedRecord.date : null;
+                                    const selectedRecordId = selectedRecord ? selectedRecord.id : null;
                                     const noteSource  = config.noteDbId  ? notes  : null;
                                     const wrongSource = config.wrongDbId ? wrongs : null;
-                                    
-                                    const subjectNotes  = noteSource  ? noteSource.filter(n => {
-                                        if (!n.subjects.some(s => s.name === selectedSubject)) return false;
-                                        if (clickedDate) {
-                                            const d = new Date(n.createdTime);
-                                            return (d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()) ===
-                                                   (new Date(clickedDate).getFullYear() * 10000 + (new Date(clickedDate).getMonth()+1) * 100 + new Date(clickedDate).getDate());
-                                        }
-                                        return true;
-                                    }) : null;
-                                    
-                                    const subjectWrongs = wrongSource ? wrongSource.filter(w => {
-                                        if (!w.subjects.some(s => s.name === selectedSubject)) return false;
-                                        if (clickedDate) {
-                                            const d = new Date(w.createdTime);
-                                            return (d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()) ===
-                                                   (new Date(clickedDate).getFullYear() * 10000 + (new Date(clickedDate).getMonth()+1) * 100 + new Date(clickedDate).getDate());
-                                        }
-                                        return true;
-                                    }) : null;
 
-                                    const subjObj = subjects.find(s => s.name === selectedSubject);
+                                    const isSameRecordDate = (createdTime) => {
+                                        if (!clickedDate) return true;
+                                        const d = new Date(createdTime);
+                                        const selectedDate = new Date(clickedDate);
+                                        return (d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate()) ===
+                                               (selectedDate.getFullYear() * 10000 + (selectedDate.getMonth()+1) * 100 + selectedDate.getDate());
+                                    };
+
+                                    const getRecordLinkedItems = (source) => {
+                                        if (!source) return null;
+                                        const exactItems = selectedRecordId
+                                            ? source.filter(item => item.relatedIds?.has(selectedRecordId))
+                                            : [];
+                                        if (exactItems.length > 0) return exactItems;
+                                        const sameSubjectItems = source.filter(isSelectedSubject);
+                                        return sameSubjectItems.filter(item => isSameRecordDate(item.createdTime));
+                                    };
+                                    
+                                    const subjectNotes  = getRecordLinkedItems(noteSource);
+                                    const subjectWrongs = getRecordLinkedItems(wrongSource);
+
+                                    const subjObj = subjects.find(s => selectedSubjectId ? s.id === selectedSubjectId : s.name === selectedSubject);
 
                                     return (
                                         <>
@@ -2864,22 +2870,16 @@ const App = () => {
                                             </div>
 
                                             {/* stat 다이내믹 그리드 */}
-                                            <div className={`grid grid-cols-1 ${studyLogFilter === 'today' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3 mb-4`}>
-                                                {/* 첫 번째 카드: '오늘' 탭이 아닐 때만 렌더링 */}
-                                                {studyLogFilter !== 'today' && (
-                                                    <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
-                                                        <p className="text-[10px] text-gray-400 mb-1">
-                                                            {clickedDate ? `${formatKORDateShort(clickedDate)} 공부` : `${filterLabel} 공부`}
-                                                        </p>
-                                                        <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>
-                                                            {fmtMinToHour(
-                                                                clickedDate 
-                                                                    ? subjectRecords.filter(r => r.date === clickedDate).reduce((a, r) => a + r.minutes, 0)
-                                                                    : totalMin
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                )}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                                {/* 첫 번째 카드 */}
+                                                <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
+                                                    <p className="text-[10px] text-gray-400 mb-1">
+                                                        선택한 세션
+                                                    </p>
+                                                    <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>
+                                                        {fmtMinToHour(selectedRecord?.minutes || 0)}
+                                                    </p>
+                                                </div>
                                                 
                                                 {/* 두 번째 카드 */}
                                                 <div className="rounded-2xl p-3" style={{background: isDark ? '#1E1E1E' : '#FDF8F4', border: isDark ? '1px solid #2F2F2F' : '1px solid #EDE0D0'}}>
