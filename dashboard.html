@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -525,6 +525,13 @@ const App = () => {
     const [statsData, setStatsData] = useState(null);
     const [notes, setNotes] = useState([]);
     const [wrongs, setWrongs] = useState([]);
+    const [noteNextCursor, setNoteNextCursor] = useState(null);
+    const [wrongNextCursor, setWrongNextCursor] = useState(null);
+    const [notesHasMore, setNotesHasMore] = useState(false);
+    const [wrongsHasMore, setWrongsHasMore] = useState(false);
+    const [loadingMoreNotes, setLoadingMoreNotes] = useState(false);
+    const [loadingMoreWrongs, setLoadingMoreWrongs] = useState(false);
+    const subjectMapRef = useRef({});
     
     const [vocabData, setVocabData] = useState({ todayAdded: [], recentWords: [], reviewList: [], masters: [], subjectCounts: {} });
     const [vocabSubjectFilter, setVocabSubjectFilter] = useState('전체');
@@ -663,28 +670,36 @@ const App = () => {
         setLoading(true);
         
         try {
-            const queryAllDatabasePages = async (databaseId, body = {}, maxResults = 2000) => {
-                let results = [];
-                let hasMore = true;
-                let cursor = undefined;
+            const queryDatabasePage = async (databaseId, body = {}, cursor = null) => {
+                const res = await fetch(`${currentConfig.proxyUrl}/v1/databases/${databaseId}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
+                    body: JSON.stringify({ ...body, page_size: 100, ...(cursor && { start_cursor: cursor }) })
+                });
+                if (!res.ok) throw new Error('데이터를 불러오지 못했습니다.');
+                return res.json();
+            };
 
-                while (hasMore && results.length < maxResults) {
-                    const res = await fetch(`${currentConfig.proxyUrl}/v1/databases/${databaseId}/query`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
-                        body: JSON.stringify({ ...body, page_size: 100, ...(cursor && { start_cursor: cursor }) })
+            const getFinalRollupNumber = async (pageId, property) => {
+                if (!pageId || !property?.id) return null;
+                let cursor = null;
+                let finalValue = null;
+
+                do {
+                    const params = new URLSearchParams({ page_size: '100' });
+                    if (cursor) params.set('start_cursor', cursor);
+                    const res = await fetch(`${currentConfig.proxyUrl}/v1/pages/${pageId}/properties/${encodeURIComponent(property.id)}?${params}`, {
+                        headers: { 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' }
                     });
-                    if (!res.ok) break;
+                    if (!res.ok) return null;
 
                     const json = await res.json();
-                    results = results.concat(json.results || []);
-                    hasMore = Boolean(json.has_more);
-                    cursor = json.next_cursor;
-                    if (!cursor) hasMore = false;
-                    if (hasMore) await new Promise(resolve => setTimeout(resolve, 350));
-                }
+                    if (json.rollup?.number !== null && json.rollup?.number !== undefined) finalValue = json.rollup.number;
+                    cursor = json.has_more ? json.next_cursor : null;
+                    if (cursor) await new Promise(resolve => setTimeout(resolve, 350));
+                } while (cursor);
 
-                return results;
+                return finalValue;
             };
 
             const subjectMap = {};
@@ -737,6 +752,7 @@ const App = () => {
                     setSubjects(subjList);
                 }
             }
+            subjectMapRef.current = subjectMap;
 
             const recRes = await fetch(`${currentConfig.proxyUrl}/v1/databases/${currentConfig.recordDbId}/query`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': currentConfig.apiKey, 'x-notion-version': '2022-06-28' },
@@ -845,8 +861,9 @@ const App = () => {
                                 }
                                 return null;
                             };
+                            const exactNoteCount = await getFinalRollupNumber(statsJson.results[0].id, props['학습노트 총 개수']);
                             setStatsData({
-                                notes:      getNum('학습노트 총 개수'),
+                                notes:      exactNoteCount ?? getNum('학습노트 총 개수'),
                                 resources:  getNum('자료실 총 개수'),
                                 doneTodos:  getNum('완료한 투두 총 개수'),
                                 studyHours: getNum('총 공부 시간'),
@@ -859,8 +876,8 @@ const App = () => {
 
             if (currentConfig.noteDbId) {
                 try {
-                    const notePages = await queryAllDatabasePages(currentConfig.noteDbId, { sorts: [{ timestamp: 'created_time', direction: 'descending' }] });
-                    const parsedNotes = notePages.map(p => {
+                    const noteJson = await queryDatabasePage(currentConfig.noteDbId, { sorts: [{ timestamp: 'created_time', direction: 'descending' }] });
+                    const parsedNotes = noteJson.results.map(p => {
                         const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                         const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
                         const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
@@ -871,14 +888,17 @@ const App = () => {
                         return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList, relatedIds };
                     });
                     setNotes(parsedNotes);
-                    setStatsData(prev => prev ? { ...prev, notes: parsedNotes.length } : prev);
+                    setNoteNextCursor(noteJson.next_cursor || null);
+                    setNotesHasMore(Boolean(noteJson.has_more && noteJson.next_cursor));
                 } catch (e) { console.warn('학습 노트 DB 로드 실패:', e); }
+            } else {
+                setNotes([]); setNoteNextCursor(null); setNotesHasMore(false);
             }
 
             if (currentConfig.wrongDbId) {
                 try {
-                    const wrongPages = await queryAllDatabasePages(currentConfig.wrongDbId, { sorts: [{ timestamp: 'created_time', direction: 'descending' }] });
-                    const parsedWrongs = wrongPages.map(p => {
+                    const wrongJson = await queryDatabasePage(currentConfig.wrongDbId, { sorts: [{ timestamp: 'created_time', direction: 'descending' }] });
+                    const parsedWrongs = wrongJson.results.map(p => {
                         const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
                         const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
                         const subjectsList = extractSubjectInfoList(p.properties, subjectMap);
@@ -889,7 +909,11 @@ const App = () => {
                         return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList, relatedIds };
                     });
                     setWrongs(parsedWrongs);
+                    setWrongNextCursor(wrongJson.next_cursor || null);
+                    setWrongsHasMore(Boolean(wrongJson.has_more && wrongJson.next_cursor));
                 } catch (e) { console.warn('오답 노트 DB 로드 실패:', e); }
+            } else {
+                setWrongs([]); setWrongNextCursor(null); setWrongsHasMore(false);
             }
 
             if (currentConfig.vocabDbId && currentConfig.testDbId) {
@@ -1069,6 +1093,56 @@ const App = () => {
 
         } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [config]);
+
+    const loadMoreNoteItems = useCallback(async (type) => {
+        const isNote = type === 'note';
+        const databaseId = isNote ? config.noteDbId : config.wrongDbId;
+        const cursor = isNote ? noteNextCursor : wrongNextCursor;
+        if (!databaseId || !cursor) return;
+
+        if (isNote) setLoadingMoreNotes(true);
+        else setLoadingMoreWrongs(true);
+
+        try {
+            const res = await fetch(`${config.proxyUrl}/v1/databases/${databaseId}/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' },
+                body: JSON.stringify({
+                    sorts: [{ timestamp: 'created_time', direction: 'descending' }],
+                    page_size: 100,
+                    start_cursor: cursor
+                })
+            });
+            if (!res.ok) throw new Error('추가 노트를 불러오지 못했습니다.');
+
+            const json = await res.json();
+            const parsedItems = (json.results || []).map(p => {
+                const titleProp = Object.values(p.properties).find(pr => pr.type === 'title');
+                const title = titleProp?.title?.[0]?.plain_text || '제목 없음';
+                const subjectsList = extractSubjectInfoList(p.properties, subjectMapRef.current);
+                const relatedIds = new Set();
+                Object.values(p.properties).forEach(pr => {
+                    if (pr.type === 'relation') pr.relation?.forEach(r => relatedIds.add(r.id));
+                });
+                return { id: p.id, title, createdTime: p.created_time, subjects: subjectsList, relatedIds };
+            });
+
+            if (isNote) {
+                setNotes(prev => prev.concat(parsedItems));
+                setNoteNextCursor(json.next_cursor || null);
+                setNotesHasMore(Boolean(json.has_more && json.next_cursor));
+            } else {
+                setWrongs(prev => prev.concat(parsedItems));
+                setWrongNextCursor(json.next_cursor || null);
+                setWrongsHasMore(Boolean(json.has_more && json.next_cursor));
+            }
+        } catch (e) {
+            showToast(e.message || '추가 노트를 불러오지 못했습니다.', 'error');
+        } finally {
+            if (isNote) setLoadingMoreNotes(false);
+            else setLoadingMoreWrongs(false);
+        }
+    }, [config, noteNextCursor, wrongNextCursor, showToast]);
 
     useEffect(() => { if(!showSetup && (!printMode || (reportSnapshotChecked && !reportSnapshotLoaded))) fetchData(); }, [fetchData, showSetup, printMode, reportSnapshotChecked, reportSnapshotLoaded]);
 
@@ -3048,6 +3122,15 @@ const App = () => {
                                         })}
                                     </div>
                                 )}
+                                {notesHasMore && (
+                                    <button
+                                        onClick={() => loadMoreNoteItems('note')}
+                                        disabled={loadingMoreNotes}
+                                        className="w-full mt-3 py-2 text-[12px] font-bold text-[#4a7c5e] dark:text-[#9CC3A8] border border-[#CDE1D3] dark:border-[#36513E] rounded-xl hover:bg-[#F3F8F5] dark:hover:bg-[#1F2A24] transition disabled:opacity-50"
+                                    >
+                                        {loadingMoreNotes ? '불러오는 중...' : '학습 노트 100개 더보기'}
+                                    </button>
+                                )}
                             </div>
 
                             {/* 오답 노트 */}
@@ -3093,6 +3176,15 @@ const App = () => {
                                             );
                                         })}
                                     </div>
+                                )}
+                                {wrongsHasMore && (
+                                    <button
+                                        onClick={() => loadMoreNoteItems('wrong')}
+                                        disabled={loadingMoreWrongs}
+                                        className="w-full mt-3 py-2 text-[12px] font-bold text-[#c0614a] dark:text-[#E07A5F] border border-[#F0D2C9] dark:border-[#593A32] rounded-xl hover:bg-[#FFF5F2] dark:hover:bg-[#2A211F] transition disabled:opacity-50"
+                                    >
+                                        {loadingMoreWrongs ? '불러오는 중...' : '오답 노트 100개 더보기'}
+                                    </button>
                                 )}
                             </div>
                         </div>
