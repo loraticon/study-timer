@@ -2795,9 +2795,14 @@ const App = () => {
                             ) : (
                                 /* ── 과목 상세 뷰 (개정 영역) ── */
                                 (() => {
-                                    const isSelectedSubject = (item) => selectedSubjectId
-                                        ? item.subjectId === selectedSubjectId || item.subjects?.some(s => s.id === selectedSubjectId)
-                                        : item.subject === selectedSubject || item.subjects?.some(s => s.name === selectedSubject);
+                                    const isSelectedSubject = (item) => {
+                                        if (!item) return false;
+                                        const itemSubjects = item.subjects || [];
+                                        if (selectedSubjectId) {
+                                            return item.subjectId === selectedSubjectId || itemSubjects.some(s => s.id === selectedSubjectId);
+                                        }
+                                        return item.subject === selectedSubject || itemSubjects.some(s => s.name === selectedSubject);
+                                    };
                                     const subjectRecords = filteredTimerRecords.filter(isSelectedSubject);
                                     const totalMin = subjectRecords.reduce((a,r)=>a+r.minutes,0);
                                     const allTotalMin = records.filter(isSelectedSubject).reduce((a,r)=>a+r.minutes,0);
@@ -2825,7 +2830,7 @@ const App = () => {
                                     const getRecordLinkedItems = (source) => {
                                         if (!source) return null;
                                         const exactItems = selectedRecordId
-                                            ? source.filter(item => item.relatedIds?.has(selectedRecordId))
+                                            ? source.filter(item => item.relatedIds && typeof item.relatedIds.has === 'function' && item.relatedIds.has(selectedRecordId))
                                             : [];
                                         if (exactItems.length > 0) return exactItems;
                                         const sameSubjectItems = source.filter(isSelectedSubject);
@@ -2877,7 +2882,7 @@ const App = () => {
                                                         선택한 세션
                                                     </p>
                                                     <p className="text-[18px] font-bold" style={{color: isDark ? '#F3F4F6' : '#A67B5B'}}>
-                                                        {fmtMinToHour(selectedRecord?.minutes || 0)}
+                                                        {fmtMinToHour(selectedRecord && selectedRecord.minutes ? selectedRecord.minutes : 0)}
                                                     </p>
                                                 </div>
                                                 
