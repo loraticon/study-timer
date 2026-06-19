@@ -339,6 +339,16 @@ const formatKORDateShort = (dateValue) => {
     const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
     return `${d.getMonth()+1}월 ${d.getDate()}일 (${day})`;
 };
+const getVocabReviewDateInfo = (dateValue, todayMs) => {
+    if (!dateValue) return { dateText: '복습일자 없음', remainText: '일정 없음', tone: 'empty', diffDays: null };
+    const reviewMs = normalizeDate(dateValue);
+    if (isNaN(reviewMs)) return { dateText: '복습일자 없음', remainText: '일정 없음', tone: 'empty', diffDays: null };
+    const baseMs = typeof todayMs === 'number' ? todayMs : normalizeDate(new Date());
+    const diffDays = Math.round((reviewMs - baseMs) / 86400000);
+    if (diffDays === 0) return { dateText: formatKORDateShort(reviewMs), remainText: '오늘 복습', tone: 'today', diffDays };
+    if (diffDays > 0) return { dateText: formatKORDateShort(reviewMs), remainText: `${diffDays}일 남음`, tone: 'future', diffDays };
+    return { dateText: formatKORDateShort(reviewMs), remainText: `${Math.abs(diffDays)}일 지남`, tone: 'overdue', diffDays };
+};
 
 
 const extractNotionId = (value) => {
@@ -899,6 +909,14 @@ const App = () => {
                     if (prop.rollup?.date?.start) return prop.rollup.date.start;
                     return null;
                 };
+                const extractDateTimeByKeys = (props, keys) => {
+                    for (const key of keys) {
+                        const value = extractDateTime(props[key]);
+                        if (value) return value;
+                    }
+                    const fuzzyKey = Object.keys(props).find(key => keys.some(target => key.includes(target)));
+                    return fuzzyKey ? extractDateTime(props[fuzzyKey]) : null;
+                };
 
                 const getMasteredTime = (page) => {
                     return extractDateTime(page.properties['마스터 날짜']);
@@ -919,6 +937,7 @@ const App = () => {
                     const passCount = props['누적 통과 횟수']?.number || 0;
                     const wrongCount = props['누적 오답 횟수']?.number || 0;
                     const isRetry   = props['다시 학습']?.checkbox === true;
+                    const nextReviewDate = extractDateTimeByKeys(props, ['다음 복습일', '복습일자', '복습 날짜', '복습 예정일', '복습일', '다음 복습 날짜']);
                     const createdTime = page.created_time;
                     const createdYMD = getLocalYMD(new Date(createdTime));
                     const isAddedToday = createdYMD === todayYMD;
@@ -939,7 +958,7 @@ const App = () => {
                         }
                     });
 
-                    const item = { id: page.id, title: answer, passCount, wrongCount, subjects: vocabSubjects, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
+                    const item = { id: page.id, title: answer, passCount, wrongCount, subjects: vocabSubjects, nextReviewDate, createdTime, status, testPageId: page.id, relatedIds: testRelatedIds };
 
                     if (isAddedToday) {
                         todayAdded.push(item);
@@ -2513,12 +2532,23 @@ const App = () => {
                                                 sortedReviewList.map(v => {
                                                     const matchedNotes = notes.filter(n => n.relatedIds?.has(v.id) || n.relatedIds?.has(v.vocabPageId) || v.relatedIds?.has(n.id) || v.vocabRelatedIds?.has(n.id) || n.title.includes(v.title) || v.title.includes(n.title));
                                                     const matchedWrongs = wrongs.filter(w => w.relatedIds?.has(v.id) || w.relatedIds?.has(v.vocabPageId) || v.relatedIds?.has(w.id) || v.vocabRelatedIds?.has(w.id) || w.title.includes(v.title) || v.title.includes(w.title));
+                                                    const reviewInfo = getVocabReviewDateInfo(v.nextReviewDate, todayNum);
+                                                    const reviewToneClass = reviewInfo.tone === 'today'
+                                                        ? 'bg-[#F3F8F5] text-[#4a7c5e] border-[#DDEBDF]'
+                                                        : reviewInfo.tone === 'overdue'
+                                                            ? 'bg-[#FFF5F2] text-[#c0614a] border-[#F3D3C9]'
+                                                            : reviewInfo.tone === 'future'
+                                                                ? 'bg-[#FDFBF7] text-[#8B664B] border-[#E8DED2]'
+                                                                : 'bg-gray-50 text-gray-400 border-gray-100';
                                                     return (
                                                         <div key={v.id} className="flex flex-col p-3.5 rounded-[14px] bg-white border border-gray-100 shadow-sm hover:border-[#D1CBBF] hover:shadow-md transition-all">
                                                             <div className="flex items-start justify-between mb-3">
-                                                                <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openVocabDetail(v)} title="뜻/설명 보기">
+                                                                <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity min-w-0 pr-3" onClick={() => openVocabDetail(v)} title="뜻/설명 및 복습일 보기">
                                                                     <span className="text-[15px] font-bold text-gray-800 leading-tight hover:text-[#A67B5B] transition-colors">{v.title}</span>
-                                                                    {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400 mt-0.5">{formatSubjectName(v.subjects[0])}</span>}
+                                                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                                                        {v.subjects.length > 0 && <span className="text-[10px] font-bold text-gray-400">{formatSubjectName(v.subjects[0])}</span>}
+                                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${reviewToneClass}`}>{reviewInfo.remainText}</span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex gap-2">
                                                                     <NoteBox matchedNotes={matchedNotes} type="note" vocab={v} />
@@ -3407,6 +3437,14 @@ const App = () => {
                 const word = vocabDetailModal.word;
                 const matchedNotes = notes.filter(n => n.relatedIds?.has(word.id) || n.relatedIds?.has(word.vocabPageId) || word.relatedIds?.has(n.id) || word.vocabRelatedIds?.has(n.id) || n.title.includes(word.title) || word.title.includes(n.title));
                 const matchedWrongs = wrongs.filter(w => w.relatedIds?.has(word.id) || w.relatedIds?.has(word.vocabPageId) || word.relatedIds?.has(w.id) || word.vocabRelatedIds?.has(w.id) || w.title.includes(word.title) || word.title.includes(w.title));
+                const reviewInfo = getVocabReviewDateInfo(word.nextReviewDate, todayNum);
+                const reviewToneClass = reviewInfo.tone === 'today'
+                    ? 'bg-[#F3F8F5] text-[#4a7c5e] border-[#DDEBDF]'
+                    : reviewInfo.tone === 'overdue'
+                        ? 'bg-[#FFF5F2] text-[#c0614a] border-[#F3D3C9]'
+                        : reviewInfo.tone === 'future'
+                            ? 'bg-[#FDFBF7] text-[#8B664B] border-[#E8DED2]'
+                            : 'bg-gray-50 text-gray-400 border-gray-100';
 
                 return (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
@@ -3425,6 +3463,14 @@ const App = () => {
                                 {word.subjects && word.subjects.length > 0 && (
                                     <span className="ml-2 text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md inline-block align-middle">{formatSubjectName(word.subjects[0])}</span>
                                 )}
+                            </div>
+
+                            <div className={`mx-6 mb-4 rounded-xl border px-4 py-3 flex items-center justify-between gap-3 ${reviewToneClass}`}>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-[10px] font-extrabold opacity-60">다음 복습일자</span>
+                                    <span className="text-[14px] font-extrabold truncate">{reviewInfo.dateText}</span>
+                                </div>
+                                <span className="text-[13px] font-extrabold shrink-0">{reviewInfo.remainText}</span>
                             </div>
 
                             {/* 탭 메뉴 */}
