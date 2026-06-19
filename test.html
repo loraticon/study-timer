@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>단어 테스트</title>
-	<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-	<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-	<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -496,6 +496,12 @@ const App = () => {
         if (config.saved) fetchData();
     }, [config.saved, fetchData]);
 
+    useEffect(() => {
+        if (appState === 'testing' && (testQueue.length === 0 || currentIndex >= testQueue.length)) {
+            setAppState('ready');
+        }
+    }, [appState, testQueue.length, currentIndex]);
+
     /* ── 과목 트리 파싱 ── */
     const subjectTree = useMemo(() => {
         const tree = { '전체': { total: allQuestions.length, subs: {} } };
@@ -538,6 +544,11 @@ const App = () => {
         else sourceQueue = allQuestions.filter(q => q.category === 'pending');
         
         const queue = limit ? sourceQueue.slice(0, limit) : [...sourceQueue];
+
+        if (queue.length === 0) {
+            setAppState('ready');
+            return;
+        }
         
         setSessionType(type);
         setTestQueue(queue);
@@ -548,6 +559,26 @@ const App = () => {
         setUserInput('');
         setIsRevealed(false);
         setIsNoteExpanded(false); 
+    };
+
+    const continuePendingReview = () => {
+        const completedIds = new Set(testQueue.map(q => q.id));
+        const queue = allQuestions.filter(q => q.category === 'pending' && !completedIds.has(q.id));
+
+        if (queue.length === 0) {
+            setAppState('ready');
+            return;
+        }
+
+        setSessionType('pending');
+        setTestQueue(queue);
+        setAppState('testing');
+        setCurrentIndex(0);
+        setResults({});
+        wrongCountIncrementedIdsRef.current = new Set();
+        setUserInput('');
+        setIsRevealed(false);
+        setIsNoteExpanded(false);
     };
 
     const startRandomTest = () => {
@@ -563,6 +594,11 @@ const App = () => {
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
         const actualCount = Math.min(randomCount, shuffled.length);
         const finalQueue = shuffled.slice(0, actualCount);
+
+        if (finalQueue.length === 0) {
+            setAppState('ready');
+            return;
+        }
 
         setSessionType('random');
         setTestQueue(finalQueue);
@@ -1102,6 +1138,8 @@ const App = () => {
     /* ══════ 화면 2: 테스트 진행 화면 ══════ */
     if (appState === 'testing') {
         const currentQ = testQueue[currentIndex];
+
+        if (!currentQ) return null;
         
         const normalizeAnswer = (value) => value.replace(/\s+/g, '').toLowerCase();
         const normalizedUserInput = normalizeAnswer(userInput);
@@ -1366,7 +1404,7 @@ const App = () => {
 
                     {sessionType === 'pending' && remainingPending.length > 0 && (
                         <button 
-                            onClick={() => { setAppState('ready'); }}
+                            onClick={continuePendingReview}
                             className="w-full py-4 rounded-2xl bg-latte-50 dark:bg-[#2A2A2A] text-latte-700 dark:text-latte-400 font-bold text-sm transition-colors border border-latte-100 dark:border-[#333] flex items-center justify-center gap-2"
                         >
                             <ZapIcon /> 아직 남은 {remainingPending.length}개 이어서 하기
