@@ -861,13 +861,17 @@ const App = () => {
                                 }
                                 return null;
                             };
-                            const exactNoteCount = await getFinalRollupNumber(statsJson.results[0].id, props['학습노트 총 개수']);
+                            // Prefer scalar formula values so relationship rollup pagination cannot truncate totals.
+                            const displayNoteCount = getNum('학습노트 총 개수 (표시용)');
+                            const exactNoteCount = displayNoteCount === null
+                                ? await getFinalRollupNumber(statsJson.results[0].id, props['학습노트 총 개수'])
+                                : null;
                             setStatsData({
-                                notes:      exactNoteCount ?? getNum('학습노트 총 개수'),
-                                resources:  getNum('자료실 총 개수'),
-                                doneTodos:  getNum('완료한 투두 총 개수'),
-                                studyHours: getNum('총 공부 시간'),
-                                subjects:   getNum('과목 총 개수'),
+                                notes:      displayNoteCount ?? exactNoteCount ?? getNum('학습노트 총 개수'),
+                                resources:  getNum('자료실 총 개수 (표시용)', '자료실 총 개수'),
+                                doneTodos:  getNum('완료한 투두 총 개수 (표시용)', '완료한 투두 총 개수'),
+                                studyHours: getNum('총 공부 시간 (표시용)', '총 공부 시간'),
+                                subjects:   getNum('과목 총 개수 (표시용)', '과목 총 개수'),
                             });
                         }
                     }
