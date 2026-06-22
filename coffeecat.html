@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>냥이 카페 시계</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -94,6 +94,7 @@
     @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.08)} 100%{transform:scale(1)} }
     .pop { animation:pop .5s ease; }
     @keyframes coffeeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+    @keyframes coffeeFloatSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-.7px)} }
     @keyframes coffeeDrinkSway { 0%,100%{transform:translateY(0) scaleX(1)} 50%{transform:translateY(1.5px) scaleX(1.006)} }
     @keyframes sodaBubbleRise {
       0%{opacity:0;transform:translateY(9px) scale(.65)}
@@ -103,6 +104,12 @@
     }
     @keyframes sodaBubbleTwinkle { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.55)} }
     .coffee-layer-cat, .coffee-layer-accessory { animation:coffeeFloat 4.8s ease-in-out infinite; }
+    .coffee-head-group { animation:coffeeFloat 4.8s ease-in-out infinite; }
+    .coffee-head-group .coffee-layer-cat,
+    .coffee-head-group .coffee-layer-accessory { animation:none; }
+    .coffee-cup-bingsu .coffee-layer-cat,
+    .coffee-cup-bingsu .coffee-layer-accessory { animation:coffeeFloatSoft 6.4s ease-in-out infinite; }
+    .coffee-cup-bingsu .coffee-head-group { animation:coffeeFloatSoft 6.4s ease-in-out infinite; }
     .coffee-layer-drink { animation:coffeeDrinkSway 5.6s ease-in-out infinite; transform-origin:center 44%; }
     .soda-bubbles { animation:coffeeDrinkSway 5.6s ease-in-out infinite; transform-origin:center 44%; }
     .soda-bubble { animation:sodaBubbleRise 2.4s ease-in-out infinite, sodaBubbleTwinkle 1.2s ease-in-out infinite; transform-origin:center; }
@@ -184,6 +191,7 @@ const DECO_ITEMS = {
     { id:'drink_matcha', label:'녹차라떼',  emoji:'🍵', unlock:null },
     { id:'drink_strawberry_aid', label:'딸기에이드', emoji:'🍓', unlock:null },
     { id:'drink_white_chocolate_latte', label:'화이트초코라떼', emoji:'🤍', unlock:null },
+    { id:'drink_hot_chocolate', label:'핫초코', emoji:'🍫', unlock:null },
     { id:'drink_blue',   label:'블루 레몬 에이드', emoji:'💙', unlock:null },
     { id:'drink_lemon_soda', label:'레몬 에이드', emoji:'🍋', unlock:null },
     { id:'drink_green_grape_soda', label:'청포도 에이드', emoji:'🍇', unlock:null },
@@ -191,14 +199,19 @@ const DECO_ITEMS = {
     { id:'drink_cherryblossom_strawberry_latte', label:'벚꽃 딸기라떼', emoji:'🌸', unlock:null },
     { id:'drink_chamomile_tea', label:'카모마일 티', emoji:'🌼', unlock:null },
     { id:'drink_coke', label:'콜라', emoji:'🥤', unlock:null },
+    { id:'drink_soda_watermelon_punch', label:'수박 펀치', emoji:'🍉', unlock:null },
     { id:'drink_oolong_tea', label:'우롱차', emoji:'🍵', unlock:null },
     { id:'drink_black_tea', label:'홍차', emoji:'🫖', unlock:null },
+    { id:'drink_tea_green_plum', label:'매실차', emoji:'🍵', unlock:null },
+    { id:'drink_tea_milk_taro', label:'타로 밀크티', emoji:'🧋', unlock:null },
     { id:'drink_bingsu_mango', label:'망고 빙수', emoji:'🥭', unlock:null },
     { id:'drink_clear_soda', label:'클리어 소다', emoji:'🫧', unlock:null },
     { id:'drink_bingsu_redbean', label:'팥빙수', emoji:'🍧', unlock:null },
     { id:'drink_juice_tomato', label:'토마토 주스', emoji:'🍅', unlock:null },
     { id:'drink_bingsu_fruits', label:'과일 빙수', emoji:'🍧', unlock:null },
     { id:'drink_frappuccino', label:'프라푸치노', emoji:'🥤', unlock:null },
+    { id:'drink_coffee_vienna', label:'비엔나 커피', emoji:'☕', unlock:null },
+    { id:'drink_juice_orange', label:'오렌지 주스', emoji:'🍊', unlock:null },
   ],
   catAcc: [
     { id:'acc_none',     label:'없음',       emoji:'✕',  unlock:null },
@@ -220,6 +233,8 @@ const DECO_ITEMS = {
     { id:'acc_hat_party', label:'파티 모자', emoji:'🎉', unlock:null },
     { id:'acc_tomato', label:'토마토', emoji:'🍅', unlock:null },
     { id:'acc_hat_gentleman', label:'신사 모자', emoji:'🎩', unlock:null },
+    { id:'acc_hat_gat', label:'갓', emoji:'🎩', unlock:null },
+    { id:'acc_hat_cap', label:'캡 모자', emoji:'🧢', unlock:null },
   ],
   cupDeco: [
     { id:'deco_none',    label:'없음',       emoji:'✕',  unlock:null },
@@ -233,13 +248,19 @@ const DECO_ITEMS = {
     { id:'deco_left_teaspoon', label:'티스푼', emoji:'🥄', unlock:null },
     { id:'deco_left_spoon', label:'스푼', emoji:'🥄', unlock:null },
     { id:'deco_left_tteok_bingsu', label:'빙수 떡', emoji:'🍡', unlock:null },
-    { id:'deco_left_honeycomb', label:'허니콤', emoji:'🍯', unlock:null },
+    { id:'deco_left_honeycomb', label:'벌꿀집', emoji:'🍯', unlock:null },
     { id:'deco_left_icecream_stick_chocolate', label:'초코 아이스크림바', emoji:'🍦', unlock:null },
     { id:'deco_left_icecream_stick_grapefruit', label:'자몽 아이스크림바', emoji:'🍦', unlock:null },
     { id:'deco_left_icecream_stick_melon', label:'멜론 아이스크림바', emoji:'🍦', unlock:null },
     { id:'deco_left_icecream_stick_strawberry', label:'딸기 아이스크림바', emoji:'🍦', unlock:null },
     { id:'deco_left_icecream_stick_vanilla', label:'바닐라 아이스크림바', emoji:'🍦', unlock:null },
     { id:'deco_left_melon', label:'멜론', emoji:'🍈', unlock:null },
+    { id:'deco_left_chocolate_dipped_cookie_stick', label:'초코 쿠키스틱', emoji:'🍪', unlock:null },
+    { id:'deco_left_icecream_scoop_vanilla', label:'바닐라 아이스크림', emoji:'🍦', unlock:null },
+    { id:'deco_left_icecream_scoop_strawberry', label:'딸기 아이스크림', emoji:'🍓', unlock:null },
+    { id:'deco_left_icecream_scoop_chocolate', label:'초코 아이스크림', emoji:'🍫', unlock:null },
+    { id:'deco_left_icecream_scoop_greentea', label:'녹차 아이스크림', emoji:'🍵', unlock:null },
+    { id:'deco_left_straw_green', label:'초록 빨대', emoji:'🥤', unlock:null },
   ],
   cupDeco2: [
     { id:'deco_none',    label:'없음',       emoji:'✕',  unlock:null },
@@ -254,7 +275,10 @@ const DECO_ITEMS = {
     { id:'deco_right_cookie_chocolate_cream', label:'초코 크림 쿠키', emoji:'🍪', unlock:null },
     { id:'deco_right_croffle', label:'크로플', emoji:'🧇', unlock:null },
     { id:'deco_right_croffle_with_icecream', label:'아이스크림 크로플', emoji:'🧇', unlock:null },
-    { id:'deco_right_honeycomb', label:'허니콤', emoji:'🍯', unlock:null },
+    { id:'deco_right_honeycomb', label:'벌꿀집', emoji:'🍯', unlock:null },
+    { id:'deco_right_chocolate_one_piece', label:'초콜릿 조각', emoji:'🍫', unlock:null },
+    { id:'deco_right_orange', label:'오렌지', emoji:'🍊', unlock:null },
+    { id:'deco_right_chocolate', label:'초콜릿', emoji:'🍫', unlock:null },
   ],
   bg: [
     { id:'bg_cream',   label:'크림',    color:'#FDFBF7', unlock:null },
@@ -363,31 +387,38 @@ const COFFEECAT_IMAGES = {
     cat_siamese: `${COFFEECAT_ASSET_BASE}/images/coffeecat/4_cat/siamese.webp`,
   },
   drink: {
-    drink_lemon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/americano.webp`,
-    drink_ice_americano: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/ice_americano.webp`,
-    drink_matcha: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/greentea_latte.webp`,
-    drink_strawberry_aid: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/strawberry_soda.webp`,
-    drink_white_chocolate_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/white_chocolate_latte.webp`,
-    drink_blue: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/blue_lemon_soda.webp`,
-    drink_lemon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/lemon_soda.webp`,
-    drink_green_grape_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/green_grape_soda.webp`,
-    drink_melon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/melon_soda.webp`,
-    drink_cherryblossom_strawberry_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/cherryblossom_strawberry_latte.webp`,
-    drink_chamomile_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/chamomile_tea.webp`,
-    drink_coke: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/coke.webp`,
-    drink_oolong_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/oolong_tea.webp`,
-    drink_black_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/black_tea.webp`,
+    drink_lemon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/coffee_americano.webp`,
+    drink_ice_americano: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/coffee_americano_ice.webp`,
+    drink_matcha: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/latte_greentea.webp`,
+    drink_strawberry_aid: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_strawberry.webp`,
+    drink_white_chocolate_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/latte_white_chocolate.webp`,
+    drink_hot_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/chocolate_hot.webp`,
+    drink_blue: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_blue_lemon.webp`,
+    drink_lemon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_lemon.webp`,
+    drink_green_grape_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_green_grape.webp`,
+    drink_melon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_melon.webp`,
+    drink_cherryblossom_strawberry_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/latte_cherryblossom_strawberry.webp`,
+    drink_chamomile_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/tea_chamomile.webp`,
+    drink_coke: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_coke.webp`,
+    drink_soda_watermelon_punch: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_watermelon_punch.webp`,
+    drink_oolong_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/tea_oolong.webp`,
+    drink_black_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/tea_black.webp`,
+    drink_tea_green_plum: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/tea_green_plum.webp`,
+    drink_tea_milk_taro: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/tea_milk_taro.webp`,
     drink_bingsu_mango: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/bingsu_mango.webp`,
-    drink_clear_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/clear_soda.webp`,
+    drink_clear_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/soda_clear.webp`,
     drink_bingsu_redbean: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/bingsu_redbean.webp`,
     drink_juice_tomato: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/juice_tomato.webp`,
     drink_bingsu_fruits: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/bingsu_fruits.webp`,
-    drink_frappuccino: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/frappuccino.webp`,
+    drink_frappuccino: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/frappe_frappuccino.webp`,
+    drink_coffee_vienna: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/coffee_vienna.webp`,
+    drink_juice_orange: `${COFFEECAT_ASSET_BASE}/images/coffeecat/1_drink/juice_orange.webp`,
   },
   cupUpByDrink: {
     drink_melon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/3_cup_up/up_melon_soda.webp`,
     drink_bingsu_redbean: `${COFFEECAT_ASSET_BASE}/images/coffeecat/3_cup_up/up_bingsu_redbean.webp`,
     drink_bingsu_fruits: `${COFFEECAT_ASSET_BASE}/images/coffeecat/3_cup_up/up_bingsu_fruits.webp`,
+    drink_coffee_vienna: `${COFFEECAT_ASSET_BASE}/images/coffeecat/3_cup_up/up_coffee_vienna.webp`,
   },
   accessory: {
     acc_ribbon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/ribbon.webp`,
@@ -408,6 +439,8 @@ const COFFEECAT_IMAGES = {
     acc_hat_party: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/hat_party.webp`,
     acc_tomato: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/tomato.webp`,
     acc_hat_gentleman: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/hat_gentleman.webp`,
+    acc_hat_gat: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/hat_gat.webp`,
+    acc_hat_cap: `${COFFEECAT_ASSET_BASE}/images/coffeecat/5_accessory/hat_cap.webp`,
   },
   decoLeft: {
     deco_left_gingercat: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/gingercat.webp`,
@@ -427,6 +460,12 @@ const COFFEECAT_IMAGES = {
     deco_left_icecream_stick_strawberry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_stick_strawberry.webp`,
     deco_left_icecream_stick_vanilla: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_stick_vanilla.webp`,
     deco_left_melon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/melon.webp`,
+    deco_left_chocolate_dipped_cookie_stick: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/chocolate_dipped_cookie_stick.webp`,
+    deco_left_icecream_scoop_vanilla: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_scoop_vanilla.webp`,
+    deco_left_icecream_scoop_strawberry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_scoop_strawberry.webp`,
+    deco_left_icecream_scoop_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_scoop_chocolate.webp`,
+    deco_left_icecream_scoop_greentea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/icecream_scoop_greentea.webp`,
+    deco_left_straw_green: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_left/straw_green.webp`,
   },
   decoRight: {
     deco_right_holly_berry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/holly_berry.webp`,
@@ -441,6 +480,9 @@ const COFFEECAT_IMAGES = {
     deco_right_croffle: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/croffle.webp`,
     deco_right_croffle_with_icecream: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/croffle_with_icecream.webp`,
     deco_right_honeycomb: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/honeycomb.webp`,
+    deco_right_chocolate_one_piece: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/chocolate_one_piece.webp`,
+    deco_right_orange: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/orange.webp`,
+    deco_right_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/2_deco_right/chocolate.webp`,
   },
 };
 
@@ -454,26 +496,32 @@ const COFFEECAT_THUMBS = {
     cat_siamese: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/cat/siamese.webp`,
   },
   drink: {
-    drink_lemon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/americano.webp`,
-    drink_ice_americano: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/ice_americano.webp`,
-    drink_matcha: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/greentea_latte.webp`,
-    drink_strawberry_aid: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/strawberry_soda.webp`,
-    drink_white_chocolate_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/white_chocolate_latte.webp`,
-    drink_blue: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/blue_lemon_soda.webp`,
-    drink_lemon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/lemon_soda.webp`,
-    drink_green_grape_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/green_grape_soda.webp`,
-    drink_melon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/melon_soda.webp`,
-    drink_cherryblossom_strawberry_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/cherryblossom_strawberry_latte.webp`,
-    drink_chamomile_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/chamomile_tea.webp`,
-    drink_coke: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/coke.webp`,
-    drink_oolong_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/oolong_tea.webp`,
-    drink_black_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/black_tea.webp`,
+    drink_lemon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/coffee_americano.webp`,
+    drink_ice_americano: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/coffee_americano_ice.webp`,
+    drink_matcha: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/latte_greentea.webp`,
+    drink_strawberry_aid: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_strawberry.webp`,
+    drink_white_chocolate_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/latte_white_chocolate.webp`,
+    drink_hot_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/chocolate_hot.webp`,
+    drink_blue: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_blue_lemon.webp`,
+    drink_lemon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_lemon.webp`,
+    drink_green_grape_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_green_grape.webp`,
+    drink_melon_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_melon.webp`,
+    drink_cherryblossom_strawberry_latte: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/latte_cherryblossom_strawberry.webp`,
+    drink_chamomile_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/tea_chamomile.webp`,
+    drink_coke: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_coke.webp`,
+    drink_soda_watermelon_punch: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_watermelon_punch.webp`,
+    drink_oolong_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/tea_oolong.webp`,
+    drink_black_tea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/tea_black.webp`,
+    drink_tea_green_plum: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/tea_green_plum.webp`,
+    drink_tea_milk_taro: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/tea_milk_taro.webp`,
     drink_bingsu_mango: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/bingsu_mango.webp`,
-    drink_clear_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/clear_soda.webp`,
+    drink_clear_soda: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/soda_clear.webp`,
     drink_bingsu_redbean: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/bingsu_redbean.webp`,
     drink_juice_tomato: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/juice_tomato.webp`,
     drink_bingsu_fruits: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/bingsu_fruits.webp`,
-    drink_frappuccino: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/frappuccino.webp`,
+    drink_frappuccino: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/frappe_frappuccino.webp`,
+    drink_coffee_vienna: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/coffee_vienna.webp`,
+    drink_juice_orange: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/drink/juice_orange.webp`,
   },
   decoLeft: {
     deco_left_gingercat: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/gingercat.webp`,
@@ -493,6 +541,12 @@ const COFFEECAT_THUMBS = {
     deco_left_icecream_stick_strawberry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_stick_strawberry.webp`,
     deco_left_icecream_stick_vanilla: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_stick_vanilla.webp`,
     deco_left_melon: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/melon.webp`,
+    deco_left_chocolate_dipped_cookie_stick: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/chocolate_dipped_cookie_stick.webp`,
+    deco_left_icecream_scoop_vanilla: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_scoop_vanilla.webp`,
+    deco_left_icecream_scoop_strawberry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_scoop_strawberry.webp`,
+    deco_left_icecream_scoop_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_scoop_chocolate.webp`,
+    deco_left_icecream_scoop_greentea: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/icecream_scoop_greentea.webp`,
+    deco_left_straw_green: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_left/straw_green.webp`,
   },
   decoRight: {
     deco_right_holly_berry: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/holly_berry.webp`,
@@ -507,6 +561,9 @@ const COFFEECAT_THUMBS = {
     deco_right_croffle: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/croffle.webp`,
     deco_right_croffle_with_icecream: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/croffle_with_icecream.webp`,
     deco_right_honeycomb: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/honeycomb.webp`,
+    deco_right_chocolate_one_piece: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/chocolate_one_piece.webp`,
+    deco_right_orange: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/orange.webp`,
+    deco_right_chocolate: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/deco_right/chocolate.webp`,
   },
   accessory: {
     acc_sunglasses_yellow: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/sunglasses_yellow.webp`,
@@ -523,6 +580,8 @@ const COFFEECAT_THUMBS = {
     acc_hat_party: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/hat_party.webp`,
     acc_tomato: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/tomato.webp`,
     acc_hat_gentleman: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/hat_gentleman.webp`,
+    acc_hat_gat: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/hat_gat.webp`,
+    acc_hat_cap: `${COFFEECAT_ASSET_BASE}/images/coffeecat/thumbs/accessory/hat_cap.webp`,
   },
 };
 
@@ -537,41 +596,83 @@ const getDecoThumbSrc = (tab, itemId) => {
 
 // WebP 레이어 합성 (아래 -> 위: 컵 아래, 음료, 컵 위, 데코1, 고양이, 데코2, 액세서리)
 const TRANSPARENT_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+const DECO_RIGHT_UNDER_CAT = new Set([
+  'deco_right_cookie_chocolate_cream',
+  'deco_right_honeycomb',
+  'deco_right_orange',
+  'deco_right_chocolate',
+]);
 const CupSVG = ({ catItem, drinkItem, catAccItem, cupDecoItem, cupDeco2Item }) => {
-  const isSodaDrink = ['drink_blue', 'drink_lemon_soda', 'drink_green_grape_soda', 'drink_strawberry_aid', 'drink_melon_soda', 'drink_coke', 'drink_clear_soda'].includes(drinkItem);
+  const isSodaDrink = ['drink_blue', 'drink_lemon_soda', 'drink_green_grape_soda', 'drink_strawberry_aid', 'drink_melon_soda', 'drink_coke', 'drink_soda_watermelon_punch', 'drink_clear_soda'].includes(drinkItem);
+  const isBingsuDrink = ['drink_bingsu_mango', 'drink_bingsu_redbean', 'drink_bingsu_fruits'].includes(drinkItem);
   const cupUpSrc = COFFEECAT_IMAGES.cupUpByDrink[drinkItem] || COFFEECAT_IMAGES.cupUp;
+  const decoRightLayer = { key:'deco2', src:COFFEECAT_IMAGES.decoRight[cupDeco2Item], alt:'' };
+  const isDecoRightUnderCat = DECO_RIGHT_UNDER_CAT.has(cupDeco2Item);
+  const catLayer = { key:'cat', src:COFFEECAT_IMAGES.cat[catItem] || COFFEECAT_IMAGES.cat.cat_white, alt:'커피냥' };
+  const accessoryLayer = { key:'accessory', src:COFFEECAT_IMAGES.accessory[catAccItem], alt:'' };
   const layers = [
     { key:'cup-down', src:COFFEECAT_IMAGES.cupDown, alt:'' },
     { key:'drink', src:COFFEECAT_IMAGES.drink[drinkItem] || COFFEECAT_IMAGES.drink.drink_lemon, alt:'' },
     { key:'cup-up', src:cupUpSrc, alt:'' },
     { key:'deco', src:COFFEECAT_IMAGES.decoLeft[cupDecoItem], alt:'' },
-    { key:'cat', src:COFFEECAT_IMAGES.cat[catItem] || COFFEECAT_IMAGES.cat.cat_white, alt:'커피냥' },
-    { key:'deco2', src:COFFEECAT_IMAGES.decoRight[cupDeco2Item], alt:'' },
-    { key:'accessory', src:COFFEECAT_IMAGES.accessory[catAccItem], alt:'' },
-  ].filter(layer => layer.src || layer.key === 'accessory');
+    ...(isDecoRightUnderCat ? [decoRightLayer] : []),
+    ...(isDecoRightUnderCat ? [{ key:'head-group', children:[catLayer, accessoryLayer] }] : [catLayer]),
+    ...(isDecoRightUnderCat ? [] : [decoRightLayer]),
+    ...(isDecoRightUnderCat ? [] : [accessoryLayer]),
+  ].filter(layer => layer.children || layer.src || layer.key === 'accessory');
 
   return (
-    <div style={{position:'relative',width:'100%',height:'100%',overflow:'visible'}} aria-label="커피냥 이미지">
+    <div className={isBingsuDrink ? 'coffee-cup-bingsu' : undefined} style={{position:'relative',width:'100%',height:'100%',overflow:'visible'}} aria-label="커피냥 이미지">
       {layers.map((layer, index) => (
-        <img
-          key={layer.key}
-          className={`coffee-layer coffee-layer-${layer.key}`}
-          src={layer.src || TRANSPARENT_IMAGE}
-          alt={layer.alt}
-          draggable="false"
-          onError={(e)=>{ e.currentTarget.style.display = 'none'; }}
-          style={{
-            position:'absolute',
-            inset:0,
-            width:'100%',
-            height:'100%',
-            objectFit:'contain',
-            pointerEvents:'none',
-            userSelect:'none',
-            opacity:layer.src ? 1 : 0,
-            zIndex:index,
-          }}
-        />
+        layer.children ? (
+          <div
+            key={layer.key}
+            className="coffee-head-group"
+            style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',userSelect:'none',zIndex:index}}
+          >
+            {layer.children.map((child, childIndex) => (
+              <img
+                key={child.key}
+                className={`coffee-layer coffee-layer-${child.key}`}
+                src={child.src || TRANSPARENT_IMAGE}
+                alt={child.alt}
+                draggable="false"
+                onError={(e)=>{ e.currentTarget.style.display = 'none'; }}
+                style={{
+                  position:'absolute',
+                  inset:0,
+                  width:'100%',
+                  height:'100%',
+                  objectFit:'contain',
+                  pointerEvents:'none',
+                  userSelect:'none',
+                  opacity:child.src ? 1 : 0,
+                  zIndex:childIndex,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <img
+            key={layer.key}
+            className={`coffee-layer coffee-layer-${layer.key}`}
+            src={layer.src || TRANSPARENT_IMAGE}
+            alt={layer.alt}
+            draggable="false"
+            onError={(e)=>{ e.currentTarget.style.display = 'none'; }}
+            style={{
+              position:'absolute',
+              inset:0,
+              width:'100%',
+              height:'100%',
+              objectFit:'contain',
+              pointerEvents:'none',
+              userSelect:'none',
+              opacity:layer.src ? 1 : 0,
+              zIndex:index,
+            }}
+          />
+        )
       ))}
       {isSodaDrink && (
         <svg
@@ -1170,7 +1271,7 @@ function App() {
 
       {/* 메인 카드 */}
       <div style={{
-        width:'300px', borderRadius:'2rem', overflow:'hidden', position:'relative',
+        width:'340px', borderRadius:'2rem', overflow:'hidden', position:'relative',
         background: cardBg,
         boxShadow:'none',
         border: widgetBorder ? `1.5px solid ${dark?'rgba(255,255,255,.08)':'#EBE8DE'}` : '1.5px solid transparent',
@@ -1425,6 +1526,7 @@ root.render(<App/>);
 </script>
 </body>
 </html>
+
 
 
 
