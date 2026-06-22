@@ -27,6 +27,8 @@
             margin: 0;
             padding: 0;
             width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
             background: transparent !important;
             background-color: transparent !important;
         }
@@ -65,7 +67,9 @@
             .home-grid { grid-template-columns: 1fr 1fr; }
             .home-grid > *:nth-child(3) { grid-column: 1 / -1; }
         }
-        @media (max-width: 560px) {
+        /* Notion 모바일 임베드는 실제 화면보다 넓은 뷰포트로 계산되는 경우가 있어
+           2열 카드가 잘리지 않도록 태블릿 폭부터 1열로 전환한다. */
+        @media (max-width: 800px) {
             .home-grid { grid-template-columns: 1fr; }
             .home-grid > *:nth-child(3) { grid-column: auto; }
         }
@@ -75,10 +79,17 @@
         .gnb-nav-full { display: flex; } 
         .gnb-nav-compact { display: none; } 
 
-        @media (max-width: 700px) {
+        @media (max-width: 800px) {
             .gnb-logo-text { display: none; }
             .gnb-nav-full { display: none; }
             .gnb-nav-compact { display: flex; }
+        }
+
+        @media (max-width: 800px) {
+            #root { padding: 0.75rem !important; gap: 0.75rem !important; }
+            header, main { min-width: 0; }
+            main { padding: 1.25rem !important; gap: 1.25rem !important; }
+            .home-grid > * { min-width: 0; }
         }
 
         @media (max-width: 420px) {
