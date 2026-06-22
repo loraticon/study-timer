@@ -594,7 +594,6 @@ const App = () => {
     const [showOverdueModal, setShowOverdueModal] = useState(false);
     const [linkNoteModal, setLinkNoteModal] = useState({ isOpen: false, vocab: null, type: 'note' });
     const [viewNotesModal, setViewNotesModal] = useState({ isOpen: false, vocab: null, type: 'note', notes: [] });
-    const [noteDetailModal, setNoteDetailModal] = useState({ isOpen: false, note: null, content: '', loading: false, error: null });
     const [linkSearchTerm, setLinkSearchTerm] = useState('');
     const dateInputRef = useRef(null);
 
@@ -1255,32 +1254,6 @@ const App = () => {
         }
     };
 
-    // 모바일에서는 외부 브라우저 대신 위젯 안에서 학습 노트 본문을 먼저 보여준다.
-    const openNoteDetail = async (note, event) => {
-        if (!window.matchMedia('(max-width: 800px)').matches) return;
-        event.preventDefault();
-        setNoteDetailModal({ isOpen: true, note, content: '', loading: true, error: null });
-
-        try {
-            const res = await fetch(`${config.proxyUrl}/v1/blocks/${note.id}/children?page_size=100`, {
-                method: 'GET',
-                headers: { 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }
-            });
-            if (!res.ok) throw new Error('노트 본문을 불러오지 못했습니다.');
-            const data = await res.json();
-            const content = (data.results || []).map(block => {
-                const value = block[block.type];
-                const text = value?.rich_text?.map(item => item.plain_text).join('') || '';
-                if (block.type === 'to_do' && text) return `${value.checked ? '✓' : '○'} ${text}`;
-                return text;
-            }).filter(Boolean).join('\n\n');
-            setNoteDetailModal({ isOpen: true, note, content: content || '표시할 본문이 없습니다.', loading: false, error: null });
-        } catch (error) {
-            setNoteDetailModal({ isOpen: true, note, content: '', loading: false, error: error.message || '노트를 불러오지 못했습니다.' });
-        }
-    };
-
-
     /* ── 투두 액션 ── */
     const toggleTodo = async (todo) => {
         if (!config.saved || !config.todoDbId) return;
@@ -1905,12 +1878,8 @@ const App = () => {
                 setLinkNoteModal({ isOpen: true, vocab, type });
                 setLinkSearchTerm('');
             } else if (count === 1) {
-                // 모바일 학습 노트는 위젯 내부 상세 보기, 데스크톱은 기존 새 탭 동작 유지
-                if (type === 'note' && window.matchMedia('(max-width: 800px)').matches) {
-                    openNoteDetail(matchedNotes[0], e);
-                } else {
-                    window.open(`https://www.notion.so/${matchedNotes[0].id.replace(/-/g,'')}`, '_blank');
-                }
+                // 1개면 바로 노션 열기
+                window.open(`https://www.notion.so/${matchedNotes[0].id.replace(/-/g,'')}`, '_blank');
             } else {
                 // 2개 이상이면 목록 모달 열기
                 setViewNotesModal({ isOpen: true, vocab, type, notes: matchedNotes });
@@ -3137,7 +3106,7 @@ const App = () => {
                                                                 const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                                                 const notionUrl = `https://www.notion.so/${n.id.replace(/-/g, '')}`;
                                                                 return (
-                                                                    <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" onClick={e => openNoteDetail(n, e)} className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors cursor-pointer no-underline group" style={{background: isDark ? '#1F2A24' : '#F3F8F5', border: isDark ? '1px solid #2F3A34' : '1px solid transparent'}} onMouseEnter={e => e.currentTarget.style.background = isDark ? '#24352B' : '#E8F2EC'} onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1F2A24' : '#F3F8F5'}>
+                                                                    <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors cursor-pointer no-underline group" style={{background: isDark ? '#1F2A24' : '#F3F8F5', border: isDark ? '1px solid #2F3A34' : '1px solid transparent'}} onMouseEnter={e => e.currentTarget.style.background = isDark ? '#24352B' : '#E8F2EC'} onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1F2A24' : '#F3F8F5'}>
                                                                         <span className="text-[12px] font-medium text-gray-700 dark:text-gray-100 flex-1 truncate group-hover:text-[#4a7c5e] dark:group-hover:text-[#A7D7B8] transition-colors">{n.title}</span>
                                                                         <span className="text-[10px] text-gray-400 shrink-0">{dateStr}</span>
                                                                     </a>
@@ -3206,7 +3175,7 @@ const App = () => {
                                             const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                                             const notionUrl = `https://www.notion.so/${n.id.replace(/-/g, '')}`;
                                             return (
-                                                <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" onClick={e => openNoteDetail(n, e)} className="flex items-center gap-3 bg-[#F3F8F5] dark:bg-[#1F2A24] rounded-xl px-3 py-2.5 hover:bg-[#E8F2EC] dark:hover:bg-[#24352B] transition-colors cursor-pointer no-underline group">
+                                                <a key={n.id} href={notionUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 bg-[#F3F8F5] dark:bg-[#1F2A24] rounded-xl px-3 py-2.5 hover:bg-[#E8F2EC] dark:hover:bg-[#24352B] transition-colors cursor-pointer no-underline group">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate group-hover:text-[#4a7c5e] dark:group-hover:text-[#9CC3A8] transition-colors">{n.title}</div>
                                                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -3702,7 +3671,7 @@ const App = () => {
                                             <div className="text-center py-6 text-gray-400 text-[12px]">연결된 학습 노트가 없습니다.</div>
                                         ) : (
                                             matchedNotes.map(n => (
-                                                <a key={n.id} href={`https://www.notion.so/${n.id.replace(/-/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => openNoteDetail(n, e)}
+                                                <a key={n.id} href={`https://www.notion.so/${n.id.replace(/-/g, '')}`} target="_blank" rel="noopener noreferrer" 
                                                     className="w-full flex items-center justify-between p-3.5 rounded-xl bg-white border border-gray-100 hover:border-[#849F71] hover:shadow-md transition-all text-left group no-underline">
                                                     <div className="flex flex-col min-w-0 mr-3">
                                                         <span className="text-[13px] font-bold text-gray-700 truncate group-hover:text-[#4a7c5e] transition-colors">{n.title}</span>
@@ -3961,34 +3930,6 @@ const App = () => {
                 </div>
             )}
 
-            {/* ── 모바일 학습 노트 상세 보기 ── */}
-            {noteDetailModal.isOpen && (
-                <div className="fixed inset-0 z-[160] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                    <div className="w-full max-w-md max-h-[85vh] bg-white dark:bg-[#252525] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-5 border-b border-gray-100 dark:border-[#2F2F2F] flex items-start gap-3">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-bold text-[#849F71] mb-1">학습 노트</p>
-                                <h3 className="text-[18px] font-extrabold text-gray-800 dark:text-gray-100 break-words">{noteDetailModal.note?.title}</h3>
-                                <p className="text-[11px] text-gray-400 mt-1">{noteDetailModal.note?.createdTime ? new Date(noteDetailModal.note.createdTime).toLocaleString('ko-KR') : ''}</p>
-                            </div>
-                            <button onClick={() => setNoteDetailModal({ isOpen: false, note: null, content: '', loading: false, error: null })} className="w-8 h-8 shrink-0 rounded-full bg-gray-50 dark:bg-[#333] flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors" aria-label="닫기"><XIcon/></button>
-                        </div>
-                        <div className="p-5 overflow-y-auto">
-                            {noteDetailModal.loading ? (
-                                <div className="py-10 text-center text-sm text-gray-400">노트 내용을 불러오는 중입니다…</div>
-                            ) : noteDetailModal.error ? (
-                                <div className="py-10 text-center text-sm text-red-400">{noteDetailModal.error}</div>
-                            ) : (
-                                <div className="text-[14px] leading-7 text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words">{noteDetailModal.content}</div>
-                            )}
-                        </div>
-                        <div className="p-4 border-t border-gray-100 dark:border-[#2F2F2F] bg-gray-50 dark:bg-[#1E1E1E]">
-                            <a href={`https://www.notion.so/${noteDetailModal.note?.id?.replace(/-/g, '') || ''}`} target="_blank" rel="noopener noreferrer" className="w-full py-3 rounded-xl bg-white dark:bg-[#252525] border border-gray-200 dark:border-[#3D3D3D] text-[12px] font-bold text-gray-500 dark:text-gray-300 flex items-center justify-center no-underline">노션 원문 열기</a>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* ── 다중 노트 목록 보기 모달 ── */}
             {viewNotesModal.isOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
@@ -4011,7 +3952,6 @@ const App = () => {
                                     key={n.id}
                                     href={`https://www.notion.so/${n.id.replace(/-/g, '')}`} 
                                     target="_blank" rel="noopener noreferrer"
-                                    onClick={e => { if (viewNotesModal.type === 'note') openNoteDetail(n, e); }}
                                     className="w-full flex items-center justify-between p-4 rounded-xl bg-white border border-gray-100 hover:border-[#A67B5B] hover:shadow-md transition-all text-left group no-underline"
                                 >
                                     <div className="flex flex-col min-w-0 mr-3">
