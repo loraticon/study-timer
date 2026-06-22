@@ -117,6 +117,9 @@
         @media (max-width: 800px) {
             .calendar-schedule-subject,
             .calendar-schedule-actions button { display: none; }
+            .timer-record { gap: 0.5rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+            .timer-record-icon,
+            .timer-record-arrow { display: none; }
         }
 
         @media (max-width: 420px) {
@@ -2922,19 +2925,19 @@ const App = () => {
                                                                                         <button
                                                                                             key={i}
                                                                                             onClick={() => setSelectedRecord(r)}
-                                                                                            className="flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors group"
+                                                                                            className="timer-record flex items-center gap-3 rounded-xl px-3 py-2 w-full text-left transition-colors group"
                                                                                             style={{background: isDark ? '#1E1E1E' : '#FDFBF7', border: isDark ? '1px solid #2F2F2F' : '1px solid transparent'}}
                                                                                             onMouseEnter={e => e.currentTarget.style.background = isDark ? '#252525' : '#F4EDE5'}
                                                                                             onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1E1E1E' : '#FDFBF7'}
                                                                                         >
-                                                                                            <SubjectIcon icon={subjects.find(s => s.name === r.subject)?.icon} size={18} />
+                                                                                            <span className="timer-record-icon"><SubjectIcon icon={subjects.find(s => s.name === r.subject)?.icon} size={18} /></span>
                                                                                             <div className="flex-1 flex items-center gap-1.5 min-w-0">
                                                                                                 {r.subjectParent && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-300 shrink-0 bg-gray-100 dark:bg-[#2F2F2F] px-1.5 py-0.5 rounded group-hover:bg-white dark:group-hover:bg-[#333333] transition-colors">{r.subjectParent}</span>}
                                                                                                 <span className="text-[13px] font-medium text-gray-700 dark:text-gray-100 truncate">{r.subject}</span>
                                                                                             </div>
                                                                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style={r.mode === 'pomodoro' ? {background:'#FEF2F2', color:'#C0614A'} : {background:'#F0F4FF', color:'#5B6FA6'}}>{r.mode === 'pomodoro' ? '뽀모도로' : '타이머'}</span>
                                                                                             <span className="text-[12px] font-bold text-gray-500 dark:text-gray-200 shrink-0">{fmtMinToHour(r.minutes)}</span>
-                                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4B5A5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                                                                            <svg className="timer-record-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4B5A5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                                                                                         </button>
                                                                                     ))}
                                                                                 </div>
