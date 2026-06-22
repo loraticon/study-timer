@@ -249,12 +249,21 @@ const App = () => {
                 body: JSON.stringify({ page_size: 100 }),
             });
             const nameProp = config.subjectNameProp || '이름';
-            const list = data.results
-                .map(page => {
-                    const prop = page.properties[nameProp];
-                    const name = prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '';
-                    return { id: page.id, name };
-                })
+            const subjectMap = {};
+            data.results.forEach(page => {
+                const prop = page.properties[nameProp];
+                const name = prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '';
+                const parentProp = page.properties['상위 항목'] || Object.values(page.properties).find(p => p.type === 'relation' && p.name && p.name.includes('상위'));
+                const parentId = parentProp?.relation?.[0]?.id || null;
+                if (name) subjectMap[page.id] = { id: page.id, name, parentId };
+            });
+            const list = Object.values(subjectMap)
+                .map(subject => ({
+                    ...subject,
+                    parentName: subject.parentId && subjectMap[subject.parentId]
+                        ? subjectMap[subject.parentId].name
+                        : null
+                }))
                 .filter(s => s.name);
             setSubjects(list);
         } catch (e) {
@@ -563,7 +572,7 @@ const App = () => {
                                         <BookIcon/>
                                         {subjectsLoading
                                             ? <span className="text-gray-400">불러오는 중...</span>
-                                            : selectedSubject?.name || <span className="text-gray-400 dark:text-gray-500">과목 선택</span>}
+                                            : (selectedSubject?.parentName ? `${selectedSubject.parentName} ▶ ${selectedSubject.name}` : selectedSubject?.name) || <span className="text-gray-400 dark:text-gray-500">과목 선택</span>}
                                     </span>
                                     <div className="flex items-center gap-1.5">
                                         {config.saved && (
@@ -590,7 +599,7 @@ const App = () => {
                                                 style={selectedSubject?.id===s.id ? { background:`${theme.hex}18` } : {}}
                                                 onClick={() => { setSelectedSubject(s); setShowSubjectDrop(false); }}>
                                                 {selectedSubject?.id===s.id && <span className="mr-1.5" style={{color:theme.hex}}>✓</span>}
-                                                {s.name}
+                                                {s.parentName ? `${s.parentName} ▶ ${s.name}` : s.name}
                                             </div>
                                         ))}
                                     </div>
