@@ -8,12 +8,14 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 설치 여부와 무관하게 모든 브라우저에서 같은 한글 폰트를 사용한다. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+                    fontFamily: { sans: ['"Pretendard Variable"', 'Pretendard', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'] },
                     colors: {
                         latte: { 50: '#F4F0EA', 100: '#EBE8DE', 300: '#D1CBBF', 500: '#A67B5B', 700: '#8B664B', 900: '#5C3A21' },
                         primary: '#A67B5B', bgLight: '#FDFBF7'
@@ -37,7 +39,9 @@
             flex-direction: column;
             align-items: stretch;
             box-sizing: border-box;
+            font-family: "Pretendard Variable", Pretendard, sans-serif;
         }
+        button, input, textarea, select { font-family: inherit; }
         ::-webkit-scrollbar { width: 3px; height: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D1CBBF; border-radius: 99px; }
