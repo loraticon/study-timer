@@ -2796,6 +2796,38 @@ const App = () => {
                             ))}
                         </div>
 
+                        {/* 과목별 공부 시간 분포 */}
+                        {filteredTimerRecords.length > 0 && (() => {
+                            const sums = {};
+                            filteredTimerRecords.forEach(r => { sums[r.subject] = (sums[r.subject] || 0) + r.minutes; });
+                            const list = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+                            const total = list.reduce((a,[,m])=>a+m,0);
+                            const visibleList = list.slice(0, 5);
+                            return (
+                                <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
+                                    <div className="flex items-center gap-2 mb-5">
+                                        <h3 className="text-[15px] font-bold text-gray-800">과목별 공부 시간</h3>
+                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full ml-auto" style={{background:'#F4EDE5', color:'#8B664B'}}>총 {fmtMinToHour(total)}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-3">
+                                        {visibleList.map(([name, min], i) => {
+                                            const pct = Math.round((min / total) * 100);
+                                            return (
+                                                <div key={name} className="flex items-center gap-3">
+                                                    <span className="text-[12px] font-bold text-gray-500 w-20 shrink-0 text-right truncate">{name}</span>
+                                                    <div className="flex-1 bg-[#F4F0EA] rounded-full h-3.5 overflow-hidden">
+                                                        <div className="h-full rounded-full transition-all duration-700" style={{ width:`${pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}></div>
+                                                    </div>
+                                                    <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-right">{fmtMinToHour(min)} <span className="text-gray-300">·</span> {pct}%</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {list.length > visibleList.length && <p className="mt-4 text-[11px] text-gray-400 text-right">상위 5개 과목 표시</p>}
+                                </div>
+                            );
+                        })()}
+
                         {/* 타이머 공부 기록 */}
                         <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
                             {selectedSubject === null ? (
@@ -3234,35 +3266,6 @@ const App = () => {
                             </div>
                         </div>
 
-                        {/* 과목별 공부 시간 분포 */}
-                        {filteredTimerRecords.length > 0 && (() => {
-                            const sums = {};
-                            filteredTimerRecords.forEach(r => { sums[r.subject] = (sums[r.subject] || 0) + r.minutes; });
-                            const list = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-                            const total = list.reduce((a,[,m])=>a+m,0);
-                            return (
-                                <div className="bg-white dark:bg-[#252525] border border-transparent dark:border-[#2F2F2F] rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] soft-card">
-                                    <div className="flex items-center gap-2 mb-5">
-                                        <h3 className="text-[15px] font-bold text-gray-800">과목별 공부 시간</h3>
-                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full ml-auto" style={{background:'#F4EDE5', color:'#8B664B'}}>총 {fmtMinToHour(total)}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-3">
-                                        {list.map(([name, min], i) => {
-                                            const pct = Math.round((min / total) * 100);
-                                            return (
-                                                <div key={name} className="flex items-center gap-3">
-                                                    <span className="text-[12px] font-bold text-gray-500 w-20 shrink-0 text-right truncate">{name}</span>
-                                                    <div className="flex-1 bg-[#F4F0EA] rounded-full h-3.5 overflow-hidden">
-                                                        <div className="h-full rounded-full transition-all duration-700" style={{ width:`${pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}></div>
-                                                    </div>
-                                                    <span className="text-[11px] font-bold text-gray-400 w-16 shrink-0 text-right">{fmtMinToHour(min)} <span className="text-gray-300">·</span> {pct}%</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })()}
                     </div>
                 )}
 
