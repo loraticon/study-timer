@@ -114,6 +114,11 @@
             margin: 0 auto;
         }
 
+        @media (max-width: 800px) {
+            .calendar-schedule-subject,
+            .calendar-schedule-actions button { display: none; }
+        }
+
         @media (max-width: 420px) {
             .gnb-refresh { width: 2rem; height: 2rem; }
             .cal-day-num { width: 1.5rem !important; height: 1.5rem !important; font-size: 11px !important; }
@@ -2529,16 +2534,16 @@ const App = () => {
                                                 <div key={s.id} className="flex gap-4 items-start group">
                                                     <span className="text-xs font-bold text-gray-400 pt-0.5 w-10 shrink-0 text-right">{s.timeStr || '-'}</span>
                                                     <div className="flex-1 flex justify-between items-center border-l-2 border-latte-200 pl-3 min-w-0">
-                                                        <div className="min-w-0 mr-2 flex flex-col justify-center">
+                                                        <div className="calendar-schedule-title flex-1 min-w-0 mr-2 flex flex-col justify-center">
                                                             <div className={`text-[13px] font-bold truncate ${s.done ? 'text-gray-400 line-through' : isOverdue ? 'text-gray-400' : 'text-gray-800'}`}>{s.title}</div>
                                                             {s.subjectName && s.subjectName !== '과목 없음' && (
-                                                                <div className={`text-[11px] font-medium mt-0.5 flex items-center gap-1 ${s.done ? 'text-gray-300' : 'text-gray-400'}`}>
+                                                                <div className={`calendar-schedule-subject text-[11px] font-medium mt-0.5 flex items-center gap-1 ${s.done ? 'text-gray-300' : 'text-gray-400'}`}>
                                                                     {s.subjectParent && <span>{s.subjectParent} <span className="text-[8px] opacity-60">▶</span></span>}
                                                                     <span>{s.subjectName}</span>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                        <div className="calendar-schedule-actions flex items-center gap-1.5 shrink-0">
                                                             <button onClick={() => handleMoveTodo(s, todayNum + 86400000)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-gray-400 hover:text-latte-500 px-1.5 py-0.5 rounded-lg hover:bg-latte-50 whitespace-nowrap" title="내일로 미루기">미루기</button>
                                                             <button onClick={() => deleteTodo(s)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded-lg hover:bg-red-50 whitespace-nowrap" title="삭제">삭제</button>
                                                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${badgeClass}`}>{badgeLabel}</span>
