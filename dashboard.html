@@ -90,6 +90,28 @@
             header, main { min-width: 0; }
             main { padding: 1.25rem !important; gap: 1.25rem !important; }
             .home-grid > * { min-width: 0; }
+            header { padding: 0.75rem !important; gap: 0.5rem; }
+            .gnb-nav-compact { flex: 1; justify-content: space-between; gap: 0.25rem !important; min-width: 0; }
+            .gnb-nav-compact button { padding: 0.375rem 0.5rem !important; }
+            .gnb-actions { gap: 0.25rem !important; }
+            .gnb-actions button { width: 2rem !important; height: 2rem !important; }
+        }
+
+        @media (max-width: 480px) {
+            header > :first-child { display: none; }
+        }
+
+        .weekly-stamp-list {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.25rem;
+        }
+        .weekly-stamp {
+            width: 100%;
+            max-width: 2.25rem;
+            height: auto;
+            aspect-ratio: 1;
+            margin: 0 auto;
         }
 
         @media (max-width: 420px) {
@@ -2212,7 +2234,7 @@ const App = () => {
                     <button onClick={() => setActiveTab('records')} className={`px-3 py-1.5 rounded-full font-bold text-[12px] transition-colors whitespace-nowrap ${activeTab === 'records' ? 'bg-[#F4F0EA] text-[#8B664B]' : 'text-gray-400'}`}>통계</button>
                 </nav>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="gnb-actions flex items-center gap-2 shrink-0">
                     <button onClick={() => setIsDark(!isDark)} className="w-9 h-9 rounded-full border border-gray-100 dark:border-[#2F2F2F] flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-[#252525] transition-all" title={isDark ? "라이트모드" : "다크모드"}>
                         {isDark ? <SunIcon/> : <MoonIcon/>}
                     </button>
@@ -2406,10 +2428,10 @@ const App = () => {
                                     </div>
                                     <span className="text-sm font-bold text-gray-300">{weeklyStamps.stampCount}/7일</span>
                                 </div>
-                                <div className="flex justify-between px-2">
+                                <div className="weekly-stamp-list">
                                     {weeklyStamps.stamps.map((st, i) => (
-                                        <div key={i} className="flex flex-col items-center gap-2">
-                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${st.hasRecord ? 'bg-[#A67B5B] text-white shadow-sm' : st.isFuture ? 'bg-transparent border border-dashed border-gray-200' : 'bg-[#F4F0EA]'}`}>
+                                        <div key={i} className="flex flex-col items-center">
+                                            <div className={`weekly-stamp rounded-full flex items-center justify-center transition-all ${st.hasRecord ? 'bg-[#A67B5B] text-white shadow-sm' : st.isFuture ? 'bg-transparent border border-dashed border-gray-200' : 'bg-[#F4F0EA]'}`}>
                                                 {st.hasRecord && <HeartIcon/>}
                                             </div>
                                         </div>
