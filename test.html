@@ -32,7 +32,14 @@
         }
     </script>
     <style>
-        body { margin: 0; padding: 8px 12px; display: flex; justify-content: center; align-items: flex-start; min-height: auto; background-color: transparent; box-sizing: border-box; }
+        html, body, #root {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        body { display: flex; flex-direction: column; align-items: stretch; box-sizing: border-box; }
         #root { align-items: flex-start !important; }
         html.dark, html.dark body, html.dark #root {
             background: #191919 !important;
@@ -44,8 +51,7 @@
         .dark ::-webkit-scrollbar-thumb { background-color: #333333; }
         * { -ms-overflow-style: none; scrollbar-width: thin; }
         
-        .soft-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
-        .dark .soft-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.3); } /* 다크모드용 그림자 조정 */
+        .soft-shadow, .dark .soft-shadow { box-shadow: none !important; }
 
         .input-underline { border-bottom: 2px solid #EBE8DE; transition: border-color 0.2s; }
         .input-underline:focus { border-bottom-color: #A67B5B; outline: none; }
@@ -80,7 +86,7 @@
 
         .test-shell {
             width: 100%;
-            max-width: 760px;
+            max-width: none;
             max-height: 90vh;
         }
 
@@ -95,7 +101,7 @@
         }
 
         @media (max-width: 640px) {
-            body { padding: 8px; align-items: flex-start; }
+            body { align-items: stretch; }
             .test-shell {
                 max-width: 100%;
                 max-height: none;
@@ -107,7 +113,6 @@
         }
 
         @media (max-width: 420px) {
-            body { padding: 6px; }
             .test-shell {
                 min-height: 0;
                 border-radius: 1.5rem !important;
