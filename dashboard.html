@@ -580,6 +580,7 @@ const App = () => {
     const [isAddingTodo, setIsAddingTodo] = useState(false);
     const [newTodoTitle, setNewTodoTitle] = useState('');
     const [newTodoSubjectId, setNewTodoSubjectId] = useState('');
+    const [newTodoTime, setNewTodoTime] = useState('');
     const [todoProps, setTodoProps] = useState({ title: '이름', done: '완료', date: '날짜', subject: '과목' });
 
     const [subjects, setSubjects] = useState([]);
@@ -1296,9 +1297,10 @@ const App = () => {
         if (!config.saved || !config.todoDbId) return;
         const targetDate = new Date(targetDateNum);
         const targetISO = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+        const targetDateStart = todo.timeStr ? `${targetISO}T${todo.timeStr}:00` : targetISO;
         setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, date: targetDateNum } : t));
         try {
-            await fetch(`${config.proxyUrl}/v1/pages/${todo.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }, body: JSON.stringify({ properties: { [todoProps.date]: { date: { start: targetISO } } } }) });
+            await fetch(`${config.proxyUrl}/v1/pages/${todo.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-api-key': config.apiKey, 'x-notion-version': '2022-06-28' }, body: JSON.stringify({ properties: { [todoProps.date]: { date: { start: targetDateStart } } } }) });
             showToast(`'${todo.title}' 항목이 이동되었습니다.`);
         } catch (e) {
             setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, date: todo.date } : t));
@@ -1344,17 +1346,21 @@ const App = () => {
 
     const handleAddTodo = async () => {
         if (!newTodoTitle.trim() || !config.saved || !config.todoDbId) { setIsAddingTodo(false); return; }
-        const title = newTodoTitle; const subjectId = newTodoSubjectId; 
+        const title = newTodoTitle; const subjectId = newTodoSubjectId; const time = newTodoTime;
         const subjectObj = subjectId ? subjects.find(s => s.id === subjectId) : null;
         const subjectName = subjectObj ? subjectObj.name : '과목 없음';
         const subjectParent = subjectObj ? subjectObj.parentName : null;
-        setNewTodoTitle(''); setNewTodoSubjectId(''); setIsAddingTodo(false);
+        setNewTodoTitle(''); setNewTodoSubjectId(''); setNewTodoTime(''); setIsAddingTodo(false);
         const tempId = 'temp-' + Date.now();
         const localISOTime = (new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))).toISOString().slice(0, 10);
-        const newTodo = { id: tempId, title, done: false, date: todayNum, timeStr: null, timeSortValue: 9999, subjectId, subjectName, subjectParent };
+        const [hours, minutes] = time ? time.split(':').map(Number) : [0, 0];
+        const timeStr = time || null;
+        const timeSortValue = time ? hours * 60 + minutes : 9999;
+        const dateStart = time ? `${localISOTime}T${time}:00` : localISOTime;
+        const newTodo = { id: tempId, title, done: false, date: todayNum, timeStr, timeSortValue, subjectId, subjectName, subjectParent };
         setTodos(prev => [newTodo, ...prev]);
         try {
-            const properties = { [todoProps.title]: { title: [{ text: { content: title } }] }, [todoProps.date]: { date: { start: localISOTime } } };
+            const properties = { [todoProps.title]: { title: [{ text: { content: title } }] }, [todoProps.date]: { date: { start: dateStart } } };
             if (todoProps.subject && subjectId) properties[todoProps.subject] = { relation: [{ id: subjectId }] };
 
             const dashboardRelationProp = config.dashboardRelationProp || '대시보드 통계용';
@@ -2343,6 +2349,17 @@ const App = () => {
                                                     {subjects.map(s => <option key={s.id} value={s.id}>{s.parentName ? `${s.parentName} ▶ ${s.name}` : s.name}</option>)}
                                                 </select>
                                             )}
+                                            <div className="flex items-center gap-2">
+                                                <label className="text-[11px] font-bold text-gray-400 shrink-0" htmlFor="new-todo-time">시간</label>
+                                                <input
+                                                    id="new-todo-time"
+                                                    type="time"
+                                                    value={newTodoTime}
+                                                    onChange={(e) => setNewTodoTime(e.target.value)}
+                                                    className="w-[112px] bg-white border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 font-medium outline-none focus:border-latte-500 cursor-pointer shadow-sm"
+                                                />
+                                                {newTodoTime && <button type="button" onClick={() => setNewTodoTime('')} className="text-[11px] font-bold text-gray-400 hover:text-gray-600">시간 없음</button>}
+                                            </div>
                                             
                                             <div className="flex items-center gap-2">
                                                 <input 
@@ -2352,7 +2369,7 @@ const App = () => {
                                                     placeholder="할 일 입력 (Enter)"
                                                 />
                                                 <button onClick={handleAddTodo} className="bg-latte-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-latte-700 transition">추가</button>
-                                                <button onClick={() => { setIsAddingTodo(false); setNewTodoTitle(''); setNewTodoSubjectId(''); }} className="text-gray-400 p-1 hover:text-gray-600"><XIcon/></button>
+                                                <button onClick={() => { setIsAddingTodo(false); setNewTodoTitle(''); setNewTodoSubjectId(''); setNewTodoTime(''); }} className="text-gray-400 p-1 hover:text-gray-600"><XIcon/></button>
                                             </div>
                                         </div>
                                     )}
